@@ -7,7 +7,7 @@ let chatController=null;
 let chatBusy=false;
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
@@ -30,13 +30,13 @@ function render(){
 }
 $('profileForm').onsubmit=e=>{e.preventDefault();for(const field of personal.fields) state.profile[field]=$(field).value.trim();state.profileConsent=$('profileConsent').checked;const saved=persist();render();if(saved)$('saved').textContent='Preferencias aplicadas; revisa el estado de sincronización.';};
 $('taskForm').onsubmit=e=>{e.preventDefault();const title=$('taskTitle').value.trim();if(!title)return;state.tasks.push({id:crypto.randomUUID(),title,date:$('taskDate').value,done:false});persist();e.target.reset();render();};
-function cancelChat(){chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
+function cancelChat(){chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
 $('chat').onsubmit=async e=>{
   e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
   if(text.length>5000)return;
   const version=chatVersion;
   const controller=new AbortController();chatController=controller;chatBusy=true;
-  $('sendChat').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
+  $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
   const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
   const payload={messages:[...history,{role:'user',content:text}]};
   if($('shareProfile').checked)payload.profile={...state.profile};
@@ -52,7 +52,25 @@ $('chat').onsubmit=async e=>{
     state.messages.push({role:'user',text},{role:'assistant',text:result.reply,source:'ai'});
     persist();if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta recibida. Revisa el estado de guardado de tu cuenta.';
   }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
-  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('sendChat').textContent='Enviar a Lifts';}}
+  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';}}
+};
+$('testAI').onclick=async()=>{
+  if(chatBusy)return;
+  const version=chatVersion;
+  const controller=new AbortController();chatController=controller;chatBusy=true;
+  $('testAI').disabled=true;$('sendChat').disabled=true;
+  $('aiDiagnostic').textContent='Comprobando con una pregunta fija, sin perfil ni historial…';
+  const timer=setTimeout(()=>controller.abort(),60000);
+  try{
+    const token=await window.nexoAccount.accessToken();if(version!==chatVersion)return;
+    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({diagnostic:true}),signal:controller.signal});
+    const result=await response.json();if(version!==chatVersion)return;
+    const server=result.server;
+    $('aiDiagnostic').textContent=(response.ok?'La IA respondió a la prueba.':result.error || 'Falló la comprobación.')+
+      (server?`\nVersión: ${server.revision}\nModelo: ${server.model}`:'\nServidor anterior: esta respuesta no incluye la versión de diagnóstico.')+
+      (result.providerDetail?'\nDetalle de Cloudflare: '+result.providerDetail:'');
+  }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
+  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
 $('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();state.onboardingCompleted=true;persist();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [

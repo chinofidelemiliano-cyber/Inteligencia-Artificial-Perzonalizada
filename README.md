@@ -101,3 +101,9 @@ Comprueba ambos niveles de cuota, reinicio de ventanas, migración repetible y r
 ### Disponibilidad del modelo
 
 Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El identificador sin sufijo `@cf/meta/llama-3.1-8b-instruct` fue retirado el 30 de mayo de 2026 y no debe reutilizarse. Referencias: [aviso oficial](https://developers.cloudflare.com/changelog/2026-05-08-planned-model-deprecations/) y [modelo FP8](https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/). La disponibilidad para una cuenta y la inferencia real deben comprobarse después del despliegue.
+
+### Comprobar el despliegue y la inferencia
+
+El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-fp8-r2`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
+
+`GET /api/chat` expone solo la revisión, el modelo y la presencia del vínculo AI, sin ejecutar inferencias ni consultar cuentas. No prueba que el proveedor esté operativo. La comprobación autenticada por POST sí llega al modelo si sesión, vínculo y cuota están disponibles.
