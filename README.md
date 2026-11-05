@@ -1,6 +1,6 @@
 # Lifts Asistente Virtual
 
-App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y consultas se guardan en Supabase con reglas de acceso por usuario. La IA y la búsqueda técnica aún no están conectadas.
+App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y consultas se guardan en Supabase con reglas de acceso por usuario. El chat usa Cloudflare Workers AI cuando el vínculo AI y el contador de uso están configurados. La búsqueda web aún no está conectada.
 
 ## Configurar Supabase (obligatorio antes de usar)
 
@@ -22,7 +22,7 @@ Conecta este repositorio y usa:
 - Build output directory: `web`.
 - Root directory: predeterminado.
 
-También puedes publicar el contenido de `web` mediante Direct Upload. No subas `.git`, pruebas ni SQL como archivos del sitio. El SDK de Supabase se descarga de jsDelivr en una versión fija, con verificación de integridad en el navegador. No hay paso de compilación.
+Usa la integración con GitHub para incluir Pages Functions: Direct Upload por arrastre solo publicaría la interfaz estática y no habilita el chat. No subas `.git`, pruebas ni SQL como archivos públicos del sitio. El SDK de Supabase se descarga de jsDelivr en una versión fija, con verificación de integridad en el navegador. Deja vacío el comando de compilación; Cloudflare compila automáticamente las funciones.
 
 ## Desarrollo local
 
@@ -36,6 +36,7 @@ python3 -m http.server 3000 --bind 127.0.0.1 --directory web
 ```sh
 node tests/auth.test.cjs
 node tests/personalization.test.cjs
+node tests/chat.test.cjs
 node --check web/auth.js
 node --check web/app.js
 ```
@@ -50,7 +51,7 @@ Después de aplicar el SQL, verifica registro, confirmación, acceso, recuperaci
 - Los datos del antiguo prototipo local no se importan a ninguna cuenta, para evitar atribuir información de un navegador compartido a otra persona.
 - La sesión se conserva en el navegador mediante el SDK; usa Cerrar sesión en equipos compartidos.
 - Borrar mis datos vacía el perfil, las tareas y las consultas; no elimina la cuenta de Supabase Auth.
-- La app aún no responde con IA ni consulta fuentes. No guardar manuales confidenciales hasta implementar una biblioteca con permisos y validar la seguridad completa.
+- El chat genera respuestas cuando Workers AI está configurado; no consulta fuentes en internet. No guardar manuales confidenciales hasta implementar una biblioteca con permisos y validar la seguridad completa.
 
 ## Bienvenida y personalización
 
@@ -60,6 +61,24 @@ Guardar las respuestas requiere marcar la autorización al finalizar. Sin autori
 
 Desde Mi perfil se pueden editar las preferencias, retirar la autorización y vaciar el perfil guardado sin eliminar tareas y consultas. Estas últimas pueden contener información personal escrita por el usuario; para eliminarlas también existe Borrar mis datos. El borrado depende de que la sincronización termine correctamente y no equivale a eliminar copias de seguridad del proveedor.
 
-Las sugerencias son reglas locales basadas en intereses y objetivos: seleccionarlas prepara una consulta editable y no la envía automáticamente. No hay un modelo de IA conectado ni un proveedor de IA que reciba estas respuestas. La privacidad frente a otros usuarios depende de las políticas RLS en `supabase/schema.sql`; los administradores del proyecto tienen acceso administrativo a los datos. No se promete confidencialidad absoluta ni cifrado de extremo a extremo.
+Las sugerencias son reglas locales basadas en intereses y objetivos: seleccionarlas prepara una consulta editable y no la envía automáticamente. El chat puede compartir el perfil con Cloudflare Workers AI solo al marcar la casilla específica; no se adjunta por defecto. La privacidad frente a otros usuarios depende de las políticas RLS en `supabase/schema.sql`; los administradores del proyecto tienen acceso administrativo a los datos. No se promete confidencialidad absoluta ni cifrado de extremo a extremo.
 
 La personalización utiliza el campo JSON existente y no requiere ejecutar SQL adicional. Las pruebas de interfaz simulan el DOM; quedan pendientes comprobaciones visuales en navegador y de permisos en Supabase real.
+
+## Activar el chat con Cloudflare Workers AI
+
+1. En Supabase SQL Editor ejecuta [`supabase/ai_rate_limit.sql`](supabase/ai_rate_limit.sql). Requiere Supabase Auth y crea un contador protegido por usuario: 5 solicitudes por minuto y 50 por día UTC. Los intentos que llegan al modelo cuentan aunque este falle. Este límite no es un tope global de gasto ni sustituye la protección contra abuso del registro de cuentas.
+2. En Cloudflare abre **Workers & Pages → lifts-asistente-virtual → Settings → Bindings** (en algunas versiones: **Functions → Bindings**). Añade un vínculo de tipo **Workers AI** con nombre exacto **AI**, en producción. Si pruebas despliegues de vista previa, configura el mismo vínculo para ese entorno.
+3. Guarda y vuelve a desplegar desde la rama `main` para aplicar el vínculo. Mantén directorio de salida `web` y comando de compilación vacío. Pages detecta y compila la carpeta `functions` desde la raíz del repositorio automáticamente. No muevas esa carpeta dentro de `web`.
+4. Usa el despliegue de Pages conectado a GitHub; una carga de archivos estáticos por arrastre no compila Pages Functions.
+5. Inicia sesión y prueba una consulta. Comprueba también errores de sesión, persistencia al recargar y permisos con otra cuenta. Si no configuraste AI o el SQL, el chat muestra la acción que falta.
+
+Modelo: `@cf/meta/llama-3.1-8b-instruct`, con un máximo de 768 tokens de salida. Revisa disponibilidad, límites y tarifas vigentes de Workers AI en tu cuenta antes de abrirlo al público. No hay credenciales privadas de Cloudflare en el navegador: la función usa el vínculo del entorno.
+
+La función verifica cada token de sesión contra Supabase Auth antes de consumir cuota o consultar el modelo. El límite se aplica de forma atómica mediante una función SQL que usa `auth.uid()` y no acepta identificadores arbitrarios. No se utiliza una clave `service_role`. La función rechaza solicitudes de otro origen, roles de sistema aportados por el cliente y cuerpos mayores de 48 KB.
+
+Cada envío comparte con Cloudflare Workers AI la pregunta y hasta ocho mensajes recientes. El perfil se adjunta únicamente si el usuario marca Compartir mi perfil en el chat, con autorización separada de guardar el perfil. La casilla se restablece al cambiar de sesión. No se envía automáticamente la lista de tareas, el correo ni el token de acceso al modelo. No se imprimen conversaciones ni tokens en registros de aplicación. El proveedor procesa el contenido conforme a sus condiciones; no se promete cifrado de extremo a extremo ni confidencialidad absoluta.
+
+La respuesta se guarda en Supabase con la pregunta después de recibirla. Si el modelo falla, no se inventa una respuesta ni se elimina el borrador. Las respuestas antiguas del prototipo no se envían como respuestas del modelo. El historial es breve y no constituye memoria completa; el modelo no tiene herramientas, navegación web ni capacidad de crear tareas.
+
+Las pruebas simulan Supabase y el modelo. La compilación de Pages Functions se puede verificar con `npx --yes wrangler@4.50.0 pages functions build --outdir /tmp/lifts-pages-functions`. La inferencia real, el SQL y la cuota quedan pendientes de validación en la cuenta de Cloudflare y Supabase del usuario.

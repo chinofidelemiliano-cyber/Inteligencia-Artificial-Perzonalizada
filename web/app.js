@@ -2,9 +2,12 @@
 const personal = window.liftsPersonalization;
 const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[]});
 let state = initial();
+let chatVersion=0;
+let chatController=null;
+let chatBusy=false;
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
@@ -27,8 +30,31 @@ function render(){
 }
 $('profileForm').onsubmit=e=>{e.preventDefault();for(const field of personal.fields) state.profile[field]=$(field).value.trim();state.profileConsent=$('profileConsent').checked;const saved=persist();render();if(saved)$('saved').textContent='Preferencias aplicadas; revisa el estado de sincronización.';};
 $('taskForm').onsubmit=e=>{e.preventDefault();const title=$('taskTitle').value.trim();if(!title)return;state.tasks.push({id:crypto.randomUUID(),title,date:$('taskDate').value,done:false});persist();e.target.reset();render();};
-$('chat').onsubmit=e=>{e.preventDefault();const text=$('question').value.trim();if(!text)return;state.messages.push({role:'user',text},{role:'assistant',text:'Consulta preparada para guardar en tu cuenta. La IA aún no está conectada, así que no puedo resolverla ni consultar fuentes. Puedes explorar tus temas sugeridos o crear tareas en Mi organización. No incluyas información confidencial.'});persist();$('question').value='';render();};
-$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;state=initial();state.onboardingCompleted=true;persist();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+function cancelChat(){chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
+$('chat').onsubmit=async e=>{
+  e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
+  if(text.length>5000)return;
+  const version=chatVersion;
+  const controller=new AbortController();chatController=controller;chatBusy=true;
+  $('sendChat').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
+  const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
+  const payload={messages:[...history,{role:'user',content:text}]};
+  if($('shareProfile').checked)payload.profile={...state.profile};
+  const timer=setTimeout(()=>controller.abort(),60000);
+  try{
+    const token=await window.nexoAccount.accessToken();
+    if(version!==chatVersion)return;
+    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload),signal:controller.signal});
+    const result=await response.json().catch(()=>({error:'El servidor no respondió en el formato esperado. Verifica el despliegue de Pages Functions.'}));
+    if(version!==chatVersion)return;
+    if(!response.ok)throw new Error(result.error || 'No se pudo obtener una respuesta.');
+    if(typeof result.reply!=='string' || !result.reply.trim())throw new Error('La IA no devolvió una respuesta válida.');
+    state.messages.push({role:'user',text},{role:'assistant',text:result.reply,source:'ai'});
+    persist();if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta recibida. Revisa el estado de guardado de tu cuenta.';
+  }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
+  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('sendChat').textContent='Enviar a Lifts';}}
+};
+$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();state.onboardingCompleted=true;persist();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},
@@ -56,6 +82,6 @@ $('welcomeBack').onclick=()=>{captureWelcome();welcomeStep=Math.max(0,welcomeSte
 $('welcomeSkip').onclick=()=>{welcomeDraft[questions[welcomeStep].field]='';welcomeStep++;renderWelcome();};
 $('welcomeLater').onclick=()=>{welcomeDraft=personal.emptyProfile();finishWelcome(false);};
 $('personalize').onclick=()=>{welcomeDraft={...state.profile};welcomeStep=0;$('welcomeConsent').checked=state.profileConsent===true;renderWelcome();page('welcome');};
-$('forgetProfile').onclick=()=>{if(!confirm('¿Borrar tus preferencias guardadas? Se conservarán tus tareas y consultas, que pueden contener información que hayas escrito.'))return;state.profile=personal.emptyProfile();state.profileConsent=false;welcomeDraft=personal.emptyProfile();persist();render();$('saved').textContent='Borrado del perfil preparado; revisa el estado de sincronización.';};
+$('forgetProfile').onclick=()=>{if(!confirm('¿Borrar tus preferencias guardadas? Se conservarán tus tareas y consultas, que pueden contener información que hayas escrito.'))return;cancelChat();$('shareProfile').checked=false;state.profile=personal.emptyProfile();state.profileConsent=false;welcomeDraft=personal.emptyProfile();persist();render();$('saved').textContent='Borrado del perfil preparado; revisa el estado de sincronización.';};
 render();
 renderWelcome();

@@ -3,12 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const personal=require('../web/personalization.js');
-function setup(){
+function setup({reply="Respuesta de prueba",failure=false}={}){
  const elements=new Map(),listeners={},writes=[];
  const make=()=>({value:'',checked:false,hidden:false,textContent:'',children:[],setAttribute(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},focus(){},reset(){}});
  const get=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id);};
- const window={liftsPersonalization:personal,nexoAccount:{save:s=>writes.push(s)},addEventListener:(name,fn)=>listeners[name]=fn};
- vm.runInNewContext(fs.readFileSync('web/app.js','utf8'),{window,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},crypto:{randomUUID:()=> 'task-id'},confirm:()=>true});
+ const window={liftsPersonalization:personal,nexoAccount:{save:s=>writes.push(s),accessToken:async()=>"test-token"},addEventListener:(name,fn)=>listeners[name]=fn};
+ vm.runInNewContext(fs.readFileSync('web/app.js','utf8'),{window,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},AbortController,setTimeout,clearTimeout,fetch:async(url,options)=>{writes.requests ??= [];writes.requests.push(JSON.parse(options.body));return {ok:!failure,json:async()=>failure?{error:"Servicio no disponible"}:{reply}};},crypto:{randomUUID:()=> 'task-id'},confirm:()=>true});
  return{get,writes,load:data=>listeners['nexo-state']({detail:data}),next:()=>get('welcomeForm').onsubmit({preventDefault(){}})};
 }
 test('new accounts see optional welcome with no assumed industry',()=>{const s=setup();s.load(null);assert.equal(s.get('welcome').hidden,false);assert.equal(s.get('home').hidden,true);assert.equal(s.get('welcomeConsent').checked,false);assert.doesNotMatch(s.get('focus').textContent,/Comco|BOPP|flexograf/i);});
@@ -17,3 +17,7 @@ test('without consent preferences stay in memory but not any saved snapshot',()=
 test('skip whole welcome persists no personal answers',()=>{const s=setup();s.load(null);s.get('welcomeAnswer').value='Not submitted';s.get('welcomeLater').onclick();assert.equal(s.writes.at(-1).profile.name,'');assert.equal(s.get('home').hidden,false);});
 test('switching accounts clears previous personalization',()=>{const s=setup();s.load({profile:{name:'Previous',interests:'cocina'},profileConsent:true,onboardingCompleted:true,tasks:[],messages:[]});assert.match(s.get('greeting').textContent,/Previous/);s.load(null);assert.doesNotMatch(s.get('greeting').textContent,/Previous/);assert.equal(s.get('welcomeAnswer').value,'');assert.equal(s.get('welcomeConsent').checked,false);});
 test('forget profile preserves tasks and removes saved preferences',()=>{const s=setup();s.load({profile:{name:'Alex'},profileConsent:true,onboardingCompleted:true,tasks:[{id:'1',title:'Keep',done:false}],messages:[]});s.get('forgetProfile').onclick();assert.equal(s.writes.at(-1).profile.name,'');assert.equal(s.writes.at(-1).tasks[0].title,'Keep');});
+
+test('chat sends no profile by default and saves real replies',async()=>{const s=setup();s.load({profile:{name:'Private'},profileConsent:true,onboardingCompleted:true,tasks:[],messages:[]});s.get('question').value='Hola';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.requests[0].profile,undefined);assert.equal(s.writes.at(-1).messages.at(-1).text,'Respuesta de prueba');assert.equal(s.get('question').value,'');});
+test('chat shares profile only when explicitly checked',async()=>{const s=setup();s.load({profile:{name:'Alex'},profileConsent:true,onboardingCompleted:true,tasks:[],messages:[]});s.get('shareProfile').checked=true;s.get('question').value='Hola';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.requests[0].profile.name,'Alex');});
+test('failed chat preserves draft and stores no fabricated response',async()=>{const s=setup({failure:true});s.load(null);s.get('question').value='Mi pregunta';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.get('question').value,'Mi pregunta');assert.equal(s.writes.length,0);assert.match(s.get('chatStatus').textContent,/Servicio no disponible/);assert.equal(s.get('sendChat').disabled,false);});

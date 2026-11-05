@@ -75,6 +75,13 @@
     el('password').value = '';
   }
   window.nexoAccount = {
+    async accessToken() {
+      if (!ready || !user) throw new Error('Inicia sesión para conversar.');
+      const uid = user.id;
+      const {data,error} = await client.auth.getSession();
+      if (error || !ready || user?.id !== uid || data.session?.user?.id !== uid || !data.session.access_token) throw new Error('Tu sesión caducó. Vuelve a iniciar sesión.');
+      return data.session.access_token;
+    },
     save(value) {
       if (!ready || !user) return;
       const uid = user.id;

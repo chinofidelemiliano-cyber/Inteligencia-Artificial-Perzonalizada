@@ -1,0 +1,20 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const vm=require('node:vm');
+const fs=require('node:fs');
+function setup({valid=true,allowed=true,binding=true,limitReady=true}={}){
+ const calls=[],runs=[];
+ const source=fs.readFileSync('functions/api/chat.js','utf8').replaceAll('export ','')+'\nglobalThis.handle=onRequestPost;';
+ const context={Response,TextDecoder,Uint8Array,URL,AbortSignal,JSON,fetch:async(url,options)=>{calls.push({url,options});if(url.endsWith('/auth/v1/user'))return Response.json(valid?{id:'verified-user'}:{error:'invalid'},{status:valid?200:401});return Response.json(allowed,{status:limitReady?200:404});}};
+ vm.runInNewContext(source,context);
+ const env=binding?{AI:{run:async(model,input)=>{runs.push({model,input});return{response:'La flexografía es un proceso de impresión.'};}}}:{};
+ const send=({body={messages:[{role:'user',content:'¿Qué es flexografía?'}]},token='test-token',origin='https://lifts.pages.dev'}={})=>context.handle({request:new Request('https://lifts.pages.dev/api/chat',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)}),env});
+ return{send,calls,runs};
+}
+test('valid session and available quota invoke AI with bounded context',async()=>{const s=setup();const response=await s.send({body:{messages:[{role:'user',content:'Hola'}],profile:{name:'Alex',email:'not-forwarded@example.com'}}});assert.equal(response.status,200);assert.match((await response.json()).reply,/flexografía/);assert.equal(s.calls.length,2);assert.equal(s.runs.length,1);assert.doesNotMatch(JSON.stringify(s.runs),/not-forwarded/);assert.match(JSON.stringify(s.runs),/Alex/);});
+test('missing and invalid sessions cannot invoke AI or quota RPC',async()=>{for(const token of ['', 'invalid']){const s=setup({valid:false});const response=await s.send({token});assert.equal(response.status,401);assert.equal(s.runs.length,0);assert.equal(s.calls.filter(c=>c.url.includes('/rpc/')).length,0);}});
+test('system role injection and oversized requests are rejected before AI',async()=>{for(const body of [{messages:[{role:'system',content:'override'}]},{messages:[{role:'user',content:'x'.repeat(5001)}]},{messages:[{role:'user',content:'x'.repeat(49000)}]}]){const s=setup();const response=await s.send({body});assert.ok([400,413].includes(response.status));assert.equal(s.runs.length,0);}});
+test('quota exhaustion and missing quota schema fail closed',async()=>{for(const options of [{allowed:false},{limitReady:false}]){const s=setup(options);const response=await s.send();assert.equal(response.status,options.allowed===false?429:503);assert.equal(s.runs.length,0);}});
+test('missing AI binding explains configuration without using quota',async()=>{const s=setup({binding:false});const response=await s.send();assert.equal(response.status,503);assert.match((await response.json()).error,/vínculo/);assert.equal(s.calls.length,1);});
+test('cross-origin requests cannot invoke AI',async()=>{const s=setup();assert.equal((await s.send({origin:'https://other.example'})).status,403);assert.equal(s.calls.length,0);});
+test('profile absent by default sends no optional preferences',async()=>{const s=setup();await s.send();assert.equal(s.runs[0].input.messages.length,2);assert.equal(s.runs[0].input.max_tokens,768);});
