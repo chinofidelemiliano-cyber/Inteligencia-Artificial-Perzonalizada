@@ -1,47 +1,52 @@
 # Nexo · Inteligencia Artificial Personalizada
 
-Primera interfaz web en español para un asistente personal con organización de tareas y perfil profesional. Incluye un perfil inicial de flexografía, Comco, BOPP y transfer.
+App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y consultas se guardan en Supabase con reglas de acceso por usuario. La IA y la búsqueda técnica aún no están conectadas.
 
-## Ejecutar
+## Configurar Supabase (obligatorio antes de usar)
 
-Requiere Python 3; no tiene dependencias externas.
+1. En el proyecto `ubasjdaluswyxpzsnyug`, abre **SQL Editor**, crea una consulta, pega el contenido de [`supabase/schema.sql`](supabase/schema.sql) y pulsa **Run**. Crea la tabla y aplica Row Level Security para que cada usuario solo pueda leer y modificar su propio espacio. No desactives RLS.
+2. En **Authentication → URL Configuration**, configura **Site URL** con la dirección estable de producción. Para este proyecto probablemente sea `https://inteligencia-artificial-perzonalizada.pages.dev`; confirma la dirección en Cloudflare.
+3. En **Redirect URLs**, añade la URL exacta de producción con `/` final y, si vas a usarlo, `https://018b1416.inteligencia-artificial-perzonalizada.pages.dev/`. Para desarrollo añade `http://127.0.0.1:3000/`. Añade individualmente otros dominios que utilices.
+4. En **Authentication → Providers → Email**, habilita el acceso por correo y la confirmación de correo. Para usuarios públicos configura un proveedor SMTP y los límites de envío apropiados: el correo incluido de Supabase tiene restricciones y no debe darse por suficiente para producción.
+5. Abre la app, crea tu cuenta con una contraseña nueva y confirma tu correo. Abre los enlaces de confirmación y recuperación en el mismo navegador que inició el proceso (PKCE).
+
+La URL y la clave `sb_publishable_…` en `web/auth.js` son públicas. No añadas claves `service_role`, claves secretas ni contraseñas al repositorio. La separación de datos depende de las políticas SQL, no de ocultar la clave pública. No se ha creado ninguna cuenta por adelantado.
+
+## Cloudflare Pages
+
+Conecta este repositorio y usa:
+
+- Rama: `main`.
+- Framework: `None`.
+- Build command: vacío.
+- Build output directory: `web`.
+- Root directory: predeterminado.
+
+También puedes publicar el contenido de `web` mediante Direct Upload. No subas `.git`, pruebas ni SQL como archivos del sitio. El SDK de Supabase se descarga de jsDelivr en una versión fija, con verificación de integridad en el navegador. No hay paso de compilación.
+
+## Desarrollo local
 
 ```sh
 cd /workspace/Inteligencia-Artificial-Perzonalizada
 python3 -m http.server 3000 --bind 127.0.0.1 --directory web
 ```
 
-## Alcance actual
+## Validación
 
-- Navegación adaptable a celulares y computadoras.
-- Perfil local editable, tareas con fecha y estado, consultas guardadas y borrado de datos.
-- Datos almacenados en localStorage, solo en el navegador actual. No guardar información confidencial.
-- No hay registro, autenticación, aislamiento seguro entre personas, backend, IA, búsqueda web ni notificaciones. El chat identifica explícitamente estas limitaciones y no inventa respuestas técnicas.
+```sh
+node tests/auth.test.cjs
+node --check web/auth.js
+node --check web/app.js
+```
 
-## Publicar en Cloudflare Pages
+Las pruebas usan un cliente simulado: comprueban bloqueo de acceso sin sesión, carga/guardado por identificador, limpieza de pantalla al salir, error de tabla ausente, recuperación, credenciales rechazadas y protección ante datos inválidos. No verifican los correos, las políticas SQL en el servidor ni la configuración real de Supabase.
 
-El prototipo es un sitio estático y se puede alojar directamente en Cloudflare Pages, sin servidor Python ni proceso de compilación.
+Después de aplicar el SQL, verifica registro, confirmación, acceso, recuperación y cierre de sesión en producción. Con dos cuentas distintas comprueba que tareas, perfil y consultas no se mezclan y que un usuario autenticado no puede consultar o modificar el `user_id` del otro mediante la API. Confirma también que una petición sin sesión no puede leer la tabla. Estas comprobaciones reales quedan pendientes hasta configurar el proyecto.
 
-### Desde GitHub
+## Límites actuales
 
-1. Sube los archivos de este proyecto a tu repositorio en GitHub; estos cambios locales todavía no se han enviado.
-2. En el panel de Cloudflare, abre **Workers & Pages**, crea un proyecto de **Pages** y conecta el repositorio `chinofidelemiliano-cyber/Inteligencia-Artificial-Perzonalizada`.
-3. Selecciona la rama `main` y el framework **None**. Mantén la raíz del proyecto en la raíz del repositorio.
-4. Deja el comando de compilación vacío y establece **Build output directory** en `web`.
-5. Publica el proyecto. Cloudflare proporcionará una dirección HTTPS en `pages.dev`; puedes añadir un dominio propio después.
-
-### Carga directa sin GitHub
-
-Crea un proyecto de Pages mediante **Direct Upload** y sube la carpeta `web` (o un ZIP con su contenido). `index.html`, `app.js` y `_headers` deben quedar en la raíz de los archivos publicados. No subas el repositorio completo ni la carpeta `.git`.
-
-### Verificar después de publicar
-
-Abre la dirección que proporcione Cloudflare y comprueba que puedes navegar entre Mi espacio, Mi organización y Mi perfil; agregar y completar una tarea; guardar el perfil; recargar y recuperar los datos; y borrarlos desde Mi perfil. Comprueba también la vista en un celular.
-
-No se necesitan claves ni variables de entorno para publicar esta versión. Publicarla no conecta una IA ni crea cuentas: los datos siguen siendo locales a cada navegador. Al cambiar del sitio local al dominio público, los datos locales anteriores no se transfieren. En equipos compartidos, los datos del prototipo no están separados por usuario.
-
-Para la aplicación completa, Cloudflare Workers puede alojar la API, D1 los datos y R2 los documentos. Esa etapa requiere implementar autenticación y permisos por usuario antes de guardar información privada en el servidor. Las credenciales de IA deben configurarse como secretos del backend, nunca en `web/app.js`.
-
-## Próxima etapa
-
-Integrar autenticación y base de datos con acceso por usuario, proveedor de IA en un servidor (sin exponer claves al navegador), búsqueda técnica con citas y fechas, y biblioteca de documentos con permisos. Validar estas funciones antes de abrir el servicio al público. No utilizar este prototipo como un sistema de cuentas seguro.
+- El espacio se sincroniza al guardar. Si falla, el aviso lo indica: mantén la página abierta y repite la acción. No hay funcionamiento sin conexión ni resolución de ediciones simultáneas; la última escritura gana.
+- Los datos del antiguo prototipo local no se importan a ninguna cuenta, para evitar atribuir información de un navegador compartido a otra persona.
+- La sesión se conserva en el navegador mediante el SDK; usa Cerrar sesión en equipos compartidos.
+- Borrar mis datos vacía el perfil, las tareas y las consultas; no elimina la cuenta de Supabase Auth.
+- La app aún no responde con IA ni consulta fuentes. No guardar manuales confidenciales hasta implementar una biblioteca con permisos y validar la seguridad completa.
