@@ -1,4 +1,4 @@
-# Nexo · Inteligencia Artificial Personalizada
+# Lifts Asistente Virtual
 
 App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y consultas se guardan en Supabase con reglas de acceso por usuario. La IA y la búsqueda técnica aún no están conectadas.
 
