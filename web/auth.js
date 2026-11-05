@@ -18,6 +18,24 @@
   let ready = false;
   const redirectTo = new URL('/', location.href).href;
   function message(text) { el('authStatus').textContent = text; }
+  function registrationError(error) {
+    const explanations = {
+      over_email_send_rate_limit: 'Supabase alcanzó el límite de envío de correos. Espera antes de reintentar; para uso público configura un proveedor SMTP en Supabase.',
+      over_request_rate_limit: 'Hay demasiados intentos. Espera antes de volver a registrarte.',
+      email_address_not_authorized: 'El servicio de correo de Supabase no está autorizado para enviar a esta dirección. Configura un proveedor SMTP en Supabase.',
+      signup_disabled: 'El registro de usuarios está desactivado. Actívalo en Authentication de Supabase.',
+      email_provider_disabled: 'El acceso por correo está desactivado en Supabase.',
+      weak_password: 'La contraseña no cumple los requisitos de seguridad configurados en Supabase. Elige otra contraseña.',
+      email_address_invalid: 'Supabase no acepta esta dirección de correo. Revisa que esté bien escrita.',
+      user_already_exists: 'No se pudo crear la cuenta. Intenta iniciar sesión o recuperar tu contraseña.',
+      unexpected_failure: 'Supabase tuvo un error interno. Revisa los registros de Authentication para identificar la causa.'
+    };
+    const code = typeof error.code === 'string' ? error.code : '';
+    const detail = explanations[code] || (error.status === 429
+      ? 'Se alcanzó un límite de solicitudes o correos. Espera antes de reintentar y revisa los límites en Supabase.'
+      : 'Supabase rechazó el registro. Detalle: ' + String(error.message || 'Sin descripción disponible.').slice(0,400));
+    return 'No se pudo completar el registro. ' + detail + (code ? ' Código: ' + code + '.' : '') + (error.status ? ' HTTP: ' + error.status + '.' : '');
+  }
   function resetView() {
     ready = false;
     user = null;
@@ -98,7 +116,7 @@
       message('Creando cuenta…');
       const {data,error} = await client.auth.signUp({email:el('email').value.trim(),password:el('password').value,options:{emailRedirectTo:redirectTo}});
       el('password').value = '';
-      if (error) { message('No se pudo completar el registro. Revisa los requisitos de contraseña, la configuración y el límite de envíos de Supabase.'); return; }
+      if (error) { message(registrationError(error)); return; }
       if (data.session) await openSession(data.session);
       else message('Revisa tu correo para confirmar el registro. Si ya tienes cuenta, inicia sesión o recupera tu contraseña.');
     });
