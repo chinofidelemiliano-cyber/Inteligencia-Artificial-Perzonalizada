@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
-const REVISION = 'lifts-ai-detail-r3';
+const REVISION = 'lifts-ai-multimodel-r4';
 const json = (body,status=200) => new Response(JSON.stringify({...body,server:{revision:REVISION,model:MODEL}}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function bodyJSON(request) {
   const reader=request.body?.getReader();
@@ -27,6 +27,9 @@ export async function onRequestPost({request,env}) {
     deep:{tokens:3072,instruction:'Explica a fondo el tema: fundamentos, funcionamiento paso a paso, factores relevantes, ejemplos y errores frecuentes cuando apliquen. Define los términos técnicos. Organiza el contenido en secciones claras sin repetir ideas. No alargues saludos ni preguntas sencillas.'}
   };
   const detail=typeof body.detail==='string' && Object.hasOwn(detailOptions,body.detail)?detailOptions[body.detail]:detailOptions.detailed;
+  const engines={balanced:MODEL,fast:'@cf/meta/llama-3.2-3b-instruct',deep:'@cf/meta/llama-3.3-70b-instruct-fp8-fast'};
+  const primary=!diagnostic && typeof body.engine==='string' && Object.hasOwn(engines,body.engine)?engines[body.engine]:MODEL;
+  const streaming=!diagnostic && body.stream===true;
   const preferences={};
   if(body.profile && typeof body.profile==='object' && !Array.isArray(body.profile)){
     for(const field of ['name','interests','role','specialty','equipment','goals','tone']){
@@ -50,9 +53,22 @@ export async function onRequestPost({request,env}) {
     if(Object.keys(preferences).length)messages.push({role:'user',content:'Preferencias opcionales para personalizar esta conversación: '+JSON.stringify(preferences)});
     messages.push(...body.messages.map(({role,content})=>({role,content})));
     stage='WORKERS_AI';
-    const result=await env.AI.run(MODEL,{messages,max_tokens:diagnostic?16:detail.tokens,temperature:0.3});
+    const options={messages,max_tokens:diagnostic?16:detail.tokens,temperature:0.3,...(streaming?{stream:true}:{})};
+    let selected=primary;
+    let result;
+    try{result=await env.AI.run(selected,options);}
+    catch(error){
+      // One sequential fallback, before any response is sent. No parallel model calls.
+      if(diagnostic || /quota|neurons|rate limit|limit exceeded|3036|5035/i.test(String(error?.message || '')))throw error;
+      selected=primary===MODEL?engines.deep:MODEL;
+      result=await env.AI.run(selected,options);
+    }
+    if(streaming){
+      if(!result || typeof result.getReader!=='function')return json({error:'El modelo no devolvió una respuesta en tiempo real válida.'},502);
+      return new Response(result,{headers:{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Lifts-Engine':selected===engines.fast?'fast':selected===engines.deep?'deep':'balanced','X-Lifts-Revision':REVISION}});
+    }
     if(typeof result?.response!=='string' || !result.response.trim())return json({error:'El modelo no devolvió una respuesta. Inténtalo de nuevo.'},502);
-    return json({reply:result.response});
+    return json({reply:result.response,engine:selected});
   } catch (error) {
     // Return only a controlled explanation and numeric provider code, never raw errors,
     // which may contain tokens, URLs, prompts or provider implementation details.

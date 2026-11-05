@@ -104,7 +104,7 @@ Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El iden
 
 ### Comprobar el despliegue y la inferencia
 
-El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-detail-r3`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
+El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-multimodel-r4`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
 
 `GET /api/chat` expone solo la revisión, el modelo y la presencia del vínculo AI, sin ejecutar inferencias ni consultar cuentas. No prueba que el proveedor esté operativo. La comprobación autenticada por POST sí llega al modelo si sesión, vínculo y cuota están disponibles.
 
@@ -141,3 +141,19 @@ node tests/images-ui.test.cjs
 ```
 
 Verifican autenticación, cuota, validación del cuerpo, formato binario, privacidad de la solicitud, descarga, errores y limpieza entre sesiones con servicios simulados. Después del despliegue hay que generar una imagen real y descargarla para validar la disponibilidad del modelo en producción.
+
+## Varios modelos y respuesta progresiva
+
+El selector de motor permite Equilibrado (`@cf/meta/llama-3.1-8b-instruct-fp8`), Ligero (`@cf/meta/llama-3.2-3b-instruct`) y Mayor capacidad (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`). Se verificó que los tres figuran activos y admiten streaming en el catálogo oficial. La cuenta puede requerir habilitación, condiciones o un plan específico para alguno de ellos. Son modelos distintos del proveedor existente; no se han conectado cuentas externas de OpenAI, Anthropic o Google.
+
+El nivel Breve/Detallada/Profunda es independiente del motor. El navegador solicita SSE y muestra el texto conforme llega, sin esperar a que se genere todo. Esto reduce la espera visible, pero no constituye una medición ni una garantía de menor latencia o mayor precisión. Para explicaciones extensas usa Mayor capacidad y Profunda; para tareas sencillas puedes probar Ligero. La velocidad depende de carga, red, contexto y longitud de respuesta.
+
+Si la primera llamada falla antes de comenzar el stream, se intenta como máximo un modelo alternativo. No hay llamadas paralelas. No se reintenta ante errores conocidos de cuota o plan. Una operación consume una unidad de cuota interna, pero hasta dos intentos pueden consumir recursos del proveedor. Un error después de comenzar el stream no dispara una segunda inferencia: se muestra la respuesta incompleta, se conserva el borrador y no se guarda como una respuesta terminada.
+
+Las condiciones de privacidad son iguales para los modelos: no se añade información adicional al perfil opcional e historial breve ya autorizados. Estos cambios no añaden navegación web, búsqueda con citas ni ejecución automática de tareas.
+
+```sh
+node tests/stream.test.cjs
+```
+
+Las pruebas comprueban selección de modelos, alternativa, cuota, SSE con fragmentos UTF-8, errores de stream y guardado exclusivo de respuestas completas. La velocidad, calidad e inferencia real de cada modelo deben validarse en producción.

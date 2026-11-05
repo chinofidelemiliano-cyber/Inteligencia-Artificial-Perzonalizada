@@ -7,7 +7,7 @@ let chatController=null;
 let chatBusy=false;
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
@@ -30,7 +30,7 @@ function render(){
 }
 $('profileForm').onsubmit=e=>{e.preventDefault();for(const field of personal.fields) state.profile[field]=$(field).value.trim();state.profileConsent=$('profileConsent').checked;const saved=persist();render();if(saved)$('saved').textContent='Preferencias aplicadas; revisa el estado de sincronización.';};
 $('taskForm').onsubmit=e=>{e.preventDefault();const title=$('taskTitle').value.trim();if(!title)return;state.tasks.push({id:crypto.randomUUID(),title,date:$('taskDate').value,done:false});persist();e.target.reset();render();};
-function cancelChat(){chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
+function cancelChat(){$('streamingAnswer').textContent='';$('streamingAnswer').hidden=true;chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
 $('chat').onsubmit=async e=>{
   e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
   if(text.length>5000)return;
@@ -38,18 +38,25 @@ $('chat').onsubmit=async e=>{
   const controller=new AbortController();chatController=controller;chatBusy=true;
   $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
   const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
-  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed'};
+  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true};
   if($('shareProfile').checked)payload.profile={...state.profile};
-  const timer=setTimeout(()=>controller.abort(),60000);
+  const timer=setTimeout(()=>controller.abort(),120000);
   try{
     const token=await window.nexoAccount.accessToken();
     if(version!==chatVersion)return;
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload),signal:controller.signal});
-    const result=await response.json().catch(()=>({error:'El servidor no respondió en el formato esperado. Verifica el despliegue de Pages Functions.'}));
+    let reply;
+    if(response.ok && response.headers?.get('Content-Type')?.includes('text/event-stream')){
+      reply=await window.liftsStream.read(response,partial=>{if(version===chatVersion){$('streamingAnswer').hidden=false;$('streamingAnswer').textContent=partial;$('chatStatus').textContent='Lifts está escribiendo…';}});
+    }else{
+      const result=await response.json().catch(()=>({error:'El servidor no respondió en el formato esperado. Verifica el despliegue.'}));
+      if(!response.ok)throw new Error(result.error || 'No se pudo obtener una respuesta.');
+      reply=result.reply;
+    }
     if(version!==chatVersion)return;
-    if(!response.ok)throw new Error(result.error || 'No se pudo obtener una respuesta.');
-    if(typeof result.reply!=='string' || !result.reply.trim())throw new Error('La IA no devolvió una respuesta válida.');
-    state.messages.push({role:'user',text},{role:'assistant',text:result.reply,source:'ai'});
+    if(typeof reply!=='string' || !reply.trim())throw new Error('La IA no devolvió una respuesta válida.');
+    $('streamingAnswer').hidden=true;$('streamingAnswer').textContent='';
+    state.messages.push({role:'user',text},{role:'assistant',text:reply,source:'ai'});
     persist();if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta recibida. Revisa el estado de guardado de tu cuenta.';
   }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';}}

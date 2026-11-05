@@ -3,12 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const personal=require('../web/personalization.js');
-function setup({reply="Respuesta de prueba",failure=false}={}){
+function setup({reply="Respuesta de prueba",failure=false,streaming=false,incomplete=false}={}){
  const elements=new Map(),listeners={},writes=[];
  const make=()=>({value:'',checked:false,hidden:false,textContent:'',children:[],setAttribute(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},focus(){},reset(){}});
  const get=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id);};
- const window={liftsPersonalization:personal,nexoAccount:{save:s=>writes.push(s),accessToken:async()=>"test-token"},addEventListener:(name,fn)=>listeners[name]=fn};
- vm.runInNewContext(fs.readFileSync('web/app.js','utf8'),{window,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},AbortController,setTimeout,clearTimeout,fetch:async(url,options)=>{writes.requests ??= [];writes.requests.push(JSON.parse(options.body));return {ok:!failure,json:async()=>failure?{error:"Servicio no disponible"}:{reply}};},crypto:{randomUUID:()=> 'task-id'},confirm:()=>true});
+ const window={liftsStream:require('../web/stream.js'),liftsPersonalization:personal,nexoAccount:{save:s=>writes.push(s),accessToken:async()=>"test-token"},addEventListener:(name,fn)=>listeners[name]=fn};
+ vm.runInNewContext(fs.readFileSync('web/app.js','utf8'),{window,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},AbortController,setTimeout,clearTimeout,fetch:async(url,options)=>{writes.requests ??= [];writes.requests.push(JSON.parse(options.body));if(streaming)return new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('data: {"response":"Respuesta en vivo"}\n\n'+(incomplete?'':'data: [DONE]\n\n')));c.close();}}),{headers:{'Content-Type':'text/event-stream'}});return {ok:!failure,json:async()=>failure?{error:"Servicio no disponible"}:{reply}};},crypto:{randomUUID:()=> 'task-id'},confirm:()=>true});
  return{get,writes,load:data=>listeners['nexo-state']({detail:data}),next:()=>get('welcomeForm').onsubmit({preventDefault(){}})};
 }
 test('new accounts see optional welcome with no assumed industry',()=>{const s=setup();s.load(null);assert.equal(s.get('welcome').hidden,false);assert.equal(s.get('home').hidden,true);assert.equal(s.get('welcomeConsent').checked,false);assert.doesNotMatch(s.get('focus').textContent,/Comco|BOPP|flexograf/i);});
@@ -24,3 +24,6 @@ test('failed chat preserves draft and stores no fabricated response',async()=>{c
 test('connection check sends a fixed diagnostic without state or saved messages',async()=>{const s=setup();s.load({profile:{name:'Private'},profileConsent:true,onboardingCompleted:true,tasks:[],messages:[]});s.get('shareProfile').checked=true;await s.get('testAI').onclick();assert.equal(s.writes.requests[0].diagnostic,true);assert.equal(s.writes.requests[0].profile,undefined);assert.equal(s.writes.requests[0].messages,undefined);assert.equal(s.writes.length,0);assert.equal(s.get('testAI').disabled,false);});
 
 test('chat sends selected detail level and defaults to detailed',async()=>{const s=setup();s.load(null);s.get('question').value='Explica el tema';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.requests[0].detail,'detailed');s.get('responseDetail').value='deep';s.get('question').value='Más contexto';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.requests[1].detail,'deep');});
+
+test('live chat displays and saves only completed stream',async()=>{const s=setup({streaming:true});s.load(null);s.get('question').value='Pregunta';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.at(-1).messages.at(-1).text,'Respuesta en vivo');assert.equal(s.get('streamingAnswer').hidden,true);assert.equal(s.writes.requests[0].stream,true);});
+test('interrupted live chat keeps draft and saves no partial answer',async()=>{const s=setup({streaming:true,incomplete:true});s.load(null);s.get('question').value='Pregunta';await s.get('chat').onsubmit({preventDefault(){}});assert.equal(s.writes.length,0);assert.equal(s.get('question').value,'Pregunta');assert.match(s.get('chatStatus').textContent,/incompleta/);});
