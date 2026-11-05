@@ -1,0 +1,19 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const personal=require('../web/personalization.js');
+function setup(){
+ const elements=new Map(),listeners={},writes=[];
+ const make=()=>({value:'',checked:false,hidden:false,textContent:'',children:[],setAttribute(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},focus(){},reset(){}});
+ const get=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id);};
+ const window={liftsPersonalization:personal,nexoAccount:{save:s=>writes.push(s)},addEventListener:(name,fn)=>listeners[name]=fn};
+ vm.runInNewContext(fs.readFileSync('web/app.js','utf8'),{window,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},crypto:{randomUUID:()=> 'task-id'},confirm:()=>true});
+ return{get,writes,load:data=>listeners['nexo-state']({detail:data}),next:()=>get('welcomeForm').onsubmit({preventDefault(){}})};
+}
+test('new accounts see optional welcome with no assumed industry',()=>{const s=setup();s.load(null);assert.equal(s.get('welcome').hidden,false);assert.equal(s.get('home').hidden,true);assert.equal(s.get('welcomeConsent').checked,false);assert.doesNotMatch(s.get('focus').textContent,/Comco|BOPP|flexograf/i);});
+test('consent saves responses and drives editable suggested prompts',()=>{const s=setup();s.load(null);for(const answer of ['Alex','música, cocina','Estudiante','Diseño','Organizar mis estudios','Con ejemplos']){s.get('welcomeAnswer').value=answer;s.next();}s.get('welcomeConsent').checked=true;s.next();assert.equal(s.writes.at(-1).profile.name,'Alex');assert.equal(s.writes.at(-1).onboardingCompleted,true);assert.equal(s.get('home').hidden,false);const topic=s.get('topics').children.find(b=>b.textContent==='música');assert.ok(topic);topic.onclick();assert.match(s.get('question').value,/música/);assert.equal(s.writes.length,1);});
+test('without consent preferences stay in memory but not any saved snapshot',()=>{const s=setup();s.load(null);s.get('welcomeAnswer').value='Session nickname';s.next();for(let i=1;i<6;i++)s.next();s.next();assert.match(s.get('greeting').textContent,/Session nickname/);assert.equal(s.writes.at(-1).profile.name,'');s.get('taskTitle').value='Task';s.get('taskDate').value='';s.get('taskForm').onsubmit({preventDefault(){},target:{reset(){}}});assert.equal(s.writes.at(-1).profile.name,'');assert.equal(s.writes.at(-1).tasks.length,1);});
+test('skip whole welcome persists no personal answers',()=>{const s=setup();s.load(null);s.get('welcomeAnswer').value='Not submitted';s.get('welcomeLater').onclick();assert.equal(s.writes.at(-1).profile.name,'');assert.equal(s.get('home').hidden,false);});
+test('switching accounts clears previous personalization',()=>{const s=setup();s.load({profile:{name:'Previous',interests:'cocina'},profileConsent:true,onboardingCompleted:true,tasks:[],messages:[]});assert.match(s.get('greeting').textContent,/Previous/);s.load(null);assert.doesNotMatch(s.get('greeting').textContent,/Previous/);assert.equal(s.get('welcomeAnswer').value,'');assert.equal(s.get('welcomeConsent').checked,false);});
+test('forget profile preserves tasks and removes saved preferences',()=>{const s=setup();s.load({profile:{name:'Alex'},profileConsent:true,onboardingCompleted:true,tasks:[{id:'1',title:'Keep',done:false}],messages:[]});s.get('forgetProfile').onclick();assert.equal(s.writes.at(-1).profile.name,'');assert.equal(s.writes.at(-1).tasks[0].title,'Keep');});
