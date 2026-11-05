@@ -8,7 +8,7 @@ let chatBusy=false;
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
 window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
-function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
+function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function render(){

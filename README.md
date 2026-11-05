@@ -122,3 +122,22 @@ Para quitar únicamente los límites de consultas de Lifts de la cuenta del prop
 La excepción se vincula al UUID de una única cuenta confirmada. La función verifica la sesión antes de permitir la excepción; las demás cuentas conservan sus límites. Solo el administrador de la base de datos puede cambiar esta configuración. No otorga acceso a datos de otros usuarios ni elimina límites de tamaño de solicitudes, seguridad, disponibilidad o consumo del proveedor. Cloudflare sigue aplicando sus cuotas y costos. Para volver a 20/minuto y 500/día, ejecuta `owner_limit.sql` con el correo correspondiente; para volver a los límites estándar elimina la fila de excepción desde SQL Editor.
 
 El script solo se aplica al Supabase real al ejecutarlo allí; subirlo a GitHub no cambia la cuenta.
+
+## Crear imágenes
+
+La sección Crear imágenes envía una descripción de 1 a 2048 caracteres al modelo activo `@cf/black-forest-labs/flux-1-schnell` con 4 pasos. La [ficha oficial del modelo](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/) documenta la entrada `prompt` y la salida `image` en base64. La función `/api/image` usa el vínculo `AI` existente: no necesita nuevas claves, SQL ni almacenamiento.
+
+Cada petición verifica la sesión real y consume una consulta de la misma cuota que el chat mediante `claim_ai_request()`. Respeta también las excepciones de cuenta ilimitada, si se aplicaron en Supabase. Estas excepciones no eliminan los límites ni costos del proveedor. Si el modelo exige condiciones o un plan distinto para la cuenta, la función devuelve un aviso; disponibilidad y tarifas deben confirmarse en el panel del proveedor.
+
+Se envía solamente la descripción escrita, sin perfil, historial, correo ni tareas. El resultado se entrega como archivo binario PNG, JPEG o WebP, con caché desactivada y sin aceptar SVG. No se guardan imágenes ni descripciones en Supabase. La vista conserva solo el último resultado en memoria; se puede descargar o descartar. Cerrar sesión o cambiar de cuenta cancela la solicitud local, revoca la URL de la imagen y limpia el formulario. Cancelar localmente no garantiza que el proveedor detenga una inferencia que ya comenzó.
+
+No hay edición de imágenes, carga de fotos, galería persistente ni archivos vectoriales listos para preprensa. Los resultados pueden tener texto incorrecto o detalles visuales inventados. El chat orienta al usuario a la sección de imágenes y no simula haber generado archivos.
+
+Pruebas adicionales:
+
+```sh
+node tests/image.test.cjs
+node tests/images-ui.test.cjs
+```
+
+Verifican autenticación, cuota, validación del cuerpo, formato binario, privacidad de la solicitud, descarga, errores y limpieza entre sesiones con servicios simulados. Después del despliegue hay que generar una imagen real y descargarla para validar la disponibilidad del modelo en producción.
