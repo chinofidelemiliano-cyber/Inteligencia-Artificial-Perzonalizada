@@ -40,7 +40,7 @@ export async function onRequestPost({request,env}) {
     if(!auth.ok)return json({error:auth.status===401 || auth.status===403?'Tu sesión caducó. Vuelve a iniciar sesión.':'No se pudo verificar la sesión. Inténtalo más tarde.'},auth.status===401 || auth.status===403?401:503);
     const user=await auth.json();
     if(!user.id)return json({error:'Sesión inválida.'},401);
-    if(!env.AI?.run)return json({error:'Falta activar Workers AI: añade un vínculo de Workers AI llamado AI en Cloudflare Pages y vuelve a desplegar.'},503);
+    if(!env.AI?.run)return json({error:'La IA no está configurada. El administrador debe añadir el vínculo AI al proyecto y volver a desplegar.'},503);
     stage='SUPABASE_QUOTA';
     const limit=await fetch(SUPABASE_URL+'/rest/v1/rpc/claim_ai_request',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(10000)});
     if(!limit.ok)return json({error:'No se pudo comprobar el límite de uso. Verifica que ejecutaste supabase/ai_rate_limit.sql.'},503);
@@ -61,11 +61,11 @@ export async function onRequestPost({request,env}) {
     if(stage==='SUPABASE_QUOTA')return json({error:'Falló la conexión o la respuesta de Supabase al comprobar la cuota.'+(timeout?' Se agotó el tiempo de espera.':'')+' Diagnóstico: SUPABASE_QUOTA.'},503);
     const description=String(error?.message || '');
     const numericCode=String(error?.code || '').match(/^\d{3,5}$/)?.[0] || description.match(/\b\d{4,5}\b/)?.[0];
-    let guidance='Revisa Workers AI en Cloudflare y los registros del despliegue para esta solicitud.';
-    if(/quota|neurons|rate limit|limit exceeded/i.test(description))guidance='Cloudflare indica un límite de uso. Revisa la cuota y el plan de Workers AI.';
-    else if(/terms|agreement|license.*accept/i.test(description))guidance='Cloudflare requiere aceptar condiciones del servicio o del modelo. Revisa el panel de Workers AI.';
-    else if(/unauthorized|authentication|not authorized|permission|forbidden/i.test(description))guidance='Cloudflare indica un problema de autorización. Revisa que Workers AI esté habilitado para la cuenta y el vínculo AI del proyecto.';
-    else if(/model.*(not found|unavailable|deprecated)|unknown model/i.test(description))guidance='Cloudflare indica que el modelo no está disponible. Revisa la disponibilidad del modelo configurado.';
+    let guidance='El administrador puede revisar el servicio de IA y los registros del despliegue para esta solicitud.';
+    if(/quota|neurons|rate limit|limit exceeded/i.test(description))guidance='El proveedor de IA indica un límite de uso. Revisa la cuota y el plan del servicio.';
+    else if(/terms|agreement|license.*accept/i.test(description))guidance='El proveedor de IA requiere aceptar condiciones del servicio o del modelo. Revisa su panel de configuración.';
+    else if(/unauthorized|authentication|not authorized|permission|forbidden/i.test(description))guidance='El proveedor de IA indica un problema de autorización. Revisa que el servicio esté habilitado y el vínculo AI del proyecto.';
+    else if(/model.*(not found|unavailable|deprecated)|unknown model/i.test(description))guidance='El proveedor de IA indica que el modelo no está disponible. Revisa la disponibilidad del modelo configurado.';
     // Only the fixed diagnostic prompt may expose a bounded provider description.
     // It cannot include profile/history because both were discarded above.
     let providerDetail;
@@ -75,9 +75,10 @@ export async function onRequestPost({request,env}) {
         .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[token omitido]')
         .replace(/https?:\/\/[^\s]+/g,'[URL omitida]')
         .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[correo omitido]')
+        .replace(/cloudflare(?:\s+workers\s+ai)?|workers\s+ai/gi,'proveedor de IA')
         .replace(/[\x00-\x1f\x7f]/g,' ').slice(0,600);
     }
-    return json({error:'Falló la generación en Cloudflare Workers AI. '+guidance+' Diagnóstico: WORKERS_AI'+(numericCode?' / código '+numericCode:'')+'.',...(providerDetail?{providerDetail}:{})},503);
+    return json({error:'No se pudo generar la respuesta. '+guidance+' Diagnóstico: WORKERS_AI'+(numericCode?' / código '+numericCode:'')+'.',...(providerDetail?{providerDetail}:{})},503);
   }
 }
 export const onRequestGet=({env})=>json({service:'Lifts · diagnóstico público de configuración',aiBindingAvailable:typeof env.AI?.run==='function',note:'Esto comprueba la configuración, no ejecuta el modelo ni verifica una sesión.'});

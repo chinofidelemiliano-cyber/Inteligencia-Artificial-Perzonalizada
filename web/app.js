@@ -68,7 +68,7 @@ $('testAI').onclick=async()=>{
     const server=result.server;
     $('aiDiagnostic').textContent=(response.ok?'La IA respondió a la prueba.':result.error || 'Falló la comprobación.')+
       (server?`\nVersión: ${server.revision}\nModelo: ${server.model}`:'\nServidor anterior: esta respuesta no incluye la versión de diagnóstico.')+
-      (result.providerDetail?'\nDetalle de Cloudflare: '+result.providerDetail:'');
+      (result.providerDetail?'\nDetalle del servicio: '+result.providerDetail:'');
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
