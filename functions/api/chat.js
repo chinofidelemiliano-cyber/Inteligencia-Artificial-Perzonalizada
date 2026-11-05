@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function bodyJSON(request) {
   const reader=request.body?.getReader();

@@ -73,7 +73,7 @@ La personalización utiliza el campo JSON existente y no requiere ejecutar SQL a
 4. Usa el despliegue de Pages conectado a GitHub; una carga de archivos estáticos por arrastre no compila Pages Functions.
 5. Inicia sesión y prueba una consulta. Comprueba también errores de sesión, persistencia al recargar y permisos con otra cuenta. Si no configuraste AI o el SQL, el chat muestra la acción que falta.
 
-Modelo: `@cf/meta/llama-3.1-8b-instruct`, con un máximo de 768 tokens de salida. Revisa disponibilidad, límites y tarifas vigentes de Workers AI en tu cuenta antes de abrirlo al público. No hay credenciales privadas de Cloudflare en el navegador: la función usa el vínculo del entorno.
+Modelo: `@cf/meta/llama-3.1-8b-instruct-fp8`, con un máximo de 768 tokens de salida. Revisa disponibilidad, límites y tarifas vigentes de Workers AI en tu cuenta antes de abrirlo al público. No hay credenciales privadas de Cloudflare en el navegador: la función usa el vínculo del entorno.
 
 La función verifica cada token de sesión contra Supabase Auth antes de consumir cuota o consultar el modelo. El límite se aplica de forma atómica mediante una función SQL que usa `auth.uid()` y no acepta identificadores arbitrarios. No se utiliza una clave `service_role`. La función rechaza solicitudes de otro origen, roles de sistema aportados por el cliente y cuerpos mayores de 48 KB.
 
@@ -97,3 +97,7 @@ NODE_PATH=/tmp/lifts-sql-tests/node_modules node tests/quota.test.cjs
 ```
 
 Comprueba ambos niveles de cuota, reinicio de ventanas, migración repetible y rechazo de cambios por usuarios ordinarios. Ejecutar o publicar código no aplica automáticamente los cambios al proyecto Supabase real.
+
+### Disponibilidad del modelo
+
+Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El identificador sin sufijo `@cf/meta/llama-3.1-8b-instruct` fue retirado el 30 de mayo de 2026 y no debe reutilizarse. Referencias: [aviso oficial](https://developers.cloudflare.com/changelog/2026-05-08-planned-model-deprecations/) y [modelo FP8](https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/). La disponibilidad para una cuenta y la inferencia real deben comprobarse después del despliegue.
