@@ -111,3 +111,14 @@ El botón **Comprobar conexión de IA** usa la sesión actual y consume una cons
 ### Respuestas detalladas
 
 El chat usa el nivel Detallada por defecto y ofrece Breve y Profunda. Las instrucciones piden explicar fundamentos, funcionamiento y ejemplos cuando sean útiles, sin alargar saludos o preguntas simples. Se refuerza la distinción entre flexografía en relieve e impresión digital y la corrección de errores del historial. Esto orienta el modelo, pero no verifica técnicamente sus respuestas ni sustituye documentación de fabricantes o búsqueda con fuentes. El historial existente se conserva; las mejoras afectan nuevas respuestas. Las respuestas más largas consumen más tokens y pueden aumentar el costo o el tiempo de espera de Workers AI.
+
+### Cuenta sin límite interno
+
+Para quitar únicamente los límites de consultas de Lifts de la cuenta del propietario:
+
+1. Ejecuta `supabase/ai_rate_limit.sql` actualizado; conserva las excepciones existentes.
+2. Abre `supabase/owner_unlimited.sql`, sustituye `TU_CORREO_AQUI` por el correo confirmado de tu cuenta y ejecútalo desde SQL Editor.
+
+La excepción se vincula al UUID de una única cuenta confirmada. La función verifica la sesión antes de permitir la excepción; las demás cuentas conservan sus límites. Solo el administrador de la base de datos puede cambiar esta configuración. No otorga acceso a datos de otros usuarios ni elimina límites de tamaño de solicitudes, seguridad, disponibilidad o consumo del proveedor. Cloudflare sigue aplicando sus cuotas y costos. Para volver a 20/minuto y 500/día, ejecuta `owner_limit.sql` con el correo correspondiente; para volver a los límites estándar elimina la fila de excepción desde SQL Editor.
+
+El script solo se aplica al Supabase real al ejecutarlo allí; subirlo a GitHub no cambia la cuenta.

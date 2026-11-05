@@ -34,10 +34,25 @@ const assert=require('node:assert/strict');
   assert.equal(await claim(),true);console.log('PASS: reinicio de ventanas');
   await db.exec('commit');
   await db.exec('set role authenticated');
-  await assert.rejects(db.query(`insert into public.ai_quota_overrides values ('${regular}',100,10000) on conflict(user_id) do update set per_day=10000`),/permission denied/);
+  await assert.rejects(db.query(`insert into public.ai_quota_overrides (user_id,per_minute,per_day) values ('${regular}',100,10000) on conflict(user_id) do update set per_day=10000`),/permission denied/);
   await assert.rejects(db.query('select * from public.ai_quota_overrides'),/permission denied/);
   await identity('');assert.equal(await claim(),false);
   await db.exec('reset role');console.log('PASS: usuarios no pueden leer ni modificar excepciones; sin sesión no hay cuota');
+  const unlimitedSQL=fs.readFileSync('supabase/owner_unlimited.sql','utf8').replace('TU_CORREO_AQUI','owner@example.test');
+  await db.exec(unlimitedSQL);
+  await db.exec(schema); // Reapplying the migration must retain the unlimited flag.
+  await identity(owner);
+  await db.exec('set role authenticated');
+  for(let i=0;i<600;i++)assert.equal(await claim(),true);
+  await identity(regular);assert.equal(await claim(),false);
+  await assert.rejects(db.query(`update public.ai_quota_overrides set unlimited=true where user_id='${regular}'`),/permission denied/);
+  await db.exec('reset role');
+  console.log('PASS: cuenta autorizada supera 500 consultas; otros usuarios mantienen límites y no pueden ampliarlos');
+  await db.exec(ownerSQL.replace('TU_CORREO_AQUI','owner@example.test'));
+  await identity(owner);
+  await db.exec(`update public.ai_usage set minute_start=date_trunc('minute',now()),minute_count=20 where user_id='${owner}'`);
+  assert.equal(await claim(),false);
+  console.log('PASS: se puede revocar acceso ilimitado sin eliminar la cuenta');
   await assert.rejects(db.exec(ownerSQL.replace('TU_CORREO_AQUI','unknown@example.test')),/No se encontró/);
   await db.exec('rollback');console.log('PASS: asignación exige una cuenta confirmada existente');
  }finally{await db.close();}
