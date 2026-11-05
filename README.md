@@ -73,7 +73,7 @@ La personalización utiliza el campo JSON existente y no requiere ejecutar SQL a
 4. Usa el despliegue de Pages conectado a GitHub; una carga de archivos estáticos por arrastre no compila Pages Functions.
 5. Inicia sesión y prueba una consulta. Comprueba también errores de sesión, persistencia al recargar y permisos con otra cuenta. Si no configuraste AI o el SQL, el chat muestra la acción que falta.
 
-Modelo: `@cf/meta/llama-3.1-8b-instruct-fp8`, con un máximo de 768 tokens de salida. Revisa disponibilidad, límites y tarifas vigentes de Workers AI en tu cuenta antes de abrirlo al público. No hay credenciales privadas de Cloudflare en el navegador: la función usa el vínculo del entorno.
+Modelo: `@cf/meta/llama-3.1-8b-instruct-fp8`, con 512, 2048 o 3072 tokens de salida según el nivel de detalle seleccionado. Revisa disponibilidad, límites y tarifas vigentes de Workers AI en tu cuenta antes de abrirlo al público. No hay credenciales privadas de Cloudflare en el navegador: la función usa el vínculo del entorno.
 
 La función verifica cada token de sesión contra Supabase Auth antes de consumir cuota o consultar el modelo. El límite se aplica de forma atómica mediante una función SQL que usa `auth.uid()` y no acepta identificadores arbitrarios. No se utiliza una clave `service_role`. La función rechaza solicitudes de otro origen, roles de sistema aportados por el cliente y cuerpos mayores de 48 KB.
 
@@ -104,6 +104,10 @@ Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El iden
 
 ### Comprobar el despliegue y la inferencia
 
-El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-fp8-r2`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
+El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-detail-r3`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
 
 `GET /api/chat` expone solo la revisión, el modelo y la presencia del vínculo AI, sin ejecutar inferencias ni consultar cuentas. No prueba que el proveedor esté operativo. La comprobación autenticada por POST sí llega al modelo si sesión, vínculo y cuota están disponibles.
+
+### Respuestas detalladas
+
+El chat usa el nivel Detallada por defecto y ofrece Breve y Profunda. Las instrucciones piden explicar fundamentos, funcionamiento y ejemplos cuando sean útiles, sin alargar saludos o preguntas simples. Se refuerza la distinción entre flexografía en relieve e impresión digital y la corrección de errores del historial. Esto orienta el modelo, pero no verifica técnicamente sus respuestas ni sustituye documentación de fabricantes o búsqueda con fuentes. El historial existente se conserva; las mejoras afectan nuevas respuestas. Las respuestas más largas consumen más tokens y pueden aumentar el costo o el tiempo de espera de Workers AI.

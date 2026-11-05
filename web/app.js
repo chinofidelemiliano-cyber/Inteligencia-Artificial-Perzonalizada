@@ -7,7 +7,7 @@ let chatController=null;
 let chatBusy=false;
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
@@ -38,7 +38,7 @@ $('chat').onsubmit=async e=>{
   const controller=new AbortController();chatController=controller;chatBusy=true;
   $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
   const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
-  const payload={messages:[...history,{role:'user',content:text}]};
+  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed'};
   if($('shareProfile').checked)payload.profile={...state.profile};
   const timer=setTimeout(()=>controller.abort(),60000);
   try{
