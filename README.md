@@ -82,3 +82,18 @@ Cada envío comparte con Cloudflare Workers AI la pregunta y hasta ocho mensajes
 La respuesta se guarda en Supabase con la pregunta después de recibirla. Si el modelo falla, no se inventa una respuesta ni se elimina el borrador. Las respuestas antiguas del prototipo no se envían como respuestas del modelo. El historial es breve y no constituye memoria completa; el modelo no tiene herramientas, navegación web ni capacidad de crear tareas.
 
 Las pruebas simulan Supabase y el modelo. La compilación de Pages Functions se puede verificar con `npx --yes wrangler@4.50.0 pages functions build --outdir /tmp/lifts-pages-functions`. La inferencia real, el SQL y la cuota quedan pendientes de validación en la cuenta de Cloudflare y Supabase del usuario.
+
+## Límite ampliado para la cuenta del propietario
+
+Ejecuta de nuevo `supabase/ai_rate_limit.sql` actualizado: conserva los contadores y añade una tabla privada de excepciones. Después abre `supabase/owner_limit.sql`, sustituye `TU_CORREO_AQUI` por el correo confirmado de tu cuenta y ejecútalo en SQL Editor. Asigna 20 consultas por minuto y 500 por día al UUID existente. No concede acceso a datos de otros usuarios ni privilegios administrativos. Las demás cuentas conservan 5/minuto y 50/día. Si el correo no corresponde a una única cuenta confirmada, el script falla sin asignar la excepción.
+
+Las excepciones no se leen ni modifican desde el navegador: solo las administra el propietario de la base de datos. Aumentar el uso puede generar costos en Cloudflare. Para revocar una excepción, el administrador puede eliminar su fila en `public.ai_quota_overrides`.
+
+Prueba del SQL en PostgreSQL embebido temporal (sin datos ni servicios de producción):
+
+```sh
+npm install --prefix /tmp/lifts-sql-tests --no-audit --no-fund @electric-sql/pglite@0.3.14
+NODE_PATH=/tmp/lifts-sql-tests/node_modules node tests/quota.test.cjs
+```
+
+Comprueba ambos niveles de cuota, reinicio de ventanas, migración repetible y rechazo de cambios por usuarios ordinarios. Ejecutar o publicar código no aplica automáticamente los cambios al proyecto Supabase real.
