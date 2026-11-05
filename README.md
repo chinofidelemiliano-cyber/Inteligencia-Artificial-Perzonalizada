@@ -104,7 +104,7 @@ Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El iden
 
 ### Comprobar el despliegue y la inferencia
 
-El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-multimodel-r4`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
+El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-guided-r5`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
 
 `GET /api/chat` expone solo la revisión, el modelo y la presencia del vínculo AI, sin ejecutar inferencias ni consultar cuentas. No prueba que el proveedor esté operativo. La comprobación autenticada por POST sí llega al modelo si sesión, vínculo y cuota están disponibles.
 
@@ -157,3 +157,9 @@ node tests/stream.test.cjs
 ```
 
 Las pruebas comprueban selección de modelos, alternativa, cuota, SSE con fragmentos UTF-8, errores de stream y guardado exclusivo de respuestas completas. La velocidad, calidad e inferencia real de cada modelo deben validarse en producción.
+
+## Explicaciones guiadas
+
+Las preguntas sobre cómo hacer o resolver algo reciben instrucciones de enseñanza: elegir y completar un método, aclarar el concepto, describir acciones y cálculos intermedios con pasos numerados y comprobar el resultado. Una lista de alternativas o la sugerencia de usar calculadora no sustituye el procedimiento. Se eliminó la indicación ambigua de no alargar preguntas sencillas, que podía acortar ejercicios aunque el usuario pidiera aprenderlos. Los ejercicios de ejemplo distinguen la raíz principal de las soluciones de una ecuación cuadrática.
+
+El cambio orienta la generación en todos los motores y no añade un verificador matemático. Las pruebas comprueban las instrucciones enviadas, no garantizan que cada respuesta del modelo las siga. El historial anterior se conserva; la mejora afecta nuevas consultas y debe comprobarse con ejercicios reales tras el despliegue.
