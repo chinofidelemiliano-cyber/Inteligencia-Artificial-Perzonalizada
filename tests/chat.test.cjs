@@ -2,12 +2,12 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
-function setup({valid=true,allowed=true,binding=true,limitReady=true}={}){
+function setup({valid=true,allowed=true,binding=true,limitReady=true,failStage=null,aiError=null}={}){
  const calls=[],runs=[];
  const source=fs.readFileSync('functions/api/chat.js','utf8').replaceAll('export ','')+'\nglobalThis.handle=onRequestPost;';
- const context={Response,TextDecoder,Uint8Array,URL,AbortSignal,JSON,fetch:async(url,options)=>{calls.push({url,options});if(url.endsWith('/auth/v1/user'))return Response.json(valid?{id:'verified-user'}:{error:'invalid'},{status:valid?200:401});return Response.json(allowed,{status:limitReady?200:404});}};
+ const context={Response,TextDecoder,Uint8Array,URL,AbortSignal,JSON,fetch:async(url,options)=>{calls.push({url,options});if((failStage==='auth' && url.endsWith('/auth/v1/user')) || (failStage==='quota' && url.includes('/rpc/')))throw new Error('private-token-and-prompt');if(url.endsWith('/auth/v1/user'))return Response.json(valid?{id:'verified-user'}:{error:'invalid'},{status:valid?200:401});return Response.json(allowed,{status:limitReady?200:404});}};
  vm.runInNewContext(source,context);
- const env=binding?{AI:{run:async(model,input)=>{runs.push({model,input});return{response:'La flexografía es un proceso de impresión.'};}}}:{};
+ const env=binding?{AI:{run:async(model,input)=>{runs.push({model,input});if(aiError)throw aiError;return{response:'La flexografía es un proceso de impresión.'};}}}:{};
  const send=({body={messages:[{role:'user',content:'¿Qué es flexografía?'}]},token='test-token',origin='https://lifts.pages.dev'}={})=>context.handle({request:new Request('https://lifts.pages.dev/api/chat',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)}),env});
  return{send,calls,runs};
 }
@@ -18,3 +18,7 @@ test('quota exhaustion and missing quota schema fail closed',async()=>{for(const
 test('missing AI binding explains configuration without using quota',async()=>{const s=setup({binding:false});const response=await s.send();assert.equal(response.status,503);assert.match((await response.json()).error,/vínculo/);assert.equal(s.calls.length,1);});
 test('cross-origin requests cannot invoke AI',async()=>{const s=setup();assert.equal((await s.send({origin:'https://other.example'})).status,403);assert.equal(s.calls.length,0);});
 test('profile absent by default sends no optional preferences',async()=>{const s=setup();await s.send();assert.equal(s.runs[0].input.messages.length,2);assert.equal(s.runs[0].input.max_tokens,768);});
+
+test('network errors identify failing Supabase stage without leaking details',async()=>{for(const stage of ['auth','quota']){const s=setup({failStage:stage});const response=await s.send();const result=await response.json();assert.equal(response.status,503);assert.match(result.error,new RegExp('SUPABASE_'+stage.toUpperCase()));assert.doesNotMatch(result.error,/private-token-and-prompt/);assert.equal(s.runs.length,0);}});
+test('AI errors identify authorization and numeric code without leaking raw content',async()=>{const s=setup({aiError:new Error('10000: Authentication error secret-token private-prompt')});const response=await s.send();const result=await response.json();assert.equal(response.status,503);assert.match(result.error,/WORKERS_AI/);assert.match(result.error,/10000/);assert.match(result.error,/autorización/);assert.doesNotMatch(result.error,/secret-token|private-prompt/);});
+test('AI quota and model failures have actionable explanations',async()=>{for(const [message,expected] of [['neurons quota limit exceeded',/cuota/],['model not found',/modelo no está disponible/],['accept terms agreement',/aceptar condiciones/]]){const s=setup({aiError:new Error(message)});const result=await (await s.send()).json();assert.match(result.error,expected);}});
