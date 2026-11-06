@@ -1,0 +1,61 @@
+/* Locally rendered articulated character; all movement respects reduced motion. */
+.robot-surface .lifts-robot{display:block;width:100%;height:100%;overflow:visible;pointer-events:none}
+.face-avatar.robot-surface{width:260px;height:350px;margin:24px auto 14px;transform:none;animation:none;isolation:isolate}
+.companion-character.robot-surface{width:100px;height:138px;flex-basis:100px;background:none;border:0;overflow:visible}
+.floating-companion{width:108px;height:152px;border-radius:26px;background:radial-gradient(ellipse at 50% 35%,#123d59de,#080b20f2 75%);transition:box-shadow .25s,border-color .25s}
+.floating-companion .face-avatar.robot-surface{width:94px;height:125px;margin:3px 0 0;transform:none;flex:none}
+.floating-companion:hover,.floating-companion:focus-visible{box-shadow:0 0 28px #00dcec30,0 12px 40px #0008}
+.robot-frame{transform-origin:150px 280px;animation:bot-breathe 5s ease-in-out infinite}
+.robot-head-art{transform-origin:150px 166px;animation:bot-look 9s ease-in-out infinite}
+.robot-arm-art.left{transform-origin:103px 190px;animation:bot-sway-left 5s ease-in-out infinite}
+.robot-arm-art.right{transform-origin:197px 190px;animation:bot-sway-right 5s ease-in-out infinite}
+.robot-forearm.left{transform-origin:78px 238px}.robot-forearm.right{transform-origin:222px 238px}
+.robot-leg-art.left{transform-origin:123px 274px;animation:bot-balance-left 5s ease-in-out infinite}
+.robot-leg-art.right{transform-origin:177px 274px;animation:bot-balance-right 5s ease-in-out infinite}
+.robot-eyes{transform-origin:150px 103px;filter:drop-shadow(0 0 4px #00edff99);animation:bot-blink 6.5s infinite}
+.robot-floor{transform-origin:150px 378px;animation:bot-floor 5s ease-in-out infinite}
+.robot-speaking-mouth,.eyes-focused,.eyes-curious,.eyes-wink{display:none}
+.robot-surface[data-expression=focused] .eyes-happy,.robot-surface[data-expression=curious] .eyes-happy{display:none}
+.robot-surface[data-expression=focused] .eyes-focused,.robot-surface[data-expression=curious] .eyes-curious{display:inline}
+.robot-surface[data-phase=listening] .robot-head-art{animation:bot-listen 3s ease-in-out infinite}
+.robot-surface[data-phase=listening] .robot-floor{stroke-width:5;opacity:1}
+.robot-surface[data-phase=thinking] .robot-head-art{animation:bot-think 4s ease-in-out infinite}
+.robot-surface[data-phase=thinking] .robot-arm-art.right{animation:bot-consider 4s ease-in-out infinite}
+.robot-surface[data-phase=thinking] .robot-forearm.right{transform:rotate(105deg)}
+.robot-surface[data-phase=speaking] .robot-mouth-art{display:none}
+.robot-surface[data-phase=speaking] .robot-speaking-mouth{display:inline;transform-origin:151px 132px;animation:bot-talk .25s ease-in-out infinite alternate}
+.robot-surface[data-phase=speaking] .robot-head-art{animation:bot-nod 2.2s ease-in-out infinite}
+.robot-surface[data-phase=speaking] .robot-arm-art.right{animation:bot-explain 2.6s ease-in-out infinite}
+.robot-surface[data-phase=speaking] .robot-forearm.right{animation:bot-forearm 2.6s ease-in-out infinite}
+.robot-surface[data-scene=tasks][data-phase=idle] .robot-head-art{animation:bot-listen 5s ease-in-out infinite}
+.robot-surface[data-scene=images][data-phase=idle] .robot-arm-art.left{animation:bot-create 4s ease-in-out infinite}
+.robot-surface:hover .robot-arm-art.right,.robot-surface:focus-visible .robot-arm-art.right,.floating-companion:hover .robot-arm-art.right,.floating-companion:focus-visible .robot-arm-art.right,.robot-surface[data-celebrate] .robot-arm-art.right{animation:bot-wave 1.1s ease-in-out 3}
+.robot-surface:hover .robot-forearm.right,.floating-companion:hover .robot-forearm.right,.robot-surface[data-celebrate] .robot-forearm.right{transform:rotate(40deg)}
+.robot-surface:hover .eyes-happy,.floating-companion:hover .eyes-happy,.robot-surface[data-celebrate] .eyes-happy{display:none}
+.robot-surface:hover .eyes-wink,.floating-companion:hover .eyes-wink,.robot-surface[data-celebrate] .eyes-wink{display:inline}
+.robot-sparkles{opacity:0}.robot-surface[data-celebrate] .robot-sparkles{animation:bot-sparkle .8s ease-in-out 3}
+.robot-surface[data-celebrate] .robot-frame{animation:bot-cheer .8s ease-in-out 3}
+.voice-stage{overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#14476844,transparent 55%),radial-gradient(ellipse at 80% 60%,#6f24a825,transparent 65%),linear-gradient(145deg,#071a2b,#130d28)}
+.card{transition:border-color .25s,box-shadow .25s}.card:hover{border-color:#3b5575;box-shadow:0 12px 36px #0003}.areas button{transition:transform .2s,border-color .2s}.areas button:hover{transform:translateY(-3px);border-color:#5bbdcf}progress{transition:filter .3s}progress:hover{filter:brightness(1.15)}
+@keyframes bot-breathe{0%,100%{transform:translateY(0) rotate(-.7deg)}50%{transform:translateY(-4px) rotate(.7deg)}}
+@keyframes bot-look{0%,20%,70%,100%{transform:rotate(0)}30%,45%{transform:rotate(-5deg)}78%,86%{transform:rotate(4deg)}}
+@keyframes bot-sway-left{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-5deg)}}
+@keyframes bot-sway-right{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(6deg)}}
+@keyframes bot-balance-left{0%,100%{transform:rotate(1deg)}50%{transform:rotate(-1.5deg)}}
+@keyframes bot-balance-right{0%,100%{transform:rotate(1.5deg)}50%{transform:rotate(-1deg)}}
+@keyframes bot-floor{0%,100%{transform:scaleX(1);opacity:.65}50%{transform:scaleX(.92);opacity:1}}
+@keyframes bot-blink{0%,42%,46%,88%,92%,100%{transform:scaleY(1)}44%,90%{transform:scaleY(.1)}}
+@keyframes bot-listen{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(-3deg) translateY(2px)}}
+@keyframes bot-think{0%,100%{transform:rotate(5deg)}50%{transform:rotate(10deg) translateY(-2px)}}
+@keyframes bot-consider{0%,100%{transform:rotate(20deg)}50%{transform:rotate(27deg)}}
+@keyframes bot-talk{from{transform:scaleY(.25)}to{transform:scaleY(1)}}
+@keyframes bot-nod{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg) translateY(2px)}}
+@keyframes bot-explain{0%,100%{transform:rotate(-12deg)}45%{transform:rotate(-35deg)}70%{transform:rotate(-25deg)}}
+@keyframes bot-forearm{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(-28deg)}}
+@keyframes bot-create{0%,100%{transform:rotate(10deg)}50%{transform:rotate(28deg)}}
+@keyframes bot-wave{0%,100%{transform:rotate(-115deg)}50%{transform:rotate(-140deg)}}
+@keyframes bot-cheer{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px) rotate(-3deg)}}
+@keyframes bot-sparkle{0%,100%{opacity:0}50%{opacity:1}}
+@media(max-width:800px){.voice-stage .face-avatar.robot-surface{width:220px;height:295px;margin:16px auto 14px;transform:none}.companion-character.robot-surface{width:76px;height:104px;flex-basis:76px}.floating-companion{width:90px;height:132px}.floating-companion .face-avatar.robot-surface{width:78px;height:104px;margin:3px 0 0;transform:none}.floating-label{bottom:7px}}
+@media(prefers-reduced-motion:reduce){.robot-surface .lifts-robot *,.floating-companion .lifts-robot *{animation:none!important;transition:none!important}.card,.areas button,.floating-companion{transition:none}.areas button:hover{transform:none}}
+.robot-surface:hover .eyes-focused,.robot-surface:hover .eyes-curious,.floating-companion:hover .eyes-focused,.floating-companion:hover .eyes-curious,.robot-surface[data-celebrate] .eyes-focused,.robot-surface[data-celebrate] .eyes-curious{display:none}

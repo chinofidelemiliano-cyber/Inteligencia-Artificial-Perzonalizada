@@ -177,3 +177,9 @@ Los dictados entrantes ahora reemplazan el borrador no enviado, incluyendo el di
 Las pruebas automáticas comprueban señales de voz y guía de diálogo. La voz, el reconocimiento y la apertura de Safari/PWA en iPhone real requieren comprobación en el dispositivo; las pruebas de navegador usan motores y cuentas simulados.
 
 Prueba de conversación continua en navegador (requiere Playwright y Chromium): `PLAYWRIGHT_MODULE=/ruta/a/playwright CHROMIUM_PATH=/ruta/a/chromium node tests/conversation-ui.browser.cjs`. Simula micrófono, síntesis, autenticación e IA para comprobar interrupción, continuación antes de la nueva petición, navegación con compañero, pausa y alternativa sin reconocimiento. No comprueba audio dúplex real ni permisos de iOS.
+
+## Personaje articulado
+
+`web/robot.js` dibuja tres instancias SVG con identificadores de degradado únicos: tarjeta de compañía, conversación y acceso flotante. Es una interpretación vectorial del personaje blanco de la lámina compartida en el chat, no una extracción del PNG ni un modelo 3D. El PNG de esa lámina no estaba adjunto como archivo accesible. No cambia los logotipos originales del sitio.
+
+`web/robot.css` articula cabeza, brazos, antebrazos y piernas: balanceo en reposo, atención al escuchar, pose de pensamiento, gestos y boca al hablar, saludo al señalar/tocar y celebración tras crear una tarea. Las secciones cambian la expresión. No añade temporizadores de sondeo, APIs de animación de pago ni consultas de IA. El seguimiento del estado de voz es local; la boca no sincroniza fonemas. `prefers-reduced-motion` desactiva los movimientos y conserva los cambios de expresión. La prueba de navegador verifica las tres instancias, identificadores únicos, navegación, conversación y movimiento reducido.
