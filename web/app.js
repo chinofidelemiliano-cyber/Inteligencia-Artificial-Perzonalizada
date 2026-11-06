@@ -1,13 +1,23 @@
 'use strict';
 const personal = window.liftsPersonalization;
-const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[]});
+const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[],savedConversations:[]});
 let state = initial();
 let chatVersion=0;
 let chatController=null;
 let chatBusy=false;
+let activeConversation=null;
+let accountVersion=0;
+let savingConversation=false;
+const pendingConversations=new Set();
 const $ = id => document.getElementById(id);
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';state=e.detail || initial();state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';state=e.detail || initial();accountVersion++;activeConversation=null;savingConversation=false;pendingConversations.clear();
+  state.savedConversations=Array.isArray(state.savedConversations)?state.savedConversations:[];
+  if(state.messages.length){
+    state.savedConversations.push({id:crypto.randomUUID(),title:'Historial anterior',messages:JSON.parse(JSON.stringify(state.messages)),savedAt:new Date().toISOString()});
+    state.messages=[];persist();
+  }
+  state.messages=[];state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
@@ -24,6 +34,7 @@ function render(){
   for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');el.textContent=m.text;$('messages').append(el);}
   if(!state.messages.length){const el=document.createElement('p');el.className='muted';el.textContent='Tu próxima consulta empieza aquí. Puedes guardar el contexto para retomarlo después.';$('messages').append(el);}
   $('messages').scrollTop=$('messages').scrollHeight;
+  renderConversations();
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
@@ -57,9 +68,56 @@ $('chat').onsubmit=async e=>{
     if(typeof reply!=='string' || !reply.trim())throw new Error('La IA no devolvió una respuesta válida.');
     $('streamingAnswer').hidden=true;$('streamingAnswer').textContent='';
     state.messages.push({role:'user',text},{role:'assistant',text:reply,source:'ai'});
-    persist();if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta recibida. Revisa el estado de guardado de tu cuenta.';
+    if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta lista.';
   }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
-  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';}}
+  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';renderConversations();}}
+};
+function conversationDirty(){
+  const saved=state.savedConversations?.find(c=>c.id===activeConversation);
+  return state.messages.length>0 && (!saved || JSON.stringify(saved.messages)!==JSON.stringify(state.messages));
+}
+function renderConversations(){
+  const records=state.savedConversations || [];
+  const saved=records.find(c=>c.id===activeConversation);
+  $('saveConversation').disabled=chatBusy || savingConversation || !state.messages.length;
+  $('saveConversation').textContent=savingConversation?'Guardando…':saved?'Guardar cambios':'Guardar conversación';
+  $('conversationStatus').textContent=pendingConversations.has(activeConversation)?'Guardado pendiente. Reintenta antes de recargar.':conversationDirty()?'Conversación temporal o con cambios sin guardar.':saved?'Conversación guardada.':'Nueva conversación temporal.';
+  $('savedConversations').replaceChildren();
+  if(!records.length)$('savedConversations').textContent='Todavía no has guardado conversaciones.';
+  for(const conversation of records){
+    const row=document.createElement('div');row.className='task';
+    const open=document.createElement('button');open.type='button';open.className='secondary';open.textContent=conversation.title || 'Conversación guardada';
+    open.onclick=()=>{
+      if(conversationDirty() && !confirm('¿Dejar los cambios sin guardar y abrir esta conversación?'))return;
+      cancelChat();activeConversation=conversation.id;state.messages=JSON.parse(JSON.stringify(conversation.messages));$('question').value='';render();
+    };
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Eliminar';remove.onclick=()=>{
+      if(!confirm('¿Eliminar esta conversación guardada?'))return;
+      state.savedConversations=state.savedConversations.filter(c=>c.id!==conversation.id);pendingConversations.delete(conversation.id);
+      if(activeConversation===conversation.id)activeConversation=null;
+      persist();render();
+    };
+    row.append(open);row.append(remove);$('savedConversations').append(row);
+  }
+}
+$('saveConversation').onclick=async()=>{
+  if(chatBusy || savingConversation || !state.messages.length)return;
+  const version=accountVersion;
+  const id=activeConversation || crypto.randomUUID();activeConversation=id;
+  const record={id,title:(state.messages.find(m=>m.role==='user')?.text || 'Conversación').slice(0,72),messages:JSON.parse(JSON.stringify(state.messages)),savedAt:new Date().toISOString()};
+  state.savedConversations=state.savedConversations.filter(c=>c.id!==id);state.savedConversations.unshift(record);
+  pendingConversations.add(id);savingConversation=true;renderConversations();
+  try{
+    const success=await window.nexoAccount.save(personal.snapshot(state));
+    if(version!==accountVersion)return;
+    if(success===false)throw new Error('save failed');
+    pendingConversations.delete(id);
+  }catch{if(version===accountVersion)$('chatStatus').textContent='No se pudo guardar. Mantén esta página abierta y pulsa Guardar cambios para reintentar.';}
+  finally{if(version===accountVersion){savingConversation=false;renderConversations();}}
+};
+$('newConversation').onclick=()=>{
+  if(conversationDirty() && !confirm('¿Empezar otra conversación y descartar los cambios que no guardaste?'))return;
+  cancelChat();activeConversation=null;state.messages=[];$('question').value='';render();
 };
 $('testAI').onclick=async()=>{
   if(chatBusy)return;
@@ -79,7 +137,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();state.onboardingCompleted=true;persist();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},

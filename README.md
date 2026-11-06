@@ -1,6 +1,6 @@
 # Lifts Asistente Virtual
 
-App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y consultas se guardan en Supabase con reglas de acceso por usuario. El chat usa Cloudflare Workers AI cuando el vínculo AI y el contador de uso están configurados. La búsqueda web aún no está conectada.
+App web en español con registro, acceso y recuperación de contraseña mediante Supabase Auth. Perfil personal, tareas y conversaciones guardadas se conservan en Supabase con reglas de acceso por usuario. Las conversaciones nuevas son temporales hasta guardarlas explícitamente. El chat usa Cloudflare Workers AI cuando el vínculo AI y el contador de uso están configurados. La búsqueda web aún no está conectada.
 
 ## Configurar Supabase (obligatorio antes de usar)
 
@@ -61,7 +61,7 @@ Guardar las respuestas requiere marcar la autorización al finalizar. Sin autori
 
 Desde Mi perfil se pueden editar las preferencias, retirar la autorización y vaciar el perfil guardado sin eliminar tareas y consultas. Estas últimas pueden contener información personal escrita por el usuario; para eliminarlas también existe Borrar mis datos. El borrado depende de que la sincronización termine correctamente y no equivale a eliminar copias de seguridad del proveedor.
 
-Las sugerencias son reglas locales basadas en intereses y objetivos: seleccionarlas prepara una consulta editable y no la envía automáticamente. El chat puede compartir el perfil con Cloudflare Workers AI solo al marcar la casilla específica; no se adjunta por defecto. La privacidad frente a otros usuarios depende de las políticas RLS en `supabase/schema.sql`; los administradores del proyecto tienen acceso administrativo a los datos. No se promete confidencialidad absoluta ni cifrado de extremo a extremo.
+Las sugerencias son reglas locales basadas en intereses y objetivos: seleccionarlas prepara una consulta editable y no la envía automáticamente. El chat puede compartir el perfil con Cloudflare Workers AI solo al marcar la opción específica en Mi perfil; no se adjunta por defecto. La privacidad frente a otros usuarios depende de las políticas RLS en `supabase/schema.sql`; los administradores del proyecto tienen acceso administrativo a los datos. No se promete confidencialidad absoluta ni cifrado de extremo a extremo.
 
 La personalización utiliza el campo JSON existente y no requiere ejecutar SQL adicional. Las pruebas de interfaz simulan el DOM; quedan pendientes comprobaciones visuales en navegador y de permisos en Supabase real.
 
@@ -79,7 +79,7 @@ La función verifica cada token de sesión contra Supabase Auth antes de consumi
 
 Cada envío comparte con Cloudflare Workers AI la pregunta y hasta ocho mensajes recientes. El perfil se adjunta únicamente si el usuario marca Compartir mi perfil en el chat, con autorización separada de guardar el perfil. La casilla se restablece al cambiar de sesión. No se envía automáticamente la lista de tareas, el correo ni el token de acceso al modelo. No se imprimen conversaciones ni tokens en registros de aplicación. El proveedor procesa el contenido conforme a sus condiciones; no se promete cifrado de extremo a extremo ni confidencialidad absoluta.
 
-La respuesta se guarda en Supabase con la pregunta después de recibirla. Si el modelo falla, no se inventa una respuesta ni se elimina el borrador. Las respuestas antiguas del prototipo no se envían como respuestas del modelo. El historial es breve y no constituye memoria completa; el modelo no tiene herramientas, navegación web ni capacidad de crear tareas.
+La pregunta y la respuesta se mantienen en memoria después de recibirlas; solo se guardan en Supabase al pulsar Guardar conversación. Si el modelo falla, no se inventa una respuesta ni se elimina el borrador. Las respuestas antiguas del prototipo no se envían como respuestas del modelo. El historial es breve y no constituye memoria completa; el modelo no tiene herramientas, navegación web ni capacidad de crear tareas.
 
 Las pruebas simulan Supabase y el modelo. La compilación de Pages Functions se puede verificar con `npx --yes wrangler@4.50.0 pages functions build --outdir /tmp/lifts-pages-functions`. La inferencia real, el SQL y la cuota quedan pendientes de validación en la cuenta de Cloudflare y Supabase del usuario.
 
@@ -163,3 +163,13 @@ Las pruebas comprueban selección de modelos, alternativa, cuota, SSE con fragme
 Las preguntas sobre cómo hacer o resolver algo reciben instrucciones de enseñanza: elegir y completar un método, aclarar el concepto, describir acciones y cálculos intermedios con pasos numerados y comprobar el resultado. Una lista de alternativas o la sugerencia de usar calculadora no sustituye el procedimiento. Se eliminó la indicación ambigua de no alargar preguntas sencillas, que podía acortar ejercicios aunque el usuario pidiera aprenderlos. Los ejercicios de ejemplo distinguen la raíz principal de las soluciones de una ecuación cuadrática.
 
 El cambio orienta la generación en todos los motores y no añade un verificador matemático. Las pruebas comprueban las instrucciones enviadas, no garantizan que cada respuesta del modelo las siga. El historial anterior se conserva; la mejora afecta nuevas consultas y debe comprobarse con ejercicios reales tras el despliegue.
+
+## Conversaciones temporales y guardadas
+
+El chat nuevo solo existe en memoria. Guardar tareas, perfil, preferencias o la bienvenida excluye siempre los mensajes temporales de las escrituras a Supabase. Recargar, cerrar la página o cerrar sesión descarta el chat temporal. **Guardar conversación** crea una copia en `savedConversations` dentro del JSON existente; no requiere SQL adicional. El guardado se confirma al completar la escritura; si falla, se señala como pendiente y se permite reintentar. No recargues hasta confirmar el guardado.
+
+**Mis conversaciones guardadas** permite abrir copias independientes o eliminarlas. **Nueva conversación** limpia el chat actual después de advertir de cambios sin guardar. Editar una conversación guardada no altera la copia persistente hasta pulsar **Guardar cambios**. El historial del prototipo que ya estaba en la cuenta se conserva como **Historial anterior**, sin borrarlo automáticamente; se puede eliminar desde la lista.
+
+El bloque de compartir perfil se retiró del formulario del chat. La opción sigue disponible en **Mi perfil → Privacidad del chat**, es voluntaria y se desactiva al iniciar sesión. Esa sección explica que el proveedor procesa preguntas e historial aunque el chat sea temporal y que descartar datos de Lifts no implica borrar posibles registros del proveedor.
+
+Las pruebas comprueban recarga sin chat temporal, guardado manual, reapertura, cambios sin guardar en conversaciones anteriores, conservación del historial legado y respuesta correcta ante errores de persistencia. El comportamiento real de sincronización depende de los permisos y disponibilidad de Supabase; el último guardado sigue prevaleciendo si se editan varias pestañas simultáneamente.

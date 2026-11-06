@@ -19,6 +19,8 @@
     const copy = JSON.parse(JSON.stringify(state));
     // Legacy profiles remain untouched until the user makes an explicit choice.
     if (copy.profileConsent !== true && copy.profileConsent !== undefined) copy.profile = emptyProfile();
+    // Working chat is session-only, including when tasks or profile are saved.
+    copy.messages=[];
     return copy;
   }
   const api = {fields,emptyProfile,suggestions,snapshot};

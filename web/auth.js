@@ -83,21 +83,24 @@
       return data.session.access_token;
     },
     save(value) {
-      if (!ready || !user) return;
+      if (!ready || !user) return Promise.resolve(false);
       const uid = user.id;
       const version = generation;
       const snapshot = JSON.parse(JSON.stringify(value));
       el('syncStatus').textContent = 'Guardando…';
       queue = queue.then(async () => {
-        if (version !== generation) return;
+        if (version !== generation) return false;
         try {
           const {error} = await client.from('user_spaces').upsert({user_id:uid,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-          if (version !== generation) return;
+          if (version !== generation) return false;
           el('syncStatus').textContent = error ? 'No se guardaron los cambios. Mantén esta página abierta y vuelve a intentar la acción.' : 'Cambios guardados en tu cuenta.';
+          return !error;
         } catch {
           if (version === generation) el('syncStatus').textContent = 'Sin conexión: los últimos cambios no se guardaron. Vuelve a intentar la acción.';
+          return false;
         }
       });
+      return queue;
     }
   };
   async function perform(action) {
