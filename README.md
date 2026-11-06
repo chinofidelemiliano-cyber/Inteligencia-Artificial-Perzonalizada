@@ -104,7 +104,7 @@ Se utiliza la variante FP8, marcada como activa en el catálogo oficial. El iden
 
 ### Comprobar el despliegue y la inferencia
 
-El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-guided-r5`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
+El botón **Comprobar conexión de IA** usa la sesión actual y consume una consulta de cuota. Envía únicamente una pregunta fija, sin historial ni perfil, y no guarda el resultado en las conversaciones. Muestra la revisión `lifts-ai-technical-r6`, el modelo y, si falla la inferencia, una descripción acotada del proveedor con redacción de tokens, correos y URLs. Las solicitudes de chat normales no muestran descripciones sin filtrar del proveedor.
 
 `GET /api/chat` expone solo la revisión, el modelo y la presencia del vínculo AI, sin ejecutar inferencias ni consultar cuentas. No prueba que el proveedor esté operativo. La comprobación autenticada por POST sí llega al modelo si sesión, vínculo y cuota están disponibles.
 
@@ -173,3 +173,9 @@ El chat nuevo solo existe en memoria. Guardar tareas, perfil, preferencias o la 
 El bloque de compartir perfil se retiró del formulario del chat. La opción sigue disponible en **Mi perfil → Privacidad del chat**, es voluntaria y se desactiva al iniciar sesión. Esa sección explica que el proveedor procesa preguntas e historial aunque el chat sea temporal y que descartar datos de Lifts no implica borrar posibles registros del proveedor.
 
 Las pruebas comprueban recarga sin chat temporal, guardado manual, reapertura, cambios sin guardar en conversaciones anteriores, conservación del historial legado y respuesta correcta ante errores de persistencia. El comportamiento real de sincronización depende de los permisos y disponibilidad de Supabase; el último guardado sigue prevaleciendo si se editan varias pestañas simultáneamente.
+
+## Terminología técnica: gap de etiquetas
+
+Las instrucciones distinguen separación entre etiquetas, contacto de impresión, junta de placa y separación transversal. Incluyen la relación geométrica `g = R / n - L` para repeticiones longitudinales iguales y equidistantes, con unidades consistentes y desarrollo efectivo conocido. `n` cuenta repeticiones en una vuelta y `L` mide el largo de avance, no el ancho de pista. La comprobación es `R = n × (L + g)`. Sin los datos necesarios se pide aclaración; un gap negativo obliga a revisar el arreglo. El valor geométrico no establece un mínimo admisible para un sensor, troquel o máquina.
+
+Este contexto es una guía local, no una consulta a documentación externa. No se ha conectado una biblioteca de manuales ni una búsqueda técnica verificable. Las pruebas validan el contexto enviado al modelo; no sustituyen evaluación real de sus respuestas, verificación del cálculo ni revisión de especificaciones del equipo. Sigue siendo necesario revisar recomendaciones técnicas antes de aplicarlas.
