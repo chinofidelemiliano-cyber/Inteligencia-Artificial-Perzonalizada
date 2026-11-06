@@ -37,7 +37,7 @@
     if(start){const block={start:start.getTime(),end:start.getTime()+duration*60000};const conflict=state().tasks.find(t=>t.id!==editing&&!t.done&&t.startAt&&work.overlaps(block,{start:Date.parse(t.startAt),end:Date.parse(t.startAt)+(Number(t.duration)||25)*60000}));if(conflict){$('taskFormStatus').textContent='Este bloque se cruza con: '+conflict.title+'. Elige otro horario.';return;}}
     const previous=state().tasks.find(t=>t.id===editing);const task={...previous,id:previous?.id || crypto.randomUUID(),title,date:$('taskDate').value,done:previous?.done || false,priority:[1,2,3].includes(Number($('taskPriority').value))?Number($('taskPriority').value):2,duration,startAt:start?.toISOString() || '',reminderAt:reminder?.toISOString() || ''};if(task.reminderAt!==previous?.reminderAt)task.remindedFor='';
     if(previous)state().tasks=state().tasks.map(t=>t.id===editing?task:t);else state().tasks.push(task);
-    persist();cancelEdit();refresh();$('taskFormStatus').textContent='Tarea preparada. Revisa el estado de guardado de tu cuenta.';
+    persist();cancelEdit();refresh();window.dispatchEvent(new CustomEvent('lifts-task-created',{detail:{title}}));$('taskFormStatus').textContent='Tarea preparada. Revisa el estado de guardado de tu cuenta.';
   }
   function renderDue(){const overdue=work.due(state().tasks);const signature=JSON.stringify(overdue.map(t=>[t.id,t.title,t.reminderAt]));if(signature===dueSignature)return;dueSignature=signature;$('dueReminders').replaceChildren();for(const task of overdue){const row=document.createElement('div');row.className='reminder-card';note(row,'Es momento de: '+task.title);row.append(button('Hecho',()=>{task.done=true;persist();refresh();}),button('Posponer 10 min',()=>{task.reminderAt=new Date(Date.now()+600000).toISOString();task.remindedFor='';persist();refresh();}),button('Ya lo vi',()=>{task.remindedFor=task.reminderAt;persist();refresh();}));$('dueReminders').append(row);}}
   async function notify(title,body,tag){if(!registration || !window.Notification || Notification.permission!=='granted')return false;try{await registration.showNotification(title,{body,tag,icon:'/assets/icon-192.png',badge:'/assets/favicon-32.png'});return true;}catch{return false;}}
@@ -63,7 +63,7 @@
   window.addEventListener('pageshow',()=>{tickFocus();tickReminders();});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tickFocus();tickReminders();}});
   setInterval(tickFocus,1000);setInterval(tickReminders,30000);
-  window.liftsWorkUI={render,addTask,context};render();
+  window.liftsWorkUI={render,addTask,context,prepareTask:title=>{cancelEdit();api.open('tasks');$('taskTitle').value=String(title).slice(0,240);$('taskTitle').focus();}};render();
   if(new URL(location.href).searchParams.get('view')==='tasks')api.open('tasks');
   window.addEventListener('nexo-state',()=>{if(new URL(location.href).searchParams.get('view')==='tasks')api.open('tasks');});
 })();

@@ -137,3 +137,21 @@ node tests/research.test.cjs
 ```
 
 Las pruebas verifican planificación y turnos nocturnos, cruces, exportación ICS con texto escapado, recordatorios y exclusión del contexto laboral sin autorización. Las pruebas de chat comprueban presentación y contexto acotado. En Chromium se recorrieron creación/edición de tareas, rechazo de conflictos, aplicación de propuesta, enfoque, exportación, búsqueda, contexto de IA y limpieza al cambiar de cuenta. Se usaron cuenta, IA, referencias y sistema de notificaciones simulados. La compilación de Pages Functions se verifica con Wrangler; el acceso real a Wikipedia, la notificación del sistema y la inferencia deben comprobarse en producción.
+
+## iPhone 16 Pro: Hablar con Lifts
+
+`/iphone.html` contiene una guía pública, adaptable al teléfono y enlazada desde Mi perfil. El usuario crea en Atajos un atajo llamado **Hablar con Lifts** con cuatro acciones: Dictar texto → Codificar URL → Texto → Abrir URLs. La acción Texto concatena la dirección de producción `https://lifts-asistente-virtual.pages.dev/#voice=` con la variable codificada. La guía calcula la dirección del sitio actual, incluye Copiar dirección y un enlace de prueba. No se ofrece un archivo `.shortcut` firmado ni se instala nada automáticamente en el teléfono.
+
+El usuario puede invocarlo mediante Siri o asignarlo en Ajustes → Botón de acción → Atajo. iOS puede pedir desbloqueo y puede abrir Safari en lugar de la app web instalada; es necesario iniciar sesión en la ventana correspondiente. El reconocimiento de voz lo gestiona iOS, no una API contratada por Lifts. No hay escucha permanente ni activación mediante una palabra propia fuera del sitio.
+
+`web/shortcut-link.js` acepta el fragmento `#voice=...`, elimina caracteres de control, limita el texto a 5000 caracteres y prepara una URL limpia. `web/shortcut.js` retira el dictado de la barra con `replaceState`, lo mantiene en memoria mientras se inicia sesión y permite revisarlo en el chat o preparar una tarea. No envía a la IA, guarda conversaciones, crea tareas ni concede permisos automáticamente. Los mensajes normales y los borradores anteriores se respetan; reemplazarlos requiere una acción del usuario. Si aún falta la bienvenida, el dictado espera a completarla o continuar sin personalizar. Salir de la cuenta descarta el dictado pendiente y los borradores del chat.
+
+Los fragmentos no se envían en peticiones HTTP. Esto reduce exposición en registros del servidor, pero no garantiza que Apple, el navegador o el dictado no mantengan sus propios datos. No uses el atajo para claves ni contraseñas. Recargar o abandonar la página antes de usar el dictado lo descarta. Si el registro exige abrir un enlace de confirmación en otra ventana, debe terminarse primero y ejecutarse después el atajo.
+
+Preparar tarea copia un título de hasta 240 caracteres y cancela cualquier edición anterior; el usuario revisa fecha y recordatorio antes de agregarla. No se interpretan fechas habladas automáticamente ni se crean recordatorios en la app Recordatorios de Apple. Para avisos nativos fuera de Lifts se puede usar Siri con las acciones de Apple o la exportación ICS ya existente; no hay sincronización automática con esas apps.
+
+```sh
+node tests/shortcut-link.test.cjs
+```
+
+Se probaron fragmentos con acentos y caracteres especiales, retirada del texto de la URL y límites. En Chromium se verificó la espera de sesión, que el dictado no viaja por HTTP, la ausencia de envíos y guardados automáticos, conservación de borradores, creación explícita de tareas, envío manual y limpieza al cerrar sesión. Las pruebas usan una cuenta y una IA simuladas. El atajo, Siri, el botón de acción y la apertura de la app web deben probarse en un iPhone real; no se han configurado remotamente en el dispositivo del usuario.
