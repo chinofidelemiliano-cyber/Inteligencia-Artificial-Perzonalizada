@@ -73,7 +73,7 @@ Las pruebas de IA y voz usan servicios simulados, no consumen llamadas a proveed
 - Voz de muestra lee una frase fija con la selección actual antes de guardarla. Escuchar respuesta y Detener voz controlan la lectura del chat. No usamos micrófono. Se detiene al cerrar sesión o abandonar la página.
 - Las conversaciones nuevas solo existen en memoria. Guardar tareas o perfil nunca guarda el chat temporal. Guardar conversación crea una copia privada; los cambios posteriores requieren Guardar cambios. Las no guardadas desaparecen al recargar o cerrar sesión. El historial antiguo se conserva como Historial anterior hasta que el usuario lo elimine.
 - La generación remota de imágenes está sujeta a la misma puerta de plan gratuito. No guarda resultados ni descripciones en la cuenta; descarga la imagen para conservarla.
-- Los modelos no buscan en internet ni ejecutan tareas. Las referencias de conversaciones anteriores pueden conservarse como historial, pero no se generan nuevas revisiones web de pago.
+- El chat no navega en internet ni ejecuta tareas por sí mismo. Trabajo permite consultar una referencia general en Wikipedia mediante una búsqueda explícita gratuita. No se generan nuevas revisiones web de pago.
 - Cuando la IA está habilitada, se envía la pregunta y hasta ocho mensajes recientes. El perfil se adjunta solo mediante la opción de Mi perfil; no se envían automáticamente tareas ni correo. El proveedor puede retener datos conforme a sus condiciones.
 - Las respuestas pueden ser incorrectas. Las guías locales incluyen flexografía en relieve, gap de etiquetas y unidades: `P = R/n`, `g = P-L`, `R = n(L+g)`, con R como desarrollo efectivo, no radio. Para parámetros específicos se necesita documentación de la máquina. Las instrucciones no sustituyen verificación técnica.
 
@@ -98,3 +98,42 @@ Las pruebas incluyen la secuencia de identidad, afecto y “cómo te caigo”, v
 ```sh
 node tests/conversation.test.cjs
 ```
+
+## Espacio de trabajo y acompañamiento
+
+La app conserva el chat general y añade estas capacidades:
+
+- **Agenda:** tareas editables, prioridad, duración, fecha objetivo, bloque de tiempo y recordatorio. La interfaz rechaza cruces con bloques existentes. Puedes filtrar pendientes, tareas de hoy/vencidas o completadas.
+- **Propuesta de jornada:** planificación local de tareas sin horario, según prioridad, fechas y duración, respetando bloques existentes. Es una propuesta que se revisa antes de aplicar. No es una estimación profesional de producción ni incorpora pausas automáticamente; reserva tus pausas como bloques. Revalida la agenda al aplicar si algo cambió.
+- **Enfoque:** temporizador persistido de 1 a 120 minutos, con pausa y reanudación. Usa una hora objetivo, no la precisión de los intervalos del navegador. Si el navegador se suspende, se actualiza cuando vuelve a ejecutarse.
+- **Trabajo:** preguntas opcionales sobre actividad, tareas recurrentes, horario, obstáculos, herramientas y objetivo semanal. Guardar el contexto y compartirlo con la IA son autorizaciones separadas; el permiso para compartir se desactiva al iniciar sesión. Sin guardar, las respuestas se excluyen de otras escrituras a la cuenta.
+- **Contexto de IA:** únicamente al habilitarlo se adjuntan el perfil laboral y hasta 12 tareas pendientes. El servidor limita campos y longitudes; no se envían datos de otras cuentas. El asistente explica qué le falta y dónde buscarlo, y no afirma haber creado tareas o notificaciones desde el chat.
+- **Convertir en tarea:** cada mensaje del usuario puede prepararse como título de una tarea; el usuario revisa y pulsa Agregar tarea.
+- **Referencias generales:** búsqueda manual gratuita en Wikipedia en español a través de `/api/research`, con sesión, límite de solicitudes y puerta del plan gratuito. Solo se envía el tema, no el perfil ni las tareas. Los resultados son referencias secundarias, no manuales de fabricantes. Si no hay una referencia útil o el proveedor falla, se ofrece una búsqueda externa de manuales y fichas, que el usuario abre voluntariamente. Preparar consulta copia una referencia visible al borrador del chat; no la envía automáticamente ni la presenta como verificación técnica.
+
+Los campos nuevos usan el JSON existente de `user_spaces`; no requieren SQL adicional. La instancia real de Supabase sigue necesitando las políticas y la función de cuota ya documentadas.
+
+## Recordatorios: alcance real
+
+**Activar notificaciones** solicita permiso mediante una acción del usuario y registra `web/sw.js`. **Probar aviso** permite comprobar la entrega al sistema. Los avisos de tareas se revisan mientras la página está abierta y puede ejecutarse, aproximadamente cada 30 segundos y al volver a primer plano. El navegador o el sistema pueden retrasarlos o bloquearlos; no son adecuados para avisos críticos de seguridad. Un permiso concedido no garantiza que se muestre una notificación.
+
+El service worker no tiene servidor push, suscripciones, cron, caché de cuentas ni tareas programadas. **No se envían notificaciones con Lifts cerrado.** En algunos teléfonos la capacidad depende de añadir la app a la pantalla de inicio. No se añade un servicio externo de notificaciones de pago.
+
+Para avisos fuera de Lifts, **Exportar al calendario** descarga un archivo ICS con bloques y alarmas. Debe importarse en un calendario privado y probar sus alertas: distintos calendarios pueden ignorar las alarmas importadas o requerir configurarlas. El archivo contiene títulos de trabajo. Los avisos de Lifts ocultan títulos por defecto; mostrarlos requiere marcar una opción que se restablece al cambiar de sesión.
+
+Los recordatorios pueden marcarse Hecho, posponerse 10 minutos o reconocerse como vistos. Se registran por cuenta las marcas de entrega y reconocimiento. No se garantiza deduplicación absoluta entre varias pestañas o dispositivos ni exactitud de notificaciones en segundo plano.
+
+## Personaje y teléfono
+
+Un personaje interactivo acompaña la jornada con el nombre elegido, mensajes basados en pendientes y accesos a agenda, contexto laboral y pausa. La presentación femenina/masculina/neutra es una elección explícita de Mi perfil: no se infiere género de nombres ni se presenta al asistente como humano. El motor recibe esa preferencia gramatical, sujeta a sus limitaciones de generación. La voz sigue dependiendo del sistema.
+
+En celular, navegación inferior fija de cinco secciones, cabecera compacta y controles adaptados al tacto. Se mantienen foco de teclado y preferencia de movimiento reducido. El personaje no rastrea actividad fuera del sitio, ubicación, empleados ni acciones en otras aplicaciones.
+
+## Validación del espacio de trabajo
+
+```sh
+node tests/work.test.cjs
+node tests/research.test.cjs
+```
+
+Las pruebas verifican planificación y turnos nocturnos, cruces, exportación ICS con texto escapado, recordatorios y exclusión del contexto laboral sin autorización. Las pruebas de chat comprueban presentación y contexto acotado. En Chromium se recorrieron creación/edición de tareas, rechazo de conflictos, aplicación de propuesta, enfoque, exportación, búsqueda, contexto de IA y limpieza al cambiar de cuenta. Se usaron cuenta, IA, referencias y sistema de notificaciones simulados. La compilación de Pages Functions se verifica con Wrangler; el acceso real a Wikipedia, la notificación del sistema y la inferencia deben comprobarse en producción.

@@ -21,6 +21,7 @@
     if (copy.profileConsent !== true && copy.profileConsent !== undefined) copy.profile = emptyProfile();
     // Working chat is session-only, including when tasks or profile are saved.
     copy.messages=[];
+    if(copy.workConsent!==true)copy.workProfile=null;
     return copy;
   }
   const api = {fields,emptyProfile,suggestions,snapshot};
