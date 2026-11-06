@@ -22,6 +22,16 @@ window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').check
 function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
+function renderMessageText(element,message){
+  if(!Array.isArray(message.citations) || !message.citations.length){element.textContent=message.text;return;}
+  let offset=0;let number=0;
+  for(const citation of [...message.citations].sort((a,b)=>a.start-b.start)){
+    if(!Number.isInteger(citation.start) || !Number.isInteger(citation.end) || citation.start<offset || citation.end<=citation.start || citation.end>message.text.length || !/^https?:\/\//i.test(citation.url || ''))continue;
+    const text=document.createElement('span');text.textContent=message.text.slice(offset,citation.start);element.append(text);
+    const link=document.createElement('a');link.textContent='['+(++number)+']';link.href=citation.url;link.title=citation.title || 'Consultar fuente';link.target='_blank';link.rel='noopener noreferrer';element.append(link);offset=citation.end;
+  }
+  const tail=document.createElement('span');tail.textContent=message.text.slice(offset);element.append(tail);
+}
 function render(){
   $('assistantTitle').textContent=assistantName()+' · Tu asistente';
   $('welcomeTitle').textContent='Hola, soy '+assistantName()+'. Vamos a conocernos.';
@@ -38,7 +48,7 @@ function render(){
   $('count').textContent=`${state.tasks.filter(t=>!t.done).length} pendientes por completar.`;
   for(const field of personal.fields) $(field).value=state.profile[field] || '';
   $('messages').replaceChildren();
-  for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');el.textContent=m.text;if(m.role==='assistant'){const listen=document.createElement('button');listen.type='button';listen.className='secondary listen-message';listen.textContent='▷ Escuchar';listen.onclick=()=>window.liftsVoice?.speak(m.text);el.append(listen);}$('messages').append(el);}
+  for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');renderMessageText(el,m);if(m.role==='assistant'){const listen=document.createElement('button');listen.type='button';listen.className='secondary listen-message';listen.textContent='▷ Escuchar';listen.onclick=()=>window.liftsVoice?.speak(m.text);el.append(listen);if(Array.isArray(m.sources) && m.sources.length){const refs=document.createElement('div');refs.className='response-sources';const label=document.createElement('p');label.textContent='Fuentes consultadas';refs.append(label);for(const source of m.sources){if(typeof source.url!=='string' || !/^https?:\/\//i.test(source.url))continue;const link=document.createElement('a');link.href=source.url;link.textContent=source.title || source.url;link.target='_blank';link.rel='noopener noreferrer';refs.append(link);}el.append(refs);}}$('messages').append(el);}
   if(!state.messages.length){const el=document.createElement('p');el.className='muted';el.textContent='Tu próxima consulta empieza aquí. Puedes guardar el contexto para retomarlo después.';$('messages').append(el);}
   $('messages').scrollTop=$('messages').scrollHeight;
   renderConversations();
@@ -73,19 +83,19 @@ $('chat').onsubmit=async e=>{
     const token=await window.nexoAccount.accessToken();
     if(version!==chatVersion)return;
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload),signal:controller.signal});
-    let reply;
+    let reply;let sources=[];let citations=[];let reviewNote='';
     if(response.ok && response.headers?.get('Content-Type')?.includes('text/event-stream')){
       reply=await window.liftsStream.read(response,partial=>{if(version===chatVersion){$('streamingAnswer').hidden=false;$('streamingAnswer').textContent=partial;$('chatStatus').textContent=assistantName()+' está escribiendo…';}});
     }else{
       const result=await response.json().catch(()=>({error:'El servidor no respondió en el formato esperado. Verifica el despliegue.'}));
       if(!response.ok)throw new Error(result.error || 'No se pudo obtener una respuesta.');
-      reply=result.reply;
+      reply=result.reply;sources=Array.isArray(result.sources)?result.sources:[];reviewNote=result.note || '';citations=Array.isArray(result.citations)?result.citations:[];
     }
     if(version!==chatVersion)return;
     if(typeof reply!=='string' || !reply.trim())throw new Error('La IA no devolvió una respuesta válida.');
     $('streamingAnswer').hidden=true;$('streamingAnswer').textContent='';
-    state.messages.push({role:'user',text},{role:'assistant',text:reply,source:'ai'});
-    if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta lista.';
+    state.messages.push({role:'user',text},{role:'assistant',text:reply,source:'ai',sources,citations});
+    if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent=reviewNote || 'Respuesta lista.';
   }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a '+assistantName();renderConversations();}}
 };

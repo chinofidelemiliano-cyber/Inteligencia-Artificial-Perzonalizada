@@ -204,3 +204,24 @@ node tests/voice.test.cjs
 ```
 
 Las pruebas cubren validación del alias, envío del nombre al modelo, persistencia por cuenta, lectura segmentada, cancelación y navegadores sin soporte. La revisión visual usa una sesión y una voz simuladas; no valida inferencia ni síntesis de voz real.
+
+## Voz de muestra
+
+En Mi perfil, **Voz de muestra** lee una frase fija con la voz y la velocidad actualmente seleccionadas, aunque aún no se hayan guardado. **Detener muestra** interrumpe la reproducción. No envía datos del chat ni modifica preferencias. Su disponibilidad depende de Web Speech API y de las voces del dispositivo.
+
+## Revisión con GPT y fuentes web (requiere configuración externa)
+
+Se añadió un modo opcional, independiente de los tres modelos existentes. El modelo actual redacta un borrador y OpenAI Responses API lo revisa con una búsqueda web obligatoria. Las instrucciones piden contrastar fuentes primarias, definir símbolos de manera consistente y comprobar condiciones y unidades. Un borrador de IA no se presenta como una fuente documental. Se muestran las citas que realmente devuelve la API, con enlaces junto al texto y una lista de referencias. Si solo hay una referencia o ninguna, se advierte; no se inventa una segunda ni se promete certeza.
+
+Para activarlo:
+
+1. Crea una clave de API en `https://platform.openai.com/api-keys` y configura la facturación y los límites de gasto de ese proyecto de OpenAI. Una suscripción a ChatGPT no equivale al saldo de API.
+2. En los ajustes del proyecto de Pages, añade **OPENAI_API_KEY** como **Secret**, nunca como texto público, variable de frontend ni archivo del repositorio. No la pegues en el chat.
+3. Opcionalmente configura **OPENAI_MODEL** con un modelo compatible con Responses API y búsqueda web. El valor predeterminado es `gpt-4.1`. Comprueba disponibilidad y tarifas para tu cuenta.
+4. Vuelve a desplegar y selecciona **Revisión con GPT y fuentes web** en el chat. No requiere SQL adicional. Verifica una consulta real y abre sus citas.
+
+El backend comprueba la sesión y la cuota antes de generar. Sin clave, el modo falla con un aviso específico y no consume cuota ni devuelve un borrador como si estuviera revisado. Si OpenAI falla o la búsqueda queda incompleta, tampoco se presenta una revisión exitosa. Los demás modos conservan su funcionamiento. Una consulta interna puede implicar varios consumos del proveedor (borrador, revisión y búsqueda), por lo que este modo tarda más y cuesta más. No está diseñado como el modo más rápido.
+
+La elección del modo autoriza enviar la pregunta, historial breve, alias del asistente y perfil únicamente si se habilitó por separado a OpenAI. No se envían tareas, correo ni tokens de Supabase. La clave permanece en el servidor. Se usa `store:false` para no solicitar almacenamiento de la respuesta en Responses API; esto no equivale a prometer ausencia de retención del proveedor. Las conversaciones de Lifts siguen siendo temporales hasta guardarlas manualmente.
+
+No se encontró una clave de OpenAI en el entorno de desarrollo; la inferencia, facturación y búsqueda reales no están validadas. Las pruebas usan respuestas simuladas de API. Esta integración usa modelos de OpenAI, no conecta ni copia esta conversación de ChatGPT.
