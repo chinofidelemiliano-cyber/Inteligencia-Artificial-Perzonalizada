@@ -2,9 +2,9 @@
 (() => {
   const el=id=>document.getElementById(id);
   const synth=window.speechSynthesis;
-  let preferences={voiceURI:'',rate:1};let voices=[];let generation=0;let statusId='voiceStatus';let remainder='';
+  let preferences={voiceURI:'',rate:1};let voices=[];let generation=0;let statusId='voiceStatus';let remainder='',watchdog=null,activeUtterance=null;
   function emit(phase,text=''){window.dispatchEvent?.(new CustomEvent('lifts-voice',{detail:{phase,text,target:statusId}}));}
-  function stop(){generation++;remainder='';emit('idle');synth?.cancel();el('voiceStatus').textContent='';el('voiceSampleStatus').textContent='';}
+  function stop(){clearTimeout(watchdog);watchdog=null;activeUtterance=null;generation++;remainder='';emit('idle');synth?.cancel();el('voiceStatus').textContent='';el('voiceSampleStatus').textContent='';}
   function refresh(){
     if(!synth || !window.SpeechSynthesisUtterance){el('voiceStatus').textContent='Este navegador no ofrece lectura por voz.';el('readLatest').disabled=true;el('stopVoice').disabled=true;el('voiceSelect').disabled=true;el('previewVoice').disabled=true;el('stopVoiceSample').disabled=true;el('voiceSampleStatus').textContent='Este navegador no ofrece lectura por voz.';return;}
     voices=synth.getVoices();const spanish=voices.filter(v=>v.lang.toLowerCase().startsWith('es'));
@@ -18,19 +18,22 @@
   function speak(text,target='voiceStatus'){
     stop();statusId=target;if(!synth || !window.SpeechSynthesisUtterance){el(statusId).textContent='La voz no está disponible en este navegador.';emit('error');return;}
     const cleaned=String(text || '').replace(/[*#`]/g,'').trim();if(!cleaned){el(statusId).textContent='Aún no hay una respuesta para escuchar.';return;}
-    const selected=voices.find(v=>v.voiceURI===el('voiceSelect').value) || voices.find(v=>v.lang==='es-MX') || voices.find(v=>v.lang.startsWith('es'));
+    voices=synth.getVoices();
+    const selected=voices.find(v=>v.voiceURI===el('voiceSelect').value) || voices.find(v=>v.localService&&v.lang.startsWith('es')) || voices.find(v=>v.lang==='es-MX') || voices.find(v=>v.lang.startsWith('es'));
     const chunks=cleaned.match(/[\s\S]{1,220}(?:\s|$)|[\s\S]{1,220}/g) || [cleaned];
     const version=generation;
     function next(){
       if(version!==generation)return;
-      const part=chunks.shift();if(!part){el(statusId).textContent='Lectura terminada.';emit('finished');return;}
+      clearTimeout(watchdog);watchdog=null;activeUtterance=null;const part=chunks.shift();if(!part){remainder='';el(statusId).textContent='Lectura terminada.';emit('finished');return;}
       remainder=part+chunks.join('');
       const utterance=new window.SpeechSynthesisUtterance(part);utterance.lang=selected?.lang || 'es-MX';if(selected)utterance.voice=selected;
-      utterance.rate=Number(el('voiceRate').value) || 1;
-      utterance.onstart=()=>{if(version===generation)emit('speaking',cleaned);};
+      activeUtterance=utterance;
+      utterance.volume=1;utterance.rate=Number(el('voiceRate').value) || 1;
+      utterance.onstart=()=>{if(version===generation){clearTimeout(watchdog);watchdog=null;emit('speaking',cleaned);}};
       utterance.onboundary=event=>{if(version===generation)remainder=part.slice(event.charIndex)+chunks.join('');};
-      utterance.onend=next;utterance.onerror=()=>{if(version===generation){el(statusId).textContent='No se pudo reproducir esta voz. Prueba otra voz o revisa el sonido del dispositivo.';emit('error');}};
-      el(statusId).textContent=statusId==='voiceSampleStatus'?'Reproduciendo voz de muestra…':'Leyendo respuesta…';synth.speak(utterance);
+      utterance.onend=next;utterance.onerror=()=>{if(version===generation){generation++;activeUtterance=null;clearTimeout(watchdog);watchdog=null;el(statusId).textContent='No se pudo reproducir esta voz. Prueba otra voz o revisa el sonido del dispositivo.';emit('error');}};
+      el(statusId).textContent=statusId==='voiceSampleStatus'?'Reproduciendo voz de muestra…':'Leyendo respuesta…';watchdog=setTimeout(()=>{if(version!==generation)return;generation++;activeUtterance=null;synth.cancel();el(statusId).textContent='La voz no inició. Pulsa Reproducir respuesta para activarla.';emit('blocked');},5000);
+      try{synth.speak(utterance);synth.resume?.();}catch{generation++;activeUtterance=null;clearTimeout(watchdog);watchdog=null;emit('error');}
     }
     synth.resume?.();next();
   }
