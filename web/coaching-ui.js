@@ -58,5 +58,5 @@
   function reset(){version++;saving=false;proposal=null;drafts=[];parseWarnings=[];parsedText='';banner.hidden=true;$('coachForm').reset();$('coachDate').value=work.localDate(new Date());$('coachStart').value=state().workProfile?.shiftStart||'09:00';$('coachEnd').value=state().workProfile?.shiftEnd||'17:00';$('coachDrafts').replaceChildren();$('coachPreview').replaceChildren();$('coachStatus').textContent='';$('coachApply').hidden=true;$('coachRetry').hidden=true;$('coachRetry').disabled=false;render();}
   window.addEventListener('nexo-state',reset);window.addEventListener('lifts-message-sent',event=>{if(!saving&&engine.canPrepare(event.detail?.text))prepare(event.detail.text,false);});
   window.addEventListener('lifts-page',render);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
-  window.liftsCoachUI={prepare,render,reset,companionText:()=>engine.followup(state().tasks,state().focusSession).message};setInterval(()=>{if(!document.hidden)render();},30000);reset();
+  window.liftsCoachUI={prepare,render,reset,setPace:pace=>{$('coachFocus').value=pace.focus;$('coachPause').value=pace.pause;build();},companionText:()=>engine.followup(state().tasks,state().focusSession).message};setInterval(()=>{if(!document.hidden)render();},30000);reset();
 })();

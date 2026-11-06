@@ -36,7 +36,7 @@
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T12:00').getTime())||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end))return{error:'Revisa el día y las horas de tu jornada.'};
     if(day(new Date(date+'T12:00'))!==date)return{error:'La fecha de inicio no es válida.'};
     const days=Math.min(7,Math.max(1,Number(options.days)||3)),focus=Math.min(120,Math.max(15,Number(options.focus)||50)),pause=Math.min(30,Math.max(3,Number(options.pause)||5)),lead=Math.min(60,Math.max(0,Number(options.lead)||5));
-    const stamp=now.getTime();const movable=tasks.filter(t=>!t.done&&t.kind!=='break'&&(!t.startAt||(options.replanExpired&&Date.parse(t.startAt)+(Number(t.duration)||25)*60000<=stamp)));
+    const stamp=now.getTime();const movable=tasks.filter(t=>!t.done&&t.kind!=='break'&&t.kind!=='personal-checkin'&&(!t.startAt||(options.replanExpired&&Date.parse(t.startAt)+(Number(t.duration)||25)*60000<=stamp)));
     const candidates=[...(options.includeExisting===false?[]:movable),...drafts].map(t=>({...t,duration:Math.min(720,Math.max(5,Number(t.duration)||25))})).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||(Number(a.priority)||2)-(Number(b.priority)||2));
     const ids=new Set(options.includeExisting===false?[]:movable.map(t=>t.id));
     const fixedTasks=tasks.filter(t=>!t.done&&t.startAt&&!ids.has(t.id));
@@ -60,7 +60,7 @@
   function followup(tasks,session,now=Date.now()){
     if(session&&!session.paused&&!session.finished&&session.endsAt>now)return{type:'focus',task:tasks.find(t=>t.id===session.taskId),at:session.endsAt,message:session.kind==='break'?'Estás en tu pausa. Cuando termine, elegimos el siguiente paso.':'Vas bien: una cosa a la vez. Tu próxima pausa será al terminar este bloque.'};
     if(session?.finished&&session.kind!=='break')return{type:'break',task:tasks.find(t=>!t.done&&t.kind==='break'&&Date.parse(t.startAt)<=now+300000&&Date.parse(t.startAt)+(Number(t.duration)||5)*60000>now),message:'Terminaste un bloque de enfoque. ¿Te viene bien descansar 5 minutos antes de continuar?'};
-    const pending=tasks.filter(t=>!t.done&&(!t.coachCheckAfter||Date.parse(t.coachCheckAfter)<=now));
+    const pending=tasks.filter(t=>!t.done&&t.kind!=='personal-checkin'&&(!t.coachCheckAfter||Date.parse(t.coachCheckAfter)<=now));
     const current=pending.filter(t=>t.startAt&&Date.parse(t.startAt)<=now&&Date.parse(t.startAt)+(Number(t.duration)||25)*60000>now).sort((a,b)=>a.startAt.localeCompare(b.startAt))[0];
     if(current)return{type:current.kind==='break'?'break':'current',task:current,message:current.kind==='break'?'Tienes una pausa sugerida ahora. Tómala cuando tu actividad lo permita.':'Ahora habías reservado tiempo para «'+current.title+'». ¿Cómo vas?'};
     const ended=pending.find(t=>t.kind!=='break'&&t.startAt&&Date.parse(t.startAt)+(Number(t.duration)||25)*60000<=now);

@@ -1,6 +1,6 @@
 'use strict';
 const personal = window.liftsPersonalization;
-const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[],savedConversations:[],workProfile:null,workConsent:false,focusSession:null,assistant:{name:'Lifts',voiceURI:'',rate:1}});
+const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[],savedConversations:[],workProfile:null,workConsent:false,focusSession:null,personalConsent:false,personalCheckins:[],assistant:{name:'Lifts',voiceURI:'',rate:1}});
 let state = initial();
 let chatVersion=0;
 let chatController=null;
@@ -56,7 +56,7 @@ function render(){
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
-  window.liftsWorkUI?.render();window.liftsCoachUI?.render();
+  window.liftsWorkUI?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
 }
 $('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
 $('assistantForm').onsubmit=async event=>{
@@ -81,6 +81,7 @@ $('chat').onsubmit=async e=>{
   window.dispatchEvent?.(new CustomEvent('lifts-chat-state',{detail:{phase:'thinking'}}));
   const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName(),assistantPresentation:state.assistant?.presentation || 'neutral',conversationMode:window.liftsConversationUI?.active() || false};
   if($('shareProfile').checked)payload.profile={...state.profile};
+  const wellbeing=window.liftsWellbeingUI?.context();if(wellbeing)payload.wellbeingContext=wellbeing;
   if($('workShare').checked && window.liftsWorkUI)payload.workContext=window.liftsWorkUI.context();
   const timer=setTimeout(()=>controller.abort(),120000);
   try{
@@ -169,7 +170,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar el perfil, las tareas y las consultas de tu cuenta?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},
