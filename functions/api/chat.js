@@ -1,8 +1,11 @@
 import '../../web/assistant-name.js';
+// El propietario confirmó Workers Free; la variable false permite pausar antes de cambiar de plan.
+const OWNER_CONFIRMED_FREE_PLAN = true;
+const freeAiEnabled = env => (env.FREE_AI_CONFIRMED ?? String(OWNER_CONFIRMED_FREE_PLAN)) === 'true';
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
-const REVISION = 'lifts-free-plan-r9';
+const REVISION = 'lifts-confirmed-free-r10';
 const json = (body,status=200) => new Response(JSON.stringify({...body,server:{revision:REVISION,model:MODEL}}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function bodyJSON(request) {
   const reader=request.body?.getReader();
@@ -13,7 +16,7 @@ async function bodyJSON(request) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 export async function onRequestPost({request,env}) {
-  if(env.FREE_AI_CONFIRMED!=='true')return json({error:'La IA remota está pausada para evitar gastos. Solo se habilita después de confirmar que el servicio está en un plan gratuito con bloqueo al agotar la cuota.'},503);
+  if(!freeAiEnabled(env))return json({error:'La IA remota está pausada para evitar gastos. Solo se habilita después de confirmar que el servicio está en un plan gratuito con bloqueo al agotar la cuota.'},503);
   if(request.headers.get('Origin')!==new URL(request.url).origin)return json({error:'Solicitud de origen no permitido.'},403);
   if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'Se requiere JSON.'},415);
   const authorization=request.headers.get('Authorization') || '';
@@ -99,4 +102,4 @@ export async function onRequestPost({request,env}) {
     return json({error:'No se pudo generar la respuesta. '+guidance+' Diagnóstico: WORKERS_AI'+(numericCode?' / código '+numericCode:'')+'.',...(providerDetail?{providerDetail}:{})},503);
   }
 }
-export const onRequestGet=({env})=>json({service:'Lifts · diagnóstico público de configuración',aiBindingAvailable:typeof env.AI?.run==='function',remoteAiEnabled:env.FREE_AI_CONFIRMED==='true',note:'Esto comprueba la configuración, no ejecuta el modelo ni verifica una sesión.'});
+export const onRequestGet=({env})=>json({service:'Lifts · diagnóstico público de configuración',aiBindingAvailable:typeof env.AI?.run==='function',remoteAiEnabled:freeAiEnabled(env),note:'Esto comprueba la configuración, no ejecuta el modelo ni verifica una sesión.'});

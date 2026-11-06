@@ -7,7 +7,7 @@ function setup({valid=true,allowed=true,binding=true,output=btoa(String.fromChar
  const context={Response,TextDecoder,Uint8Array,URL,AbortSignal,atob,JSON,fetch:async(url,options)=>{calls.push({url,options});return url.endsWith('/auth/v1/user')?Response.json(valid?{id:'user'}:{},{status:valid?200:401}):Response.json(allowed);}};
  vm.runInNewContext(fs.readFileSync('functions/api/image.js','utf8').replaceAll('export ','')+'\nglobalThis.handle=onRequestPost;',context);
  const env=binding?{AI:{run:async(model,input)=>{runs.push({model,input});if(aiError)throw aiError;return{image:output};}}}:{};
- env.FREE_AI_CONFIRMED=freeConfirmed?'true':'false';
+ if(freeConfirmed!==null)env.FREE_AI_CONFIRMED=freeConfirmed?'true':'false';
  const send=({body={prompt:'Un paisaje azul'},token='test-token',origin='https://lifts.pages.dev'}={})=>context.handle({env,request:new Request('https://lifts.pages.dev/api/image',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)})});
  return{send,calls,runs};
 }
@@ -18,4 +18,6 @@ test('cross origin and missing binding cannot invoke image model',async()=>{cons
 test('unsupported model output is rejected instead of rendered as executable content',async()=>{for(const output of [null,'',btoa('<svg onload="alert(1)"></svg>')]){const s=setup({output});assert.equal((await s.send()).status,502);}});
 test('provider failure exposes only useful bounded diagnostic',async()=>{const s=setup({aiError:new Error('5035 paid plan required private-prompt test-token')});const response=await s.send();const result=await response.json();assert.equal(response.status,503);assert.match(result.error,/facturación/);assert.match(result.error,/5035/);assert.doesNotMatch(result.error,/private-prompt|test-token/);});
 
-test('images are blocked without confirmed free plan before any billable inference or network call',async()=>{const s=setup({freeConfirmed:false});const response=await s.send();assert.equal(response.status,503);assert.equal(s.calls.length,0);assert.equal(s.runs.length,0);});
+test('explicit pause blocks images before inference or network calls',async()=>{const s=setup({freeConfirmed:false});const response=await s.send();assert.equal(response.status,503);assert.equal(s.calls.length,0);assert.equal(s.runs.length,0);});
+
+test('owner-confirmed free plan works without extra dashboard configuration',async()=>{const s=setup({freeConfirmed:null});assert.equal((await s.send()).status,200);assert.equal(s.runs.length,1);});

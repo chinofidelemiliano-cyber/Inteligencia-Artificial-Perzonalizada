@@ -1,4 +1,7 @@
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+// El propietario confirmó Workers Free; la variable false permite pausar antes de cambiar de plan.
+const OWNER_CONFIRMED_FREE_PLAN = true;
+const freeAiEnabled = env => (env.FREE_AI_CONFIRMED ?? String(OWNER_CONFIRMED_FREE_PLAN)) === 'true';
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
 const json = (error,status) => Response.json({error},{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
@@ -12,7 +15,7 @@ async function readPrompt(request) {
   return body.prompt.trim();
 }
 export async function onRequestPost({request,env}) {
-  if(env.FREE_AI_CONFIRMED!=='true')return json('La generación de imágenes está pausada para evitar gastos. Solo se habilita con un plan gratuito confirmado que bloquee el uso al agotar su cuota.',503);
+  if(!freeAiEnabled(env))return json('La generación de imágenes está pausada para evitar gastos. Solo se habilita con un plan gratuito confirmado que bloquee el uso al agotar su cuota.',503);
   if(request.headers.get('Origin')!==new URL(request.url).origin)return json('Solicitud de origen no permitido.',403);
   if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json('Se requiere JSON.',415);
   const authorization=request.headers.get('Authorization') || '';
