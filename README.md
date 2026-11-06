@@ -80,3 +80,9 @@ Las pruebas de IA y voz usan servicios simulados, no consumen llamadas a proveed
 ## Identidad visual
 
 Los originales están en `web/assets/lifts-banner.png` y `lifts-icon-original.png`. El banner se muestra sin recortes; los iconos derivados se usan en la pestaña y accesos directos. El manifest no añade funcionamiento sin conexión ni publica una app en tiendas. Se revisó el diseño en Chromium para escritorio y celular con cuenta simulada, incluyendo movimiento reducido.
+
+## Tono de las respuestas
+
+El asistente tiene instrucciones para ser cercano, paciente y directo; responder a lo preguntado; reconocer emociones expresadas sin suponerlas; y evitar frases repetitivas, condescendencia, halagos automáticos y explicaciones defensivas de identidad. Mantiene la precisión y la corrección de errores. No se cambia de proveedor ni se añaden llamadas de pago. La temperatura del modelo se mantiene igual.
+
+Las pruebas verifican que las instrucciones de tono y precisión llegan al modelo. No garantizan que todas las respuestas generadas las sigan: debe comprobarse el trato real después del despliegue. El historial guardado no se reescribe.
