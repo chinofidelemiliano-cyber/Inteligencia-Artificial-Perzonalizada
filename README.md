@@ -179,3 +179,9 @@ Las pruebas comprueban recarga sin chat temporal, guardado manual, reapertura, c
 Las instrucciones distinguen separación entre etiquetas, contacto de impresión, junta de placa y separación transversal. Incluyen la relación geométrica `g = R / n - L` para repeticiones longitudinales iguales y equidistantes, con unidades consistentes y desarrollo efectivo conocido. `n` cuenta repeticiones en una vuelta y `L` mide el largo de avance, no el ancho de pista. La comprobación es `R = n × (L + g)`. Sin los datos necesarios se pide aclaración; un gap negativo obliga a revisar el arreglo. El valor geométrico no establece un mínimo admisible para un sensor, troquel o máquina.
 
 Este contexto es una guía local, no una consulta a documentación externa. No se ha conectado una biblioteca de manuales ni una búsqueda técnica verificable. Las pruebas validan el contexto enviado al modelo; no sustituyen evaluación real de sus respuestas, verificación del cálculo ni revisión de especificaciones del equipo. Sigue siendo necesario revisar recomendaciones técnicas antes de aplicarlas.
+
+## Identidad visual
+
+El tema en `web/styles.css` usa fondo azul noche, superficies oscuras y acentos cian, azul y violeta inspirados en los logos proporcionados. Incluye controles de contraste, foco de teclado, diseño adaptable y respeto a la preferencia de movimiento reducido. La navegación y las vistas de acceso, inicio e imágenes se revisaron en Chromium con sesión simulada y ancho móvil de 390 px.
+
+Pendiente: incorporar los archivos originales del banner horizontal y el icono cuadrado. Las imágenes visibles en el chat no estuvieron disponibles como archivos descargables en el entorno. No se han sustituido por recreaciones ni se ha declarado un favicon o icono de instalación que aún no existe. Cuando estén disponibles, añadirlos a `web/assets` y configurar banner, favicon, apple-touch-icon y manifest con los tamaños adecuados.
