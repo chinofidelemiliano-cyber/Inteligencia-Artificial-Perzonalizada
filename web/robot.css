@@ -59,3 +59,13 @@
 @media(max-width:800px){.voice-stage .face-avatar.robot-surface{width:220px;height:295px;margin:16px auto 14px;transform:none}.companion-character.robot-surface{width:76px;height:104px;flex-basis:76px}.floating-companion{width:90px;height:132px}.floating-companion .face-avatar.robot-surface{width:78px;height:104px;margin:3px 0 0;transform:none}.floating-label{bottom:7px}}
 @media(prefers-reduced-motion:reduce){.robot-surface .lifts-robot *,.floating-companion .lifts-robot *{animation:none!important;transition:none!important}.card,.areas button,.floating-companion{transition:none}.areas button:hover{transform:none}}
 .robot-surface:hover .eyes-focused,.robot-surface:hover .eyes-curious,.floating-companion:hover .eyes-focused,.floating-companion:hover .eyes-curious,.robot-surface[data-celebrate] .eyes-focused,.robot-surface[data-celebrate] .eyes-curious{display:none}
+/* Original PNG artwork, positioned and clipped at render time without altering its pixels. */
+.robot-frame{transform-origin:96px 200px}.robot-head-art{transform-origin:92px 110px;translate:12px 2px}
+.robot-arm-art.left{transform-origin:53px 126px}.robot-arm-art.right{transform-origin:128px 126px}.robot-leg-art.left{transform-origin:70px 208px}.robot-leg-art.right{transform-origin:115px 208px}.robot-floor{transform-origin:96px 292px}
+.sheet-face{display:none}.face-happy{display:inline}.sheet-mouth{display:none}
+.robot-surface[data-expression=focused] .face-happy,.robot-surface[data-expression=curious] .face-happy{display:none}
+.robot-surface[data-expression=focused] .face-focused,.robot-surface[data-expression=curious] .face-curious{display:inline}
+.robot-surface[data-phase=speaking] .sheet-face{display:none}.robot-surface[data-phase=speaking] .face-excited{display:inline}.robot-surface[data-phase=speaking] .sheet-mouth{display:inline}
+.robot-surface[data-phase=speaking] .robot-speaking-mouth{transform-origin:92px 84px}
+.robot-surface:hover .sheet-face,.floating-companion:hover .sheet-face,.robot-surface[data-celebrate] .sheet-face{display:none}
+.robot-surface:hover .face-wink,.floating-companion:hover .face-wink,.robot-surface[data-celebrate] .face-wink{display:inline}
