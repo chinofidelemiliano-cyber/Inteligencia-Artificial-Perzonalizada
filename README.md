@@ -86,3 +86,15 @@ Los originales están en `web/assets/lifts-banner.png` y `lifts-icon-original.pn
 El asistente tiene instrucciones para ser cercano, paciente y directo; responder a lo preguntado; reconocer emociones expresadas sin suponerlas; y evitar frases repetitivas, condescendencia, halagos automáticos y explicaciones defensivas de identidad. Mantiene la precisión y la corrección de errores. No se cambia de proveedor ni se añaden llamadas de pago. La temperatura del modelo se mantiene igual.
 
 Las pruebas verifican que las instrucciones de tono y precisión llegan al modelo. No garantizan que todas las respuestas generadas las sigan: debe comprobarse el trato real después del despliegue. El historial guardado no se reescribe.
+
+## Comprensión de preguntas y comentarios
+
+`lib/conversation.js` orienta la respuesta según la última intervención: saludos, afecto, impresión sobre la interacción, identidad, correcciones, emociones, procedimientos, preguntas y comentarios. Las reglas locales son pistas conservadoras, no un clasificador semántico infalible. Las frases mixtas siguen pasando al modelo para interpretar el mensaje completo.
+
+Se retiraron los ejemplos de respuestas sociales del prompt global. Las guías de cálculo se añaden a procedimientos; el contenido técnico se limita al contexto pertinente y se excluye de los intercambios sociales. En esos intercambios se conserva solo el contexto inmediato y se limita la extensión. El historial del asistente no se considera una fuente de verdad. Esto reduce contaminación por ejemplos anteriores y carga innecesaria, sin añadir llamadas a modelos ni servicios de pago.
+
+Las pruebas incluyen la secuencia de identidad, afecto y “cómo te caigo”, variantes sin acentos, correcciones y preguntas mixtas. Comprueban la clasificación local y el contexto enviado, no la corrección garantizada de cada respuesta generada. La comprensión y el trato deben revisarse con el modelo real después de desplegar.
+
+```sh
+node tests/conversation.test.cjs
+```
