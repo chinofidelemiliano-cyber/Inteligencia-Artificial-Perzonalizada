@@ -1,0 +1,11 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');
+function setup({supported=true}={}){const elements=new Map(),events={},spoken=[];let cancelled=0;
+ const get=id=>{if(!elements.has(id))elements.set(id,{value:'1',textContent:'',disabled:false,children:[],replaceChildren(){this.children=[];},append(node){this.children.push(node);}});return elements.get(id);};
+ const voice={voiceURI:'es-mx',name:'Español',lang:'es-MX',localService:true};const window={addEventListener:(name,handler)=>events[name]=handler};
+ if(supported){window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};window.speechSynthesis={getVoices:()=>[voice],addEventListener(){},cancel(){cancelled++;},speak:utterance=>spoken.push(utterance)};}
+ vm.runInNewContext(fs.readFileSync('web/voice.js','utf8'),{window,document:{getElementById:get,createElement:()=>({})}});
+ return{get,events,spoken,window,cancelled:()=>cancelled};}
+test('voice selects Spanish, honors speed, and reads all chunks without omissions',()=>{const s=setup();s.window.liftsVoice.configure({voiceURI:'es-mx',rate:1.15});const text=('Una explicación detallada. ').repeat(30);s.window.liftsVoice.speak(text);let index=0;while(index<s.spoken.length)s.spoken[index++].onend();assert.equal(s.spoken.map(u=>u.text).join(''),text.trim());assert.equal(s.spoken[0].lang,'es-MX');assert.equal(s.spoken[0].rate,1.15);assert.match(s.get('voiceStatus').textContent,/terminada/);});
+test('stop cancels speech and prevents stale chunks from continuing',()=>{const s=setup();s.window.liftsVoice.speak('Texto '.repeat(100));const before=s.spoken.length;s.get('stopVoice').onclick();s.spoken[0].onend();assert.equal(s.spoken.length,before);assert.ok(s.cancelled()>0);});
+test('account change stops reading previous account text',()=>{const s=setup();s.window.liftsVoice.speak('Mensaje anterior');s.events['nexo-state']();s.spoken[0].onend();assert.equal(s.get('voiceStatus').textContent,'');});
+test('unsupported browsers get an explanation and disabled voice controls',()=>{const s=setup({supported:false});assert.equal(s.get('readLatest').disabled,true);s.window.liftsVoice.speak('Hola');assert.match(s.get('voiceStatus').textContent,/no está disponible/);});

@@ -1,6 +1,6 @@
 'use strict';
 const personal = window.liftsPersonalization;
-const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[],savedConversations:[]});
+const initial = () => ({profile:personal.emptyProfile(),profileConsent:false,onboardingCompleted:false,tasks:[],messages:[],savedConversations:[],assistant:{name:'Lifts',voiceURI:'',rate:1}});
 let state = initial();
 let chatVersion=0;
 let chatController=null;
@@ -10,8 +10,9 @@ let accountVersion=0;
 let savingConversation=false;
 const pendingConversations=new Set();
 const $ = id => document.getElementById(id);
+function assistantName(){const result=window.liftsAssistantName.validate(state.assistant?.name || 'Lifts');return result.valid?result.name:'Lifts';}
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';state=e.detail || initial();accountVersion++;activeConversation=null;savingConversation=false;pendingConversations.clear();
+window.addEventListener('nexo-state', e => {cancelChat();$('shareProfile').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';$('assistantSettingsStatus').textContent='';state=e.detail || initial();accountVersion++;activeConversation=null;savingConversation=false;pendingConversations.clear();
   state.savedConversations=Array.isArray(state.savedConversations)?state.savedConversations:[];
   if(state.messages.length){
     state.savedConversations.push({id:crypto.randomUUID(),title:'Historial anterior',messages:JSON.parse(JSON.stringify(state.messages)),savedAt:new Date().toISOString()});
@@ -22,16 +23,22 @@ function page(id){if(!state.onboardingCompleted)id='welcome';for(const section o
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function render(){
+  $('assistantTitle').textContent=assistantName()+' · Tu asistente';
+  $('welcomeTitle').textContent='Hola, soy '+assistantName()+'. Vamos a conocernos.';
+  $('assistantName').value=assistantName();
+  if(!chatBusy)$('sendChat').textContent='Enviar a '+assistantName();
+  window.liftsVoice?.configure(state.assistant || {});
   $('greeting').textContent=state.profile.name ? `Hola, ${state.profile.name}. Vamos paso a paso.` : 'Todo empieza con un buen plan.';
   $('focus').textContent=[state.profile.role,state.profile.specialty,state.profile.equipment].filter(Boolean).join(' · ') || 'Tu perfil es opcional. Elige los temas que te interesan.';
   $('topics').replaceChildren();
   for(const topic of personal.suggestions(state.profile)) {const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=topic.label;button.onclick=()=>{$('question').value=topic.prompt;page('home');$('question').focus();};$('topics').append(button);}
   $('personalizationNote').textContent=state.profileConsent===true ? 'Sugerencias basadas en tu perfil guardado. Puedes cambiarlo o borrarlo en Mi perfil.' : 'Sugerencias por reglas locales. Tus preferencias actuales no se guardarán en el perfil sin tu autorización.';
   $('profileConsent').checked=state.profileConsent===true;
+  $('taskProgress').value=state.tasks.length?state.tasks.filter(t=>t.done).length/state.tasks.length:0;
   $('count').textContent=`${state.tasks.filter(t=>!t.done).length} pendientes por completar.`;
   for(const field of personal.fields) $(field).value=state.profile[field] || '';
   $('messages').replaceChildren();
-  for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');el.textContent=m.text;$('messages').append(el);}
+  for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');el.textContent=m.text;if(m.role==='assistant'){const listen=document.createElement('button');listen.type='button';listen.className='secondary listen-message';listen.textContent='▷ Escuchar';listen.onclick=()=>window.liftsVoice?.speak(m.text);el.append(listen);}$('messages').append(el);}
   if(!state.messages.length){const el=document.createElement('p');el.className='muted';el.textContent='Tu próxima consulta empieza aquí. Puedes guardar el contexto para retomarlo después.';$('messages').append(el);}
   $('messages').scrollTop=$('messages').scrollHeight;
   renderConversations();
@@ -39,17 +46,27 @@ function render(){
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
 }
+$('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
+$('assistantForm').onsubmit=async event=>{
+  event.preventDefault();const result=window.liftsAssistantName.validate($('assistantName').value);
+  if(!result.valid){$('assistantSettingsStatus').textContent=result.error;return;}
+  const version=accountVersion;
+  state.assistant={name:result.name,voiceURI:$('voiceSelect').value,rate:Number($('voiceRate').value) || 1};
+  render();$('sendChat').textContent='Enviar a '+assistantName();$('assistantSettingsStatus').textContent='Guardando…';
+  try{const ok=await window.nexoAccount.save(personal.snapshot(state));if(version===accountVersion)$('assistantSettingsStatus').textContent=ok===false?'No se pudo guardar. Reintenta antes de salir.':'Nombre y voz guardados en tu cuenta.';}
+  catch{if(version===accountVersion)$('assistantSettingsStatus').textContent='No se pudo guardar. Revisa tu conexión.';}
+};
 $('profileForm').onsubmit=e=>{e.preventDefault();for(const field of personal.fields) state.profile[field]=$(field).value.trim();state.profileConsent=$('profileConsent').checked;const saved=persist();render();if(saved)$('saved').textContent='Preferencias aplicadas; revisa el estado de sincronización.';};
 $('taskForm').onsubmit=e=>{e.preventDefault();const title=$('taskTitle').value.trim();if(!title)return;state.tasks.push({id:crypto.randomUUID(),title,date:$('taskDate').value,done:false});persist();e.target.reset();render();};
-function cancelChat(){$('streamingAnswer').textContent='';$('streamingAnswer').hidden=true;chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';$('chatStatus').textContent='';}
+function cancelChat(){window.liftsVoice?.stop();$('streamingAnswer').textContent='';$('streamingAnswer').hidden=true;chatVersion++;chatController?.abort();chatController=null;chatBusy=false;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a '+assistantName();$('chatStatus').textContent='';}
 $('chat').onsubmit=async e=>{
   e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
   if(text.length>5000)return;
   const version=chatVersion;
   const controller=new AbortController();chatController=controller;chatBusy=true;
-  $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a Lifts…';
+  $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a '+assistantName()+'…';
   const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
-  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true};
+  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName()};
   if($('shareProfile').checked)payload.profile={...state.profile};
   const timer=setTimeout(()=>controller.abort(),120000);
   try{
@@ -58,7 +75,7 @@ $('chat').onsubmit=async e=>{
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload),signal:controller.signal});
     let reply;
     if(response.ok && response.headers?.get('Content-Type')?.includes('text/event-stream')){
-      reply=await window.liftsStream.read(response,partial=>{if(version===chatVersion){$('streamingAnswer').hidden=false;$('streamingAnswer').textContent=partial;$('chatStatus').textContent='Lifts está escribiendo…';}});
+      reply=await window.liftsStream.read(response,partial=>{if(version===chatVersion){$('streamingAnswer').hidden=false;$('streamingAnswer').textContent=partial;$('chatStatus').textContent=assistantName()+' está escribiendo…';}});
     }else{
       const result=await response.json().catch(()=>({error:'El servidor no respondió en el formato esperado. Verifica el despliegue.'}));
       if(!response.ok)throw new Error(result.error || 'No se pudo obtener una respuesta.');
@@ -70,7 +87,7 @@ $('chat').onsubmit=async e=>{
     state.messages.push({role:'user',text},{role:'assistant',text:reply,source:'ai'});
     if($('question').value.trim()===text)$('question').value='';render();$('chatStatus').textContent='Respuesta lista.';
   }catch(error){if(version===chatVersion)$('chatStatus').textContent=error.name==='AbortError'?'La respuesta tardó demasiado. Tu pregunta sigue aquí para reintentarlo.':error.message || 'No se pudo contactar con la IA. Tu pregunta no se ha borrado.';}
-  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a Lifts';renderConversations();}}
+  finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('sendChat').disabled=false;$('testAI').disabled=false;$('sendChat').textContent='Enviar a '+assistantName();renderConversations();}}
 };
 function conversationDirty(){
   const saved=state.savedConversations?.find(c=>c.id===activeConversation);

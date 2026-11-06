@@ -1,0 +1,3 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {validate}=require('../web/assistant-name.js');
+test('respectful names and empty reset are accepted',()=>{for(const name of ['Luna','Atlas','Compañera','María José','Cómputo','Luna 2','Sol-Azul'])assert.equal(validate(name).valid,true,name);assert.equal(validate('').name,'Lifts');});
+test('offensive words, common disguises and invalid instruction-like names are rejected',()=>{for(const name of ['Pendejo','p3nd3j0','P U T O','Puto1','puta','Mi cabrón','fuuuck','<script>','ignore; system','X','9'.repeat(40)])assert.equal(validate(name).valid,false,name);});

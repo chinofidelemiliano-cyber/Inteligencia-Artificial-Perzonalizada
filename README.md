@@ -185,3 +185,22 @@ Este contexto es una guía local, no una consulta a documentación externa. No s
 El tema en `web/styles.css` usa fondo azul noche, superficies oscuras y acentos cian, azul y violeta inspirados en los logos proporcionados. Incluye controles de contraste, foco de teclado, diseño adaptable y respeto a la preferencia de movimiento reducido. La navegación y las vistas de acceso, inicio e imágenes se revisaron en Chromium con sesión simulada y ancho móvil de 390 px.
 
 Los PNG originales recibidos en `dd.zip` se conservan en `web/assets/lifts-banner.png` (1536 × 1024) y `web/assets/lifts-icon-original.png` (1254 × 1254). El banner aparece completo, sin recorte, en el acceso y el inicio; el icono cuadrado aparece en la navegación. Del icono se derivaron tamaños 32, 180, 192 y 512 para favicon, Apple Touch y manifest, además de `web/favicon.ico`. `web/manifest.webmanifest` configura el nombre Lifts y el modo standalone para accesos directos compatibles. Esto no añade funcionamiento sin conexión ni equivale a publicar una app nativa en una tienda. El aspecto y la instalación del acceso directo dependen del navegador; algunos dispositivos requieren volver a crearlo para actualizar el icono.
+
+## Nombre personal, voz e interacción
+
+En **Mi perfil → Un nombre y una voz a tu gusto**, cada cuenta elige un alias de 2 a 32 caracteres para el asistente, su voz y velocidad de lectura. La configuración `assistant` se guarda en el JSON de la cuenta y es independiente de la autorización de guardar el perfil personal. No requiere SQL adicional. La marca y los logos de Lifts se conservan; cambian el título del asistente, la bienvenida y el nombre enviado al modelo.
+
+`web/assistant-name.js` valida caracteres y un vocabulario de palabras ofensivas comunes, incluyendo algunas variantes con números, repeticiones y espacios. Se utiliza en la interfaz y en el servidor antes de invocar IA. Es un filtro heurístico, no una garantía de detección universal ni moderación de todas las conversaciones; puede requerir ampliar vocabulario o revisar falsos positivos.
+
+**Escuchar respuesta**, **Escuchar** en cada mensaje y **Detener voz** usan Web Speech API del navegador. No hay micrófono ni clonación de voces. Se priorizan voces en español y se fraccionan respuestas largas para leerlas completas. Al cerrar sesión o abandonar la página se cancela la lectura. La disponibilidad depende del sistema; algunas voces requieren conexión y su procesamiento lo gestiona el navegador o sistema. No se afirma que toda síntesis sea local ni se añade un servicio TTS propio. En navegadores sin soporte se muestra un aviso. La calidad audible debe revisarse en el dispositivo real.
+
+La interfaz incluye un indicador visual del asistente, progreso de tareas, profundidad al pasar sobre tarjetas, respuesta al pulsar botones y transiciones entre secciones. `prefers-reduced-motion` desactiva animaciones. Los logos originales se conservan.
+
+Pruebas adicionales:
+
+```sh
+node tests/assistant-name.test.cjs
+node tests/voice.test.cjs
+```
+
+Las pruebas cubren validación del alias, envío del nombre al modelo, persistencia por cuenta, lectura segmentada, cancelación y navegadores sin soporte. La revisión visual usa una sesión y una voz simuladas; no valida inferencia ni síntesis de voz real.
