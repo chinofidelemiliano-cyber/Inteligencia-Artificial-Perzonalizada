@@ -66,6 +66,9 @@
     if (saved && (!saved.profile || !Array.isArray(saved.tasks) || !Array.isArray(saved.messages))) {
       message('Los datos de tu espacio no tienen el formato esperado. No se sobrescribieron.'); return;
     }
+    // Publish only after all deferred workspace modules can receive account state.
+    if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
+    if(version!==generation)return;
     ready = true;
     window.dispatchEvent(new CustomEvent('nexo-state',{detail:saved || null}));
     el('accountEmail').textContent = user.email || '';

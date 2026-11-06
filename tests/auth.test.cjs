@@ -4,15 +4,16 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 const source=fs.readFileSync('web/auth.js','utf8');
 const tick=()=>new Promise(r=>setTimeout(r,15));
-function setup({data=null,error=null,signupError=null,saveError=null}={}){
- const elements=new Map();
+function setup({data=null,error=null,signupError=null,saveError=null,loading=false}={}){
+ const elements=new Map(),documentListeners={};
  const get=id=>{if(!elements.has(id))elements.set(id,{hidden:false,value:'',textContent:'',disabled:false,querySelectorAll:()=>[],reportValidity:()=>true});return elements.get(id);};
  get('workspace').hidden=true;
  let handler;const writes=[];const reads=[];const events=[];
  const client={from:()=>({select:()=>({eq:(column,id)=>{reads.push(id);return{maybeSingle:async()=>({data:data?{data}:null,error})};}}),upsert:async row=>{writes.push(row);return{error:saveError};}}),auth:{onAuthStateChange:fn=>handler=fn,signInWithPassword:async()=>({error:{message:'bad password'}}),signOut:async()=>({error:null}),signUp:async()=>({data:{session:null},error:signupError}),resetPasswordForEmail:async()=>({error:null}),updateUser:async()=>({error:null})}};
  const window={supabase:{createClient:()=>client},dispatchEvent:e=>events.push(e)};
- vm.runInNewContext(source,{window,document:{getElementById:get},location:{href:'https://example.pages.dev/'},URL,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},setTimeout,JSON,Date});
- return {get,writes,reads,events,window,event:(type,id)=>handler(type,id?{user:{id,email:id+'@example.com'}}:null)};
+ const doc={readyState:loading?'loading':'complete',getElementById:get,addEventListener:(name,fn)=>documentListeners[name]=fn};
+ vm.runInNewContext(source,{window,document:doc,location:{href:'https://example.pages.dev/'},URL,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},setTimeout,JSON,Date});
+ return {get,writes,reads,events,window,ready:()=>{doc.readyState='complete';documentListeners.DOMContentLoaded?.();},event:(type,id)=>handler(type,id?{user:{id,email:id+'@example.com'}}:null)};
 }
 test('no session keeps workspace hidden and prevents writes',async()=>{const s=setup();s.event('INITIAL_SESSION');s.window.nexoAccount.save({});await tick();assert.equal(s.get('workspace').hidden,true);assert.equal(s.writes.length,0);});
 test('load and save use current authenticated user; logout clears UI',async()=>{const data={profile:{name:'A'},tasks:[],messages:[]};const s=setup({data});s.event('SIGNED_IN','user-a');await tick();assert.equal(s.get('workspace').hidden,false);assert.deepEqual(s.reads,['user-a']);s.window.nexoAccount.save(data);await tick();assert.equal(s.writes[0].user_id,'user-a');s.event('SIGNED_OUT');assert.equal(s.get('workspace').hidden,true);assert.equal(s.events.at(-1).detail,null);});
@@ -26,3 +27,5 @@ test('unknown registration error displays server detail as plain text',async()=>
 
 test('save reports actual persistence success and database failure',async()=>{for(const saveError of [null,{code:'42501'}]){const s=setup({saveError});s.event('SIGNED_IN','user-a');await tick();const saved=await s.window.nexoAccount.save({profile:{},messages:[],tasks:[]});assert.equal(saved,!saveError);}});
 test('save without an active account reports failure',async()=>{const s=setup();assert.equal(await s.window.nexoAccount.save({}),false);});
+test('fast account data waits for workspace scripts before publishing the session',async()=>{const data={profile:{name:'A'},tasks:[],messages:[]};const s=setup({data,loading:true});s.event('SIGNED_IN','user-a');await tick();assert.equal(s.get('workspace').hidden,true);assert.equal(s.events.length,0);s.ready();await tick();assert.equal(s.get('workspace').hidden,false);assert.equal(s.events.at(-1).detail.profile.name,'A');});
+test('logout while waiting for the page prevents stale account entry',async()=>{const s=setup({data:{profile:{},tasks:[],messages:[]},loading:true});s.event('SIGNED_IN','user-a');await tick();s.event('SIGNED_OUT');s.ready();await tick();assert.equal(s.get('workspace').hidden,true);assert.equal(s.events.at(-1).detail,null);});
