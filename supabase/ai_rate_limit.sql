@@ -18,6 +18,7 @@ create table if not exists public.ai_quota_overrides (
 alter table public.ai_quota_overrides add column if not exists unlimited boolean not null default false;
 alter table public.ai_quota_overrides enable row level security;
 revoke all on public.ai_quota_overrides from public, anon, authenticated;
+update public.ai_quota_overrides set unlimited=false;
 create or replace function public.claim_ai_request() returns boolean
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -27,14 +28,9 @@ declare
   accepted uuid;
   minute_limit integer := 5;
   day_limit integer := 50;
-  unlimited_access boolean := false;
 begin
   if uid is null then return false; end if;
-  select q.per_minute, q.per_day, q.unlimited into minute_limit, day_limit, unlimited_access
-    from public.ai_quota_overrides q where q.user_id=uid;
-  if unlimited_access is true then return true; end if;
-  minute_limit := coalesce(minute_limit,5);
-  day_limit := coalesce(day_limit,50);
+  -- El modo gratuito no permite excepciones ni acceso ilimitado.
   insert into public.ai_usage as usage (user_id,minute_start,minute_count,day_start,day_count)
   values (uid,current_minute,1,current_day,1)
   on conflict (user_id) do update set

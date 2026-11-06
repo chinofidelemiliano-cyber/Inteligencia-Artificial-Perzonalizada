@@ -12,6 +12,7 @@ async function readPrompt(request) {
   return body.prompt.trim();
 }
 export async function onRequestPost({request,env}) {
+  if(env.FREE_AI_CONFIRMED!=='true')return json('La generación de imágenes está pausada para evitar gastos. Solo se habilita con un plan gratuito confirmado que bloquee el uso al agotar su cuota.',503);
   if(request.headers.get('Origin')!==new URL(request.url).origin)return json('Solicitud de origen no permitido.',403);
   if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json('Se requiere JSON.',415);
   const authorization=request.headers.get('Authorization') || '';
