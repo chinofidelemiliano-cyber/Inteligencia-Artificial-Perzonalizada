@@ -2,9 +2,9 @@
 (() => {
   const el=id=>document.getElementById(id);
   const synth=window.speechSynthesis;
-  let preferences={voiceURI:'',rate:1};let voices=[];let generation=0;let statusId='voiceStatus';
+  let preferences={voiceURI:'',rate:1};let voices=[];let generation=0;let statusId='voiceStatus';let remainder='';
   function emit(phase,text=''){window.dispatchEvent?.(new CustomEvent('lifts-voice',{detail:{phase,text,target:statusId}}));}
-  function stop(){generation++;emit('idle');synth?.cancel();el('voiceStatus').textContent='';el('voiceSampleStatus').textContent='';}
+  function stop(){generation++;remainder='';emit('idle');synth?.cancel();el('voiceStatus').textContent='';el('voiceSampleStatus').textContent='';}
   function refresh(){
     if(!synth || !window.SpeechSynthesisUtterance){el('voiceStatus').textContent='Este navegador no ofrece lectura por voz.';el('readLatest').disabled=true;el('stopVoice').disabled=true;el('voiceSelect').disabled=true;el('previewVoice').disabled=true;el('stopVoiceSample').disabled=true;el('voiceSampleStatus').textContent='Este navegador no ofrece lectura por voz.';return;}
     voices=synth.getVoices();const spanish=voices.filter(v=>v.lang.toLowerCase().startsWith('es'));
@@ -24,15 +24,17 @@
     function next(){
       if(version!==generation)return;
       const part=chunks.shift();if(!part){el(statusId).textContent='Lectura terminada.';emit('finished');return;}
+      remainder=part+chunks.join('');
       const utterance=new window.SpeechSynthesisUtterance(part);utterance.lang=selected?.lang || 'es-MX';if(selected)utterance.voice=selected;
       utterance.rate=Number(el('voiceRate').value) || 1;
       utterance.onstart=()=>{if(version===generation)emit('speaking',cleaned);};
+      utterance.onboundary=event=>{if(version===generation)remainder=part.slice(event.charIndex)+chunks.join('');};
       utterance.onend=next;utterance.onerror=()=>{if(version===generation){el(statusId).textContent='No se pudo reproducir esta voz. Prueba otra voz o revisa el sonido del dispositivo.';emit('error');}};
       el(statusId).textContent=statusId==='voiceSampleStatus'?'Reproduciendo voz de muestra…':'Leyendo respuesta…';synth.speak(utterance);
     }
     synth.resume?.();next();
   }
-  window.liftsVoice={configure,speak,stop};el('stopVoice').onclick=stop;el('stopVoiceSample').onclick=stop;
+  window.liftsVoice={configure,speak,stop,takeRemaining:()=>{const text=remainder;stop();return text;}};el('stopVoice').onclick=stop;el('stopVoiceSample').onclick=stop;
   el('previewVoice').onclick=()=>speak('Hola. Esta es una muestra de mi voz. Puedo acompañarte a organizar tu día y explicarte las cosas paso a paso.','voiceSampleStatus');
   synth?.addEventListener('voiceschanged',refresh);
   window.addEventListener('nexo-state',stop);window.addEventListener('pagehide',stop);
