@@ -1,0 +1,30 @@
+'use strict';
+(() => {
+  const $=id=>document.getElementById(id);const api=window.liftsWorkspace;let enabled=false,recognition=null,listening=false,revision=0;
+  const Speech=window.SpeechRecognition || window.webkitSpeechRecognition;
+  function phase(value,message){$('faceAvatar').dataset.phase=value;$('voiceStageStatus').textContent=message;}
+  function stopListening(){revision++;if(recognition){recognition.onend=null;recognition.onresult=null;recognition.onerror=null;recognition.abort();recognition=null;}listening=false;$('startTalking').textContent='🎙 Hablar';}
+  function stop(){enabled=false;stopListening();window.liftsVoice?.stop();api.cancelResponse();document.body.classList.remove('conversation-mode','voice-show-text');$('voiceStage').hidden=true;$('voiceCaption').textContent='';}
+  function showText(){document.body.classList.add('voice-show-text');$('showWrittenChat').textContent='Ocultar conversación escrita';}
+  function interrupt(){stopListening();window.liftsVoice?.stop();api.cancelResponse();if(enabled)phase('idle','Te escucho cuando quieras. Pulsa Hablar para continuar.');}
+  $('startConversation').onclick=()=>{enabled=true;api.open('home');document.body.classList.add('conversation-mode');document.body.classList.remove('voice-show-text');$('voiceStage').hidden=false;$('voiceStageName').textContent=api.assistantName();$('showWrittenChat').textContent='Ver conversación escrita';$('voiceCaption').textContent='';$('voiceInputHelp').textContent=Speech?'Pulsa Hablar para hacer una petición. La escucha termina después de una frase.':'Este navegador no ofrece dictado dentro del sitio. Abre la conversación escrita y usa el micrófono del teclado de tu iPhone, luego pulsa Enviar.';$('startTalking').disabled=!Speech;phase('idle','Vamos a conversar.');window.liftsVoice?.speak('Soy '+api.assistantName()+'. Pulsa Hablar cuando quieras contarme algo.');};
+  $('readStageReply').onclick=()=>{stopListening();window.liftsVoice?.speak(api.getState().messages.filter(m=>m.role==='assistant').at(-1)?.text || 'Pulsa Hablar para comenzar una conversación.');};
+  $('stopConversation').onclick=stop;$('interruptTalking').onclick=interrupt;
+  $('showWrittenChat').onclick=()=>{document.body.classList.toggle('voice-show-text');$('showWrittenChat').textContent=document.body.classList.contains('voice-show-text')?'Ocultar conversación escrita':'Ver conversación escrita';};
+  $('startTalking').onclick=()=>{if(!enabled||!Speech)return;if(listening){recognition?.stop();return;}if(api.isBusy()){phase('thinking','Estoy preparando la respuesta. Puedes pulsar Interrumpir si quieres cambiar de tema.');return;}window.liftsVoice?.stop();stopListening();const current=revision;recognition=new Speech();recognition.lang='es-MX';recognition.continuous=false;recognition.interimResults=true;let finalText='',preview='',errored=false;
+    recognition.onstart=()=>{if(current!==revision)return;listening=true;$('startTalking').textContent='Terminar de hablar';phase('listening','Te escucho…');};
+    recognition.onresult=event=>{if(current!==revision)return;let interim='';for(let i=event.resultIndex;i<event.results.length;i++){const text=event.results[i][0].transcript;if(event.results[i].isFinal)finalText+=text+' ';else interim+=text;}preview=(finalText+interim).trim().slice(0,5000);$('voiceCaption').textContent=preview;};
+    recognition.onerror=event=>{if(current!==revision)return;errored=true;phase('idle',event.error==='not-allowed'?'No se concedió acceso al micrófono. Puedes usar el dictado del teclado.':'No pude captar la frase. Puedes reintentar o usar el teclado.');};
+    recognition.onend=()=>{if(current!==revision)return;listening=false;recognition=null;$('startTalking').textContent='🎙 Hablar';if(!enabled||errored)return;const text=(finalText.trim() || preview).slice(0,5000);if(!text){phase('idle','No recibí una frase. Pulsa Hablar para intentarlo de nuevo.');return;}phase('thinking','Voy a revisar lo que me dijiste…');window.dispatchEvent(new CustomEvent('lifts-new-voice-turn'));api.ask(text);};
+    try{recognition.start();}catch{stopListening();phase('idle','No se pudo iniciar el micrófono. Usa el dictado del teclado.');}
+  };
+  window.addEventListener('lifts-chat-state',event=>{if(!enabled)return;const data=event.detail;if(data.phase==='thinking')phase('thinking','Estoy preparando tu respuesta…');if(data.phase==='error')phase('idle',data.text);if(data.phase==='reply'){$('voiceCaption').textContent=data.text;phase('idle','Respuesta preparada. Iniciando voz…');window.liftsVoice?.speak(data.text);}});
+  window.addEventListener('lifts-voice',event=>{if(!enabled)return;const data=event.detail;if(data.phase==='idle'&&!listening&&!api.isBusy())phase('idle','Pulsa Hablar cuando quieras continuar.');if(data.phase==='speaking')phase('speaking',api.assistantName()+' está hablando…');if(data.phase==='finished')phase('idle','Tu turno. Pulsa Hablar cuando quieras.');if(data.phase==='error'){phase('idle','No se pudo reproducir la voz. Puedes leer la respuesta y elegir otra voz en Mi perfil.');showText();}});
+  window.addEventListener('lifts-dictation-ready',()=>{if(enabled){interrupt();showText();}});
+  window.addEventListener('nexo-state',()=>{if(enabled)stop();});window.addEventListener('pagehide',stop);
+  window.addEventListener('lifts-page',event=>{if(enabled&&event.detail?.page!=='home')stop();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&enabled){stopListening();window.liftsVoice?.stop();api.cancelResponse();phase('idle','La conversación está en pausa. Pulsa Hablar al regresar.');}});
+  const installed=window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone===true;
+  $('appLaunchHint').textContent=installed?'Abierta como app en este dispositivo.':/iPhone|iPad|iPod/.test(navigator.userAgent)?'Estás en Safari. Para abrir Lifts sin la barra del navegador, entra desde su icono en la pantalla de inicio. El atajo Abrir URLs no puede forzar esa apertura.':'';
+  window.liftsConversationUI={active:()=>enabled};
+})();
