@@ -1,49 +1,39 @@
 'use strict';
 // Decorative local effects. No AI calls, camera, tracking, or additional services.
 (() => {
-  const workspace=document.getElementById('workspace'),main=workspace.querySelector('main');
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)');let paused=false,flight=null,restart=null;
+  const workspace=document.getElementById('workspace');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');let paused=false;
   try{paused=localStorage.getItem('lifts-effects-paused')==='true';}catch{}
   const sky=document.createElement('div');sky.className='ambient-sky';sky.setAttribute('aria-hidden','true');
   for(let i=0;i<42;i++){const star=document.createElement('span');star.className='ambient-star';star.style.cssText=`--x:${(i*37+11)%100}%;--y:${(i*61+7)%100}%;--size:${i%6===0?3:1.5}px;--delay:${-(i%11)}s;--duration:${4+i%5}s`;sky.append(star);}
   for(let i=0;i<3;i++){const meteor=document.createElement('span');meteor.className='ambient-meteor';meteor.style.cssText=`--x:${25+i*31}%;--y:${8+i*23}%;--delay:${-18+i*6}s`;sky.append(meteor);}
   document.body.prepend(sky);
-  const layer=document.createElement('div');layer.className='pet-layer';layer.setAttribute('aria-hidden','true');
-  layer.innerHTML=`<div class="pet-runner"><svg class="pet-art" viewBox="405 770 155 150" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><defs><clipPath id="lifts-pet-running-outline"><path d="M481 783C470 780 460 787 454 797L447 809C444 817 450 826 458 829L465 827L466 835C462 839 459 839 454 840L448 841C442 838 438 830 435 823L436 811C432 807 427 812 428 821C426 835 432 846 442 851L438 861C430 865 425 876 422 884L415 894C411 900 413 909 421 913C429 916 436 912 440 904L450 889L463 889L476 898L486 907C498 915 516 917 530 911C537 906 533 897 525 893L518 884L514 873L517 864C532 861 542 853 546 842C550 833 543 823 540 814C537 804 529 798 521 792C516 782 507 781 498 784Z"/></clipPath></defs><g clip-path="url(#lifts-pet-running-outline)"><image data-src="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></g></svg></div>`;
-  main.append(layer);const runner=layer.querySelector('.pet-runner');
-  const toggle=document.createElement('button');toggle.type='button';toggle.className='ambient-motion-toggle secondary';toggle.textContent='✦';toggle.setAttribute('aria-label','Pausar animaciones decorativas');document.getElementById('logout').after(toggle);
-  function unavailable(){return paused||reduced.matches||document.hidden||workspace.hidden;}
-  function halt(){clearTimeout(restart);restart=null;flight?.cancel();flight=null;runner.hidden=true;}
-  function route(){
-    halt();if(unavailable()||!runner.animate)return;
-    const artwork=layer.querySelector('image');if(!artwork.hasAttribute('href'))artwork.setAttribute('href',artwork.dataset.src);
-    const bounds=main.getBoundingClientRect();
-    const candidates=[...main.querySelectorAll('.card,.intro,.voice-entry,.voice-stage')].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.bottom>140&&r.top<innerHeight-120);
-    if(!candidates.length){restart=setTimeout(route,3500);return;}
-    const target=candidates[Math.floor(Date.now()/17000)%candidates.length];const width=runner.getBoundingClientRect().width||90;
-    const left=Math.max(8,target.left-bounds.left-width*.6),right=Math.min(bounds.width-width-6,target.right-bounds.left-width*.35);
-    const top=Math.max(8,target.top-bounds.top-width*.75),behind=target.top-bounds.top+Math.min(target.height*.4,95),bottom=Math.min(Math.max(top+80,target.bottom-bounds.top-width*.3),innerHeight-bounds.top-120);
-    const mirror=Date.now()%2===0;runner.style.setProperty('--pet-facing',mirror?'-1':'1');runner.hidden=false;
-    const a=mirror?right:left,b=mirror?left:right;
-    // The cards paint above this layer: the pet actually passes behind them.
-    flight=runner.animate([
-      {transform:`translate(${a}px,${top}px)`,offset:0,opacity:0},
-      {transform:`translate(${a}px,${top}px)`,offset:.05,opacity:1},
-      {transform:`translate(${b}px,${top}px)`,offset:.34,opacity:1},
-      {transform:`translate(${b}px,${behind}px)`,offset:.44,opacity:1},
-      {transform:`translate(${target.left-bounds.left+target.width*.45}px,${behind}px)`,offset:.58,opacity:1},
-      {transform:`translate(${a}px,${Math.max(top,bottom)}px)`,offset:.77,opacity:1},
-      {transform:`translate(${b}px,${Math.max(top,bottom)}px)`,offset:.95,opacity:1},
-      {transform:`translate(${b}px,${Math.max(top,bottom)}px)`,offset:1,opacity:0}
-    ],{duration:16000,easing:'linear',fill:'both'});
-    flight.onfinish=()=>{flight=null;restart=setTimeout(route,1800);};
-  }
-  function sync(){document.body.classList.toggle('effects-paused',paused||document.hidden);document.body.classList.toggle('effects-reduced',reduced.matches);toggle.setAttribute('aria-pressed',String(paused));toggle.title=paused?'Reanudar animaciones':'Pausar animaciones';toggle.setAttribute('aria-label',toggle.title+' decorativas');route();}
+  const floating=document.getElementById('floatingCompanion');
+  const dock=document.createElement('div');dock.className='companion-dock';dock.dataset.state='rest';
+  const pair=document.createElement('div');pair.className='dock-pair';floating.before(dock);dock.append(pair);pair.append(floating);
+  const pet=document.createElement('div');pet.className='dock-pet';pet.setAttribute('aria-hidden','true');
+  const poses={sit:[22,767,111,165],wave:[674,770,117,160],look:[640,58,170,204]};
+  // Use complete poses; do not cut joints out of a flattened character sheet.
+  pet.innerHTML=`<svg class="pet-art" viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">${Object.entries(poses).map(([name,[x,y,w,h]])=>`<svg class="pet-pose pet-${name}" x="0" y="0" width="180" height="210" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMax meet"><defs><clipPath id="dock-pose-${name}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs><image clip-path="url(#dock-pose-${name})" data-src="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></svg>`).join('')}</svg>`;
+  pair.prepend(pet);
+  const greeting=document.createElement('span');greeting.className='dock-greeting';greeting.textContent='¡Hola!';greeting.setAttribute('aria-hidden','true');pair.append(greeting);
+  const recall=document.createElement('button');recall.type='button';recall.className='dock-recall secondary';recall.textContent='‹';recall.setAttribute('aria-label','Mostrar a Lifts y su mascota');dock.append(recall);
+  const toggle=document.createElement('button');toggle.type='button';toggle.className='ambient-motion-toggle secondary';toggle.textContent='✦';document.getElementById('logout').after(toggle);
+  const sequence=[['greeting',2800],['rest',18000],['turn',1300],['leave',1100],['hidden',3200],['return',1100]];
+  let step=0,timer=null,hovered=false;
+  const face=floating.querySelector('.face-avatar');
+  function engaged(){return hovered||dock.contains(document.activeElement)||face.dataset.phase!=='idle';}
+  function halted(){return paused||reduced.matches||document.hidden||workspace.hidden||engaged();}
+  function clear(){clearTimeout(timer);timer=null;}
+  function advance(){clear();if(halted()){dock.dataset.state='rest';return;}const [state,delay]=sequence[step];dock.dataset.state=state;step=(step+1)%sequence.length;timer=setTimeout(advance,delay);}
+  function restart(){clear();dock.dataset.state='rest';step=0;if(!halted())advance();}
+  function sync(){document.body.classList.toggle('effects-paused',paused||document.hidden);document.body.classList.toggle('effects-reduced',reduced.matches);toggle.setAttribute('aria-pressed',String(paused));toggle.title=paused?'Reanudar animaciones':'Pausar animaciones';toggle.setAttribute('aria-label',toggle.title+' decorativas');if(!workspace.hidden)pet.querySelectorAll('image').forEach(image=>{if(!image.hasAttribute('href'))image.setAttribute('href',image.dataset.src);});restart();}
   toggle.onclick=()=>{paused=!paused;try{localStorage.setItem('lifts-effects-paused',String(paused));}catch{}sync();};
+  recall.onclick=()=>{clear();dock.dataset.state='greeting';step=1;floating.focus();};
+  floating.addEventListener('pointerenter',()=>{hovered=true;restart();});floating.addEventListener('pointerleave',()=>{hovered=false;restart();});
+  dock.addEventListener('focusin',()=>{clear();dock.dataset.state='rest';});dock.addEventListener('focusout',()=>queueMicrotask(restart));
+  new MutationObserver(restart).observe(face,{attributes:true,attributeFilter:['data-phase']});
+  new MutationObserver(sync).observe(workspace,{attributes:true,attributeFilter:['hidden']});
   reduced.addEventListener('change',sync);document.addEventListener('visibilitychange',sync);
-  window.addEventListener('lifts-page',()=>{halt();restart=setTimeout(route,450);});
-  window.addEventListener('resize',()=>{halt();restart=setTimeout(route,250);});
-  window.addEventListener('scroll',()=>{halt();restart=setTimeout(route,450);},{passive:true});
-  window.addEventListener('nexo-state',()=>{halt();restart=setTimeout(route,500);});window.addEventListener('pagehide',halt);
-  new MutationObserver(sync).observe(workspace,{attributes:true,attributeFilter:['hidden']});sync();
+  window.addEventListener('lifts-page',restart);window.addEventListener('nexo-state',sync);window.addEventListener('pagehide',clear);sync();
 })();
