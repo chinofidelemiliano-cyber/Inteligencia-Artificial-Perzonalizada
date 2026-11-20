@@ -35,3 +35,15 @@ test('planning tomorrow leaves a later appointment today in place',()=>{
  const options={now:Date.parse('2026-11-06T08:00'),recover:true,reorganize:true};
  assert.deepEqual(work.plan([appointment],'2026-11-07','09:00','17:00',options).scheduled,[]);
 });
+
+test('interval and alternate reminders advance on their original cadence without acknowledgment',()=>{
+ const reminderAt='2026-11-06T14:00:00.000Z';
+ const task={reminderAt,reminderRepeat:'minutes:5'};
+ assert.equal(work.reminderOccurrence(task,Date.parse('2026-11-06T14:12:00Z')),'2026-11-06T14:10:00.000Z');
+ assert.equal(work.nextReminder(task,Date.parse('2026-11-06T14:12:00Z')),'2026-11-06T14:15:00.000Z');
+ assert.equal(work.reminderOccurrence({...task,snoozedFrom:reminderAt},Date.parse('2026-11-06T14:12:00Z')),reminderAt);
+ assert.equal(work.reminderOccurrence({...task,remindedFor:'2026-11-06T14:10:00.000Z'},Date.parse('2026-11-06T14:12:00Z')),'');
+ const alternate={reminderAt,reminderRepeat:'alternate',reminderTimeZone:'America/Mexico_City'};
+ assert.equal(work.nextReminder(alternate,Date.parse('2026-11-07T19:00:00Z')),'2026-11-08T14:00:00.000Z');
+ assert.equal(work.repeatMinutes('minutes:4'),0);
+});

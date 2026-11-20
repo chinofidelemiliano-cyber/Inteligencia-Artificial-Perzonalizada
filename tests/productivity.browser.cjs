@@ -92,6 +92,24 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     await page.locator('#reminderItems').getByRole('button',{name:'Editar aviso'}).click();
     assert.equal(await page.locator('#reminderIntensity').inputValue(),'1');
     await page.locator('#cancelReminderEdit').click();
+    await page.evaluate(text=>window.liftsWorkspace.ask(text),'Recuérdame tomar agua cada 10 minutos');
+    assert.equal(await page.locator('#reminderRepeat').inputValue(),'minutes:10');
+    await page.locator('#reminderRepeat').selectOption('custom');
+    await page.locator('#reminderInterval').fill('7');
+    await page.locator('#saveReminder').click();
+    await page.getByText('Cada 7 min',{exact:false}).waitFor();
+    const recurring = page.locator('#reminderItems article').filter({hasText:'tomar agua'});
+    await recurring.getByRole('button',{name:'Pausar',exact:true}).click();
+    await recurring.getByText('En pausa',{exact:false}).waitFor();
+    await recurring.getByRole('button',{name:'Reanudar',exact:true}).click();
+    await recurring.getByRole('button',{name:'Pausar',exact:true}).waitFor();
+
+    await page.locator('#reminderItems article').filter({hasText:'tomar agua'}).getByRole('button',{name:'Editar aviso'}).click();
+    assert.equal(await page.locator('#reminderRepeat').inputValue(),'custom');
+    assert.equal(await page.locator('#reminderInterval').inputValue(),'7');
+    await page.locator('#reminderRepeat').selectOption('alternate');
+    assert.equal(await page.locator('#reminderInterval').isVisible(),false);
+    await page.locator('#cancelReminderEdit').click();
     await page.locator('nav [data-page="tasks"]').click();
     await page.locator('#taskTitle').fill('Ordenar las fichas de medición');
     await page.locator('#suggestTaskSteps').click();
@@ -100,11 +118,11 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     const saved = await page.evaluate(()=>window.saves.at(-1));
     assert.equal(saved.tasks[0].reminderRepeat,'weekly');
     assert.equal(saved.tasks[0].priority,1);
-    assert.equal(saved.tasks[1].steps.length,3);
+    assert.equal(saved.tasks[2].steps.length,3);
     await page.evaluate(text=>window.liftsWorkspace.ask(text),'Organiza mi jornada de mañana');
     await page.locator('#applySchedule').waitFor({state:'visible'});
     await page.locator('#applySchedule').click();
-    assert.equal(await page.evaluate(()=>window.saves.at(-1).tasks[1].planned),true);
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).tasks[2].planned),true);
     await page.locator('#reviewDay').click();
     assert.match(await page.locator('#schedulePreview').textContent(),/Siguiente paso sugerido/);
 
@@ -119,7 +137,7 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     assert.equal(sentEvents.length,2);
     assert.ok(sentEvents.every(event=>event.visibility==='private'));
     assert.deepEqual(sentEvents[0].recurrence,['RRULE:FREQ=WEEKLY']);
-    assert.equal(sentEvents[1].extendedProperties.private.liftsBlock,saved.tasks[1].id);
+    assert.equal(sentEvents[1].extendedProperties.private.liftsBlock,saved.tasks[2].id);
     await page.locator('#googleGmail').click();
     await page.getByText('Confirmación · Persona de prueba').waitFor();
     googleScopes = await page.evaluate(()=>window.oauthScopes);

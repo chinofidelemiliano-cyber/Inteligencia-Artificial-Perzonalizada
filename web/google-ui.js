@@ -157,7 +157,7 @@
     const start = new Date(task.reminderAnchorAt || task.snoozedFrom || task.reminderAt);
     const end = new Date(start.getTime() + 60000);
     const timeZone = task.reminderTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const repeat = {'daily':'DAILY','weekly':'WEEKLY'}[task.reminderRepeat];
+    const repeat = {daily:'DAILY',alternate:'DAILY;INTERVAL=2',weekly:'WEEKLY'}[task.reminderRepeat];
     return {
       summary:task.title, visibility:'private', transparency:'transparent',
       start:{dateTime:start.toISOString(),timeZone}, end:{dateTime:end.toISOString(),timeZone},
@@ -207,6 +207,7 @@
       let saved = 0;
       let removed = 0;
       const errors = [];
+      let minuteAlarms = 0;
       const cancelled = new Set();
       async function syncEvent(task, marker, makeEvent, wanted) {
         const eventId = (marker === 'liftsTask' ? 'lifts' : 'liftsb') + task.id.replace(/-/g,'').toLowerCase();
@@ -237,7 +238,9 @@
       }
       for (const task of selections) {
         const pending = !task.done && !task.archived;
-        const wantsAlarm = pending && Number.isFinite(Date.parse(task.reminderAt)) &&
+        const minuteRepeat = work.repeatMinutes(task.reminderRepeat);
+        if(pending && minuteRepeat)minuteAlarms++;
+        const wantsAlarm = !minuteRepeat && !task.reminderPaused && pending && Number.isFinite(Date.parse(task.reminderAt)) &&
           (task.reminderRepeat || (Date.parse(task.reminderAt) > Date.now() && task.remindedFor !== task.reminderAt));
         const wantsBlock = !task.archived && Number.isFinite(Date.parse(task.startAt));
         try {
@@ -254,7 +257,8 @@
         if(await api.save()===false)errors.push('Google procesó las cancelaciones, pero Lifts no confirmó su guardado.');
       }
       return {message:saved + ' bloques o avisos sincronizados · ' + removed + ' cancelados · ' + errors.length +
-        ' fallos. Comprueba las notificaciones de Google Calendar en cada dispositivo.',items:errors};
+        ' fallos. Comprueba las notificaciones de Google Calendar en cada dispositivo.' +
+        (minuteAlarms?' Los avisos por minutos se mantienen en Lifts.':''),items:errors};
     });
   };
 

@@ -9,11 +9,29 @@
   const list = $('reminderItems');
   let editing = '';
   let generation = 0;
+  const repeatSelect = $('reminderRepeat');
+  const intervalInput = $('reminderInterval');
+
+  function syncInterval() {
+    const custom = repeatSelect.value === 'custom';
+    $('reminderIntervalField').hidden = !custom;
+    intervalInput.disabled = !custom;
+    intervalInput.required = custom;
+  }
+  function setRepeat(repeat) {
+    const minutes = work.repeatMinutes(repeat);
+    repeatSelect.value = minutes && minutes!==5 && minutes!==10 ? 'custom' : (repeat || '');
+    intervalInput.value = minutes || 15;
+    syncInterval();
+  }
+  repeatSelect.onchange = syncInterval;
+  syncInterval();
 
   function reset() {
     generation++;
     editing = '';
     form.reset();
+    syncInterval();
     status.textContent = '';
     save.disabled = false;
     $('cancelReminderEdit').hidden = true;
@@ -25,16 +43,18 @@
     api.open('reminders');
     $('reminderTitle').value = title.slice(0, 240);
     if (date) $('reminderDate').value = work.localInput(date);
-    $('reminderRepeat').value = settings.repeat || '';
+    setRepeat(settings.repeat);
     $('reminderIntensity').value = String(settings.intensity || 2);
     $('reminderTitle').focus();
   }
 
   function edit(task) {
-    const date = new Date(task.reminderAt);
+    const current = Date.parse(task.reminderAt);
+    const next = current<=Date.now() ? work.nextReminder({...task,reminderAt:task.reminderAnchorAt || task.reminderAt}) : '';
+    const date = new Date(next || task.reminderAt);
     open(task.title, Number.isFinite(date.getTime()) ? date : undefined);
     editing = task.id;
-    $('reminderRepeat').value = task.reminderRepeat || '';
+    setRepeat(task.reminderRepeat);
     $('reminderIntensity').value = String(task.priority || 2);
     $('cancelReminderEdit').hidden = false;
   }
@@ -69,7 +89,11 @@
 
     const state = api.getState();
     const reminderAt = date.toISOString();
-    const reminderRepeat = $('reminderRepeat').value;
+    const reminderRepeat = repeatSelect.value==='custom' ? 'minutes:'+Number(intervalInput.value) : repeatSelect.value;
+    if (repeatSelect.value==='custom' && !work.repeatMinutes(reminderRepeat)) {
+      status.textContent = 'Elige un intervalo entero entre 5 y 1440 minutos.';
+      return;
+    }
     const priority = Number($('reminderIntensity').value);
     let task = state.tasks.find(item=>item.id===editing);
     if (!task) {
@@ -77,14 +101,18 @@
       state.tasks.push(task);
       editing = task.id;
     }
-    if (task.reminderAt !== reminderAt || task.reminderRepeat !== reminderRepeat) {
+    const oldNext = Date.parse(task.reminderAt)<=Date.now()
+      ? work.nextReminder({...task,reminderAt:task.reminderAnchorAt || task.reminderAt}) : '';
+    if ((task.reminderAt !== reminderAt && oldNext !== reminderAt) || task.reminderRepeat !== reminderRepeat) {
       task.reminderAnchorAt = reminderRepeat ? reminderAt : '';
       task.reminderTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       task.remindedFor = '';
       task.notifiedFor = '';
       task.snoozedFrom = '';
     }
+    const rescheduled = task.reminderAt !== reminderAt && !oldNext;
     Object.assign(task, {title,reminderAt,reminderRepeat,priority});
+    if (rescheduled && !reminderRepeat) task.reminderPaused = false;
     if (task.kind === 'reminder') task.date = work.localDate(date);
     $('cancelReminderEdit').hidden = false;
     void persist('Recordatorio guardado.');
@@ -103,10 +131,10 @@
       title.textContent = task.title;
       const details = document.createElement('p');
       const date = new Date(task.reminderAt);
-      const repetition = {daily:'A diario',weekly:'Cada semana'}[task.reminderRepeat] || 'Una vez';
+      const repetition = work.repeatLabel(task.reminderRepeat);
       const intensity = {1:'Alta',3:'Suave'}[task.priority] || 'Normal';
       const timing = Number.isFinite(date.getTime()) ? date.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : 'Revisa la fecha';
-      const seen = task.remindedFor === task.reminderAt ? ' · Visto' : '';
+      const seen = task.reminderPaused ? ' · En pausa' : task.remindedFor === task.reminderAt ? ' · Visto' : '';
       details.textContent = timing + ' · ' + repetition + ' · Intensidad ' + intensity.toLowerCase() +
         (task.kind === 'reminder' ? '' : ' · Vinculado a Agenda') + seen;
       const button = document.createElement('button');
@@ -114,12 +142,37 @@
       button.className = 'secondary';
       button.textContent = 'Editar aviso';
       button.onclick = ()=>edit(task);
+      const pause = document.createElement('button');
+      pause.type = 'button';
+      pause.className = 'secondary';
+      pause.textContent = task.reminderPaused ? 'Reanudar' : 'Pausar';
+      pause.onclick = async ()=>{
+        if (save.disabled) return;
+        const version = generation;
+        const previous = {...task};
+        if (task.reminderPaused && Date.parse(task.reminderAt)<=Date.now()) {
+          const next = work.nextReminder({...task,reminderAt:task.reminderAnchorAt || task.reminderAt});
+          if (!next) {
+            edit(task);
+            status.textContent = 'Selecciona una nueva fecha y hora para reanudar el aviso.';
+            return;
+          }
+          task.reminderAt = next;
+          task.snoozedFrom = '';
+        }
+        task.reminderPaused = !task.reminderPaused;
+        pause.disabled = true;
+        if (await persist(task.reminderPaused ? 'Aviso en pausa.' : 'Aviso reanudado.') === false && version === generation) {
+          Object.assign(task,previous);
+          pause.disabled = false;
+        }
+      };
       const disable = document.createElement('button');
       disable.type = 'button';
       disable.className = 'secondary';
       disable.textContent = 'Desactivar';
       disable.onclick = async ()=>{
-        if (!confirm('¿Desactivar este aviso?')) return;
+        if (save.disabled || !confirm('¿Desactivar este aviso?')) return;
         disable.disabled = true;
         const version = generation;
         const state = api.getState();
@@ -138,7 +191,7 @@
           disable.disabled = false;
         }
       };
-      row.append(title,details,button,disable);
+      row.append(title,details,button,pause,disable);
       list.append(row);
     }
   }

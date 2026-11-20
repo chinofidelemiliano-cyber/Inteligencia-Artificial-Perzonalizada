@@ -28,7 +28,8 @@
 <label for="reminderTitle">¿Qué quieres recordar?</label><input id="reminderTitle" required maxlength="240">
 <div class="field-grid">
 <div><label for="reminderDate">Fecha y hora</label><input id="reminderDate" type="datetime-local" required></div>
-<div><label for="reminderRepeat">Repetición</label><select id="reminderRepeat"><option value="">Una vez</option><option value="daily">A diario</option><option value="weekly">Cada semana</option></select></div>
+<div><label for="reminderRepeat">Repetición</label><select id="reminderRepeat"><option value="">Una vez</option><option value="daily">A diario</option><option value="weekly">Cada semana</option><option value="alternate">Días alternos</option><option value="minutes:5">Cada 5 minutos</option><option value="minutes:10">Cada 10 minutos</option><option value="custom">Cada cierto número de minutos</option></select></div>
+<div id="reminderIntervalField" hidden><label for="reminderInterval">Intervalo en minutos</label><input id="reminderInterval" type="number" min="5" max="1440" step="1" value="15"></div>
 <div><label for="reminderIntensity">Intensidad del aviso</label><select id="reminderIntensity"><option value="3">Suave</option><option value="2" selected>Normal</option><option value="1">Alta</option></select></div>
 </div>
 <p class="notice">La intensidad alta solicita entrega urgente en segundo plano. El sonido, la vibración y No molestar dependen del dispositivo.</p>

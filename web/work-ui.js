@@ -4,7 +4,7 @@
   const state=()=>api.getState();const persist=()=>api.save();const refresh=()=>api.render();
   const fields={workRole:'role',workDuties:'duties',workShiftStart:'shiftStart',workShiftEnd:'shiftEnd',workChallenges:'challenges',workResources:'resources',workGoal:'goal'};
   let proposal=null,editing=null,version=0,registration=null,notificationDetails=false,stepRequest=null,draftKind='';
-  const notified=new Set();let dueSignature='';let backgroundPush=false;
+  const notified=new Map();let dueSignature='';let backgroundPush=false;
   const today=()=>work.localDate(new Date());
   function stamp(value){return new Date(value).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'});}
   function button(text,action){const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent=text;b.onclick=action;return b;}
@@ -39,8 +39,14 @@
     $('planDate').value ||= today();$('taskDate').value ||= today();
     renderDue();tickFocus();
   }
-  function cancelEdit(){draftKind='';stepRequest?.abort();stepRequest=null;$('suggestTaskSteps').disabled=false;editing=null;$('taskForm').reset();$('taskSubmit').textContent='Agregar tarea';$('cancelEditTask').hidden=true;$('taskFormStatus').textContent='';}
-  function editTask(task){cancelEdit();editing=task.id;$('taskTitle').value=task.title;$('taskDate').value=task.date || '';$('taskPriority').value=String(task.priority || 2);$('taskDuration').value=String(task.duration || 25);$('taskStart').value=task.startAt?work.localInput(new Date(task.startAt)):'';$('taskReminder').value=task.reminderAt?work.localInput(new Date(task.reminderAt)):'';$('taskRepeat').value=task.reminderRepeat || '';$('taskSteps').value=(task.steps || []).map(step=>step.title).join('\n');$('taskSubmit').textContent='Guardar tarea';$('cancelEditTask').hidden=false;$('taskTitle').focus();}
+  function cancelEdit(){$('taskRepeat').querySelector('[data-current-repeat]')?.remove();draftKind='';stepRequest?.abort();stepRequest=null;$('suggestTaskSteps').disabled=false;editing=null;$('taskForm').reset();$('taskSubmit').textContent='Agregar tarea';$('cancelEditTask').hidden=true;$('taskFormStatus').textContent='';}
+  function editTask(task){cancelEdit();editing=task.id;$('taskTitle').value=task.title;$('taskDate').value=task.date || '';$('taskPriority').value=String(task.priority || 2);$('taskDuration').value=String(task.duration || 25);$('taskStart').value=task.startAt?work.localInput(new Date(task.startAt)):'';$('taskReminder').value=task.reminderAt?work.localInput(new Date(task.reminderAt)):'';const repeat=$('taskRepeat');
+    repeat.querySelector('[data-current-repeat]')?.remove();
+    if(task.reminderRepeat && !Array.from(repeat.options).some(option=>option.value===task.reminderRepeat)){
+      const option=new Option(work.repeatLabel(task.reminderRepeat),task.reminderRepeat);
+      option.dataset.currentRepeat='true';repeat.append(option);
+    }
+    repeat.value=task.reminderRepeat || '';$('taskSteps').value=(task.steps || []).map(step=>step.title).join('\n');$('taskSubmit').textContent='Guardar tarea';$('cancelEditTask').hidden=false;$('taskTitle').focus();}
   $('suggestTaskSteps').onclick=async()=>{
     const title=$('taskTitle').value.trim();
     const current=$('taskSteps').value;
@@ -103,8 +109,9 @@
       if(next){task.reminderAt=next;task.snoozedFrom='';task.notifiedFor='';}else task.remindedFor=task.reminderAt;
       persist();refresh();}));$('dueReminders').append(row);}}
   async function notify(title,body,tag,intensity=2){if(!registration || !window.Notification || Notification.permission!=='granted')return false;try{await registration.showNotification(title,{body,tag,icon:'/assets/icon-192.png',badge:'/assets/favicon-32.png',silent:intensity===3,...(intensity===1?{vibrate:[180,90,180]}:{})});return true;}catch{return false;}}
-  async function tickReminders(){updateCompanion();const currentVersion=version;const due=work.due(state().tasks).sort((a,b)=>(a.priority||2)-(b.priority||2)||a.reminderAt.localeCompare(b.reminderAt));if(backgroundPush){renderDue();return;}if(!registration || !window.Notification || Notification.permission!=='granted'){renderDue();return;}for(const task of due){const key=task.id+task.reminderAt;if(notified.has(key)||task.notifiedFor===task.reminderAt)continue;notified.add(key);const delivered=await notify(api.assistantName()+' · Recordatorio',notificationDetails?task.title:'Tienes un pendiente programado. Abre Lifts para verlo.',key,task.priority||2);if(currentVersion!==version)return;if(delivered){$('notificationStatus').textContent='Aviso aceptado por el sistema. Pulsa la notificación para confirmar que la viste.';}
-      else {notified.delete(key);$('notificationStatus').textContent='No se pudo mostrar el aviso. Sigue pendiente en la agenda.';}}renderDue();}
+  async function tickReminders(){updateCompanion();const currentVersion=version;const due=work.due(state().tasks).sort((a,b)=>(a.priority||2)-(b.priority||2)||a.reminderAt.localeCompare(b.reminderAt));if(backgroundPush){renderDue();return;}if(!registration || !window.Notification || Notification.permission!=='granted'){renderDue();return;}for(const task of due){const occurrence=work.reminderOccurrence(task);if(!occurrence||notified.get(task.id)===occurrence||task.notifiedFor===occurrence)continue;
+      const key=task.id+occurrence;notified.set(task.id,occurrence);const delivered=await notify(api.assistantName()+' · Recordatorio',notificationDetails?task.title:'Tienes un pendiente programado. Abre Lifts para verlo.',key,task.priority||2);if(currentVersion!==version)return;if(delivered){$('notificationStatus').textContent='Aviso aceptado por el sistema. Pulsa la notificación para confirmar que la viste.';}
+      else {if(notified.get(task.id)===occurrence)notified.delete(task.id);$('notificationStatus').textContent='No se pudo mostrar el aviso. Sigue pendiente en la agenda.';}}renderDue();}
   function tickFocus(){const session=state().focusSession;if(!session){$('focusClock').textContent=String(Number($('focusMinutes').value)||25).padStart(2,'0')+':00';return;}const remaining=Math.max(0,session.paused?session.remaining:session.endsAt-Date.now());$('focusClock').textContent=String(Math.floor(remaining/60000)).padStart(2,'0')+':'+String(Math.floor(remaining/1000)%60).padStart(2,'0');if(!session.paused&&remaining===0&&!session.finished){session.finished=true;if(session.kind==='break'&&session.taskId){const task=state().tasks.find(t=>t.id===session.taskId&&t.kind==='break');if(task){task.done=true;task.completedAt=new Date().toISOString();}queueMicrotask(()=>api.render());}$('focusStatus').textContent=session.kind==='break'?'Terminó tu pausa. Elige el siguiente paso cuando estés listo.':'Terminaste tu bloque. Haz una pausa y revisa cómo te fue.';notify(api.assistantName()+' · Enfoque',session.kind==='break'?'Tu pausa terminó. Podemos elegir el siguiente paso.':'Tu bloque terminó. Es momento de una pausa.','focus-'+session.endsAt);persist();}}
   $('taskFilter').onchange=render;$('cancelEditTask').onclick=cancelEdit;
   function planDay(){

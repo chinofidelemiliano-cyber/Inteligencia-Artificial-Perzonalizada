@@ -24,12 +24,39 @@
     }
     return{scheduled,remaining};
   }
-  function due(tasks,now=Date.now()){return tasks.filter(t=>!t.done&&!t.archived&&t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt))&&Date.parse(t.reminderAt)<=now&&t.remindedFor!==t.reminderAt);}
+  function repeatMinutes(repeat) {
+    const match=/^minutes:([1-9][0-9]{0,3})$/.exec(repeat || '');
+    const minutes=Number(match?.[1]);
+    return minutes>=5 && minutes<=1440 ? minutes : 0;
+  }
+  function repeatLabel(repeat) {
+    const minutes=repeatMinutes(repeat);
+    return minutes ? 'Cada '+minutes+' min' : ({daily:'A diario',alternate:'Días alternos',weekly:'Cada semana'}[repeat] || 'Una vez');
+  }
+  function reminderOccurrence(task, now=Date.now()) {
+    const active=Date.parse(task.reminderAt);
+    if(task.done||task.archived||task.reminderPaused||!Number.isFinite(active)||active>now)return '';
+    const anchor=Date.parse(task.reminderAnchorAt);
+    const occurrence=task.snoozedFrom ? active : recurrenceAt(Number.isFinite(anchor)?anchor:active,task,now,false);
+    if(!Number.isFinite(occurrence)||occurrence<active)return '';
+    const iso=new Date(occurrence).toISOString();
+    return task.remindedFor===iso || (occurrence===active&&task.remindedFor===task.reminderAt) ? '' : iso;
+  }
+  function due(tasks,now=Date.now()){return tasks.filter(task=>reminderOccurrence(task,now));}
   function nextReminder(task, now=Date.now()) {
-    const base=Date.parse(task.reminderAt);
-    const days=task.reminderRepeat==='daily'?1:task.reminderRepeat==='weekly'?7:0;
-    if(!days||!Number.isFinite(base))return '';
-    if(base>now)return new Date(base).toISOString();
+    if(!repeatMinutes(task.reminderRepeat)&&!['daily','alternate','weekly'].includes(task.reminderRepeat))return '';
+    const date=recurrenceAt(Date.parse(task.reminderAt),task,now,true);
+    return Number.isFinite(date)?new Date(date).toISOString():'';
+  }
+  function recurrenceAt(base,task,now,next){
+    if(!Number.isFinite(base)||base>now)return base;
+    const minutes=repeatMinutes(task.reminderRepeat);
+    if(minutes){
+      const step=minutes*60000;
+      return base+(Math.floor((now-base)/step)+Number(next))*step;
+    }
+    const days={daily:1,alternate:2,weekly:7}[task.reminderRepeat];
+    if(!days)return base;
     const settings={year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'};
     let formatter;
     try{formatter=new Intl.DateTimeFormat('en-CA',{...settings,timeZone:task.reminderTimeZone});}
@@ -47,10 +74,12 @@
     }
     const step=days*86400000;
     const origin=wallTime(base);
-    let wall=origin+Math.max(1,Math.floor((wallTime(now)-origin)/step))*step;
-    let candidate=instant(wall);
-    while(candidate<=now){wall+=step;candidate=instant(wall);}
-    return new Date(candidate).toISOString();
+    const elapsed=Math.max(0,Math.floor((wallTime(now)-origin)/step));
+    let wall=origin+elapsed*step;
+    let candidate=elapsed ? instant(wall) : base;
+    if(next&&candidate<=now)candidate=instant(wall+step);
+    if(!next&&candidate>now)candidate=elapsed===1 ? base : instant(wall-step);
+    return candidate;
   }
   function taskKey(title){return String(title).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
   const escapeICS=value=>String(value).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/;/g,'\\;').replace(/,/g,'\\,');
@@ -58,9 +87,9 @@
   const utc=value=>new Date(value).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
   function calendar(tasks,now=new Date()){
     const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lifts//Agenda//ES','CALSCALE:GREGORIAN'];
-    for(const t of tasks){const start=t.startAt || t.reminderAt;if(t.done||t.archived||!start||!Number.isFinite(Date.parse(start)))continue;lines.push('BEGIN:VEVENT',`UID:${escapeICS(t.id)}@lifts`, `DTSTAMP:${utc(now)}`,`DTSTART:${utc(start)}`,`DTEND:${utc(Date.parse(start)+(Number(t.duration)||25)*60000)}`,`SUMMARY:${escapeICS(t.title)}`);
-      if(t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt)))lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Recordatorio de Lifts',`TRIGGER;VALUE=DATE-TIME:${utc(t.reminderAt)}`,'END:VALARM');lines.push('END:VEVENT');}
+    for(const t of tasks){const start=t.startAt || (!t.reminderPaused && t.reminderAt);if(t.done||t.archived||!start||!Number.isFinite(Date.parse(start)))continue;lines.push('BEGIN:VEVENT',`UID:${escapeICS(t.id)}@lifts`, `DTSTAMP:${utc(now)}`,`DTSTART:${utc(start)}`,`DTEND:${utc(Date.parse(start)+(Number(t.duration)||25)*60000)}`,`SUMMARY:${escapeICS(t.title)}`);
+      if(!t.reminderPaused&&t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt)))lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Recordatorio de Lifts',`TRIGGER;VALUE=DATE-TIME:${utc(t.reminderAt)}`,'END:VALARM');lines.push('END:VEVENT');}
     lines.push('END:VCALENDAR');return lines.map(fold).join('\r\n')+'\r\n';
   }
-  const api={localDate,localInput,interval,overlaps,plan,due,nextReminder,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  const api={localDate,localInput,interval,overlaps,plan,due,reminderOccurrence,nextReminder,repeatMinutes,repeatLabel,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
