@@ -76,7 +76,7 @@ test('service worker displays a private reminder and opens the agenda with a rec
   assert.doesNotMatch(JSON.stringify(notifications),/Título privado/);
   listeners.notificationclick({notification:{data:{id},close(){}},waitUntil});
   await Promise.all(pending);
-  assert.equal(opened[0].searchParams.get('view'),'tasks');
+  assert.equal(opened[0].searchParams.get('view'),'reminders');
   assert.equal(opened[0].searchParams.get('aviso'),id);
 });
 

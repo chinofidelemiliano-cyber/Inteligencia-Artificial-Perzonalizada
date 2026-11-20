@@ -26,3 +26,20 @@
 #flexoForm label { display: flex; align-items: baseline; gap: 10px; }
 #flexoForm input[type="radio"], #planReorganize { width: auto; flex: none; }
 #googleResults, #flexoFeedback, .task-description { overflow-wrap: anywhere; }
+
+#installLiftsHelp {
+  width: min(92vw, 34rem);
+  max-height: 85dvh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  background: #0d142b;
+  color: var(--text);
+}
+#installLiftsHelp::backdrop { background: #030615c9; }
+#reminderItems { overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  nav button[data-page="reminders"] .nav-label { font-size: 8.5px; }
+}

@@ -82,20 +82,29 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     await page.waitForFunction(()=>document.getElementById('flexoStatus').textContent.includes('Generado por IA'));
     assert.equal(await page.locator('#flexoForm input').count(),4);
 
-    await page.evaluate(text=>window.liftsWorkspace.ask(text),'Recuérdame revisar los anilox mañana a las 09:00');
-    assert.equal(await page.locator('#taskTitle').inputValue(),'revisar los anilox');
-    assert.match(await page.locator('#taskReminder').inputValue(),/T09:00$/);
-    await page.locator('#taskRepeat').selectOption('weekly');
+    await page.evaluate(text=>window.liftsWorkspace.ask(text),'Recuérdame revisar los anilox mañana a las 09:00, cada semana, con intensidad alta');
+    assert.equal(await page.locator('#reminderTitle').inputValue(),'revisar los anilox');
+    assert.match(await page.locator('#reminderDate').inputValue(),/T09:00$/);
+    assert.equal(await page.locator('#reminderRepeat').inputValue(),'weekly');
+    assert.equal(await page.locator('#reminderIntensity').inputValue(),'1');
+    await page.locator('#saveReminder').click();
+    await page.getByText('Cada semana · Intensidad alta',{exact:false}).waitFor();
+    await page.locator('#reminderItems').getByRole('button',{name:'Editar aviso'}).click();
+    assert.equal(await page.locator('#reminderIntensity').inputValue(),'1');
+    await page.locator('#cancelReminderEdit').click();
+    await page.locator('nav [data-page="tasks"]').click();
+    await page.locator('#taskTitle').fill('Ordenar las fichas de medición');
     await page.locator('#suggestTaskSteps').click();
     await page.waitForFunction(()=>document.getElementById('taskSteps').value.includes('Registrar diferencias'));
     await page.locator('#taskSubmit').click();
     const saved = await page.evaluate(()=>window.saves.at(-1));
     assert.equal(saved.tasks[0].reminderRepeat,'weekly');
-    assert.equal(saved.tasks[0].steps.length,3);
+    assert.equal(saved.tasks[0].priority,1);
+    assert.equal(saved.tasks[1].steps.length,3);
     await page.evaluate(text=>window.liftsWorkspace.ask(text),'Organiza mi jornada de mañana');
     await page.locator('#applySchedule').waitFor({state:'visible'});
     await page.locator('#applySchedule').click();
-    assert.equal(await page.evaluate(()=>window.saves.at(-1).tasks[0].planned),true);
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).tasks[1].planned),true);
     await page.locator('#reviewDay').click();
     assert.match(await page.locator('#schedulePreview').textContent(),/Siguiente paso sugerido/);
 
@@ -110,7 +119,7 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     assert.equal(sentEvents.length,2);
     assert.ok(sentEvents.every(event=>event.visibility==='private'));
     assert.deepEqual(sentEvents[0].recurrence,['RRULE:FREQ=WEEKLY']);
-    assert.equal(sentEvents[1].extendedProperties.private.liftsBlock,saved.tasks[0].id);
+    assert.equal(sentEvents[1].extendedProperties.private.liftsBlock,saved.tasks[1].id);
     await page.locator('#googleGmail').click();
     await page.getByText('Confirmación · Persona de prueba').waitFor();
     googleScopes = await page.evaluate(()=>window.oauthScopes);
@@ -130,6 +139,12 @@ test('mobile productivity flows, quiz progress, private Google requests and push
         toJSON(){return {endpoint:this.endpoint,keys};}
       };
     });
+    await page.locator('nav [data-page="home"]').click();
+    await page.locator('#installLifts').click();
+    await page.locator('#installLiftsHelp').getByText('iPhone o iPad').waitFor();
+    await page.locator('#installLiftsHelp').getByText('Android',{exact:true}).waitFor();
+    await page.locator('#installLiftsHelp').getByRole('button',{name:'Cerrar'}).click();
+    await page.locator('nav [data-page="reminders"]').click();
     await page.locator('#enablePush').click();
     await page.waitForFunction(()=>document.getElementById('pushStatus').textContent.includes('Dispositivo registrado'));
     await page.locator('#checkPush').click();

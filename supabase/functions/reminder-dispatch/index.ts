@@ -81,8 +81,8 @@ Deno.serve(async request => {
         } else {
           await webpush.sendNotification({
             endpoint:endpoint.href, keys:{p256dh:delivery.key_p256dh,auth:delivery.key_auth}
-          }, JSON.stringify({id:delivery.delivery_id}), {
-            TTL:3600, timeout:7000, urgency:delivery.reminder_priority === 1 ? 'high' : 'normal',
+          }, JSON.stringify({id:delivery.delivery_id,intensity:delivery.reminder_priority}), {
+            TTL:3600, timeout:7000, urgency:delivery.reminder_priority === 1 ? 'high' : delivery.reminder_priority === 3 ? 'low' : 'normal',
             vapidDetails:{subject,publicKey,privateKey}
           });
         }

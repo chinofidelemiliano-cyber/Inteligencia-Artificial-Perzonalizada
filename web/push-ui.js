@@ -8,21 +8,28 @@
   let generation = 0;
   let busy = false;
   let pendingReceipt;
-  const install = $('installLifts');
+  const installButtons = [$('installLifts'), $('installLiftsLogin')];
   let installPrompt;
+  function updateInstall() {
+    const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    installButtons.forEach(button=>{button.hidden=installed;});
+  }
+  updateInstall();
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     installPrompt = event;
-    install.hidden = false;
   });
-  install.onclick = async () => {
-    if (!installPrompt) return;
+  async function install() {
+    if (!installPrompt) { $('installLiftsHelp').showModal(); return; }
     const prompt = installPrompt;
     installPrompt = null;
-    install.hidden = true;
-    await prompt.prompt();
-  };
-  window.addEventListener('appinstalled', () => { install.hidden = true; });
+    try { await prompt.prompt(); }
+    catch { $('installLiftsHelp').showModal(); }
+  }
+  installButtons.forEach(button=>{button.onclick=install;});
+  window.addEventListener('appinstalled', () => {
+    installButtons.forEach(button=>{button.hidden=true;});
+  });
   if (navigator.serviceWorker && window.isSecureContext) {
     void navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
@@ -77,7 +84,7 @@
       if (!existing) await subscription.unsubscribe().catch(()=>{});
       throw error;
     }
-    window.dispatchEvent(new CustomEvent('lifts-push-enabled'));
+    window.dispatchEvent(new CustomEvent('lifts-push-enabled',{detail:reg}));
     return 'Dispositivo registrado. Crea un recordatorio futuro y comprueba su estado cuando llegue la hora.';
   });
 

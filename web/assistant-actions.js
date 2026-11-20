@@ -16,9 +16,11 @@
       return {reply:'Preparé el cuestionario de flexografía. Puedes resolver la práctica incluida o generar una nueva con IA.',
         open:()=>window.liftsFlexoQuizUI.open(advanced)};
     }
-    const reminder = /^(?:recuérdame|recuerdame)\s+(.+?)(?:\s+(hoy|mañana|\d{4}-\d{2}-\d{2}))?\s+a\s+las?\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?$/i.exec(input);
+    const reminder = /^(?:recuérdame|recuerdame)\s+(.+?)(?:\s+(hoy|mañana|\d{4}-\d{2}-\d{2}))?\s+a\s+las?\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?((?:[,\s]+(?:con intensidad (?:alta|normal|suave)|cada (?:d[ií]a|semana)|a diario)){0,2})$/i.exec(input);
     if (reminder) {
-      const [, title, day, hour, minute, period] = reminder;
+      const [, title, day, hour, minute, period, preferences] = reminder;
+      const intensity = /intensidad alta/i.test(preferences) ? 1 : /intensidad suave/i.test(preferences) ? 3 : 2;
+      const repeat = /cada semana/i.test(preferences) ? 'weekly' : /cada d[ií]a|a diario/i.test(preferences) ? 'daily' : '';
       const date = dateFrom(day?.toLowerCase());
       let hours = Number(hour);
       const minutes = Number(minute || 0);
@@ -29,8 +31,12 @@
       if (!day && date <= new Date()) date.setDate(date.getDate() + 1);
       if (date <= new Date()) return {reply:'Esa hora ya pasó. Indícame una fecha y hora futuras.'};
       return {reply:'Preparé el recordatorio para ' + date.toLocaleString('es-MX', {dateStyle:'long',timeStyle:'short'}) +
-        '. Revisa la prioridad y la repetición y guarda la tarea en Agenda.',
-        open:()=>window.liftsWorkUI.prepareReminder(title, date)};
+        '. Revisa la intensidad y la repetición y guarda el aviso en Recordatorios.',
+        open:()=>window.liftsReminders.open(title, date, {intensity,repeat})};
+    }
+    if (/^(?:ay[uú]dame a |quiero )?(?:crear|hacer|agregar|programar)\s+(?:(?:un|unos|dos|[0-9]+)\s+)?recordat/i.test(input)) {
+      return {reply:'Vamos a preparar los avisos. Escribe el primero y elige fecha, repetición e intensidad. Puedes guardar los demás en la misma sección.',
+        open:()=>window.liftsReminders.open()};
     }
     if (/^(?:recuérdame|recuerdame)\b/i.test(input)) return {reply:'¿En qué fecha y a qué hora? Puedes decir «Recuérdame revisar los anilox mañana a las 09:00».'};
     if (/^(?:qué|que|cuáles|cuales)\s+pendientes\b.*\besta semana\b/i.test(input)) {

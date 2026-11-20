@@ -5,8 +5,8 @@ const OWNER_CONFIRMED_FREE_PLAN = true;
 const freeAiEnabled = env => (env.FREE_AI_CONFIRMED ?? String(OWNER_CONFIRMED_FREE_PLAN)) === 'true';
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
-const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
-const REVISION = 'lifts-learning-r17';
+const MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';
+const REVISION = 'lifts-reminders-r18';
 const json = (body,status=200) => new Response(JSON.stringify({...body,server:{revision:REVISION,model:MODEL}}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function bodyJSON(request) {
   const reader=request.body?.getReader();
@@ -98,6 +98,7 @@ export async function onRequestPost({request,env}) {
     while(history[0]?.role==='assistant')history.shift();
     messages.push(...history.map(({role,content})=>({role,content})));
     stage='WORKERS_AI';
+    if(primary===MODEL)messages[0].content+=' /no_think';
     const options={messages,max_tokens:diagnostic?16:social?384:voiceMode&&detail!==detailOptions.deep?Math.min(768,detail.tokens):detail.tokens,temperature:0.3,...(streaming?{stream:true}:{})};
     const selected=primary;
     const result=await env.AI.run(selected,options);

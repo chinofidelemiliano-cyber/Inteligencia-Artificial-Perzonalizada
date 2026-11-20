@@ -19,7 +19,7 @@ window.addEventListener('nexo-state', e => {cancelChat();$('question').value='';
     state.messages=[];persist();
   }
   state.messages=[];state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
-function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','work','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
+function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','reminders','work','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function renderMessageText(element,message){
@@ -45,8 +45,9 @@ function render(){
   for(const topic of personal.suggestions(state.profile)) {const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=topic.label;button.onclick=()=>{$('question').value=topic.prompt;page('home');$('question').focus();};$('topics').append(button);}
   $('personalizationNote').textContent=state.profileConsent===true ? 'Sugerencias basadas en tu perfil guardado. Puedes cambiarlo o borrarlo en Mi perfil.' : 'Sugerencias por reglas locales. Tus preferencias actuales no se guardarán en el perfil sin tu autorización.';
   $('profileConsent').checked=state.profileConsent===true;
-  $('taskProgress').value=state.tasks.length?state.tasks.filter(t=>t.done).length/state.tasks.length:0;
-  $('count').textContent=`${state.tasks.filter(t=>!t.done).length} pendientes por completar.`;
+  const agendaTasks=state.tasks.filter(task=>task.kind!=='reminder'&&!task.archived);
+  $('taskProgress').value=agendaTasks.length?agendaTasks.filter(task=>task.done).length/agendaTasks.length:0;
+  $('count').textContent=`${agendaTasks.filter(task=>!task.done).length} pendientes por completar.`;
   for(const field of personal.fields) $(field).value=state.profile[field] || '';
   $('messages').replaceChildren();
   for(const m of state.messages){const el=document.createElement('div');el.className='message'+(m.role==='user'?' user':'');renderMessageText(el,m);if(m.role==='assistant'){const listen=document.createElement('button');listen.type='button';listen.className='secondary listen-message';listen.textContent='▷ Escuchar';listen.onclick=()=>window.liftsVoice?.speak(m.text);el.append(listen);if(Array.isArray(m.sources) && m.sources.length){const refs=document.createElement('div');refs.className='response-sources';const label=document.createElement('p');label.textContent='Fuentes consultadas';refs.append(label);for(const source of m.sources){if(typeof source.url!=='string' || !/^https?:\/\//i.test(source.url))continue;const link=document.createElement('a');link.href=source.url;link.textContent=source.title || source.url;link.target='_blank';link.rel='noopener noreferrer';refs.append(link);}el.append(refs);}}else if(m.role==='user'){const taskButton=document.createElement('button');taskButton.type='button';taskButton.className='secondary listen-message';taskButton.textContent='＋ Convertir en tarea';taskButton.onclick=()=>{if(window.liftsWorkUI){window.liftsWorkUI.prepareTask(m.text);return;}page('tasks');$('taskTitle').value=m.text.slice(0,240);$('taskTitle').focus();};el.append(taskButton);const organize=document.createElement('button');organize.type='button';organize.className='secondary listen-message';organize.textContent='Organizar estos pendientes';organize.onclick=()=>window.liftsCoachUI?.prepare(m.text);el.append(organize);}$('messages').append(el);}
@@ -56,7 +57,7 @@ function render(){
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
-  window.liftsWorkUI?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
+  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
 }
 $('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
 $('assistantForm').onsubmit=async event=>{
@@ -180,7 +181,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();window.liftsReminders?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},
