@@ -5,3 +5,33 @@ test('overnight shifts produce valid blocks across midnight',()=>{const result=w
 test('due reminders exclude completed, invalid and acknowledged reminders',()=>{const time=Date.parse('2026-11-06T12:00:00Z');const at='2026-11-06T11:00:00Z';const due=work.due([{id:'a',reminderAt:at},{id:'b',done:true,reminderAt:at},{id:'c',reminderAt:at,remindedFor:at},{id:'d',reminderAt:'bad'},{id:'e',reminderAt:'2026-11-06T13:00:00Z'}],time);assert.deepEqual(due.map(t=>t.id),['a']);});
 test('calendar exports UTC blocks and alarms while escaping descriptions and folding long UTF-8 lines',()=>{const text=work.calendar([{id:'1',title:'Revisión, orden; próxima\nBEGIN:VEVENT '+ 'é'.repeat(90),startAt:'2026-11-06T12:00:00Z',duration:25,reminderAt:'2026-11-06T11:50:00Z'}],new Date('2026-11-01T00:00:00Z'));assert.match(text,/DTSTART:20261106T120000Z/);assert.match(text,/DTEND:20261106T122500Z/);assert.match(text,/TRIGGER;VALUE=DATE-TIME:20261106T115000Z/);assert.equal(text.split('\r\n').filter(line=>line==='BEGIN:VEVENT').length,1);assert.match(text,/\\nBEGIN:VEVENT/);for(const line of text.split('\r\n'))assert.ok(new TextEncoder().encode(line).length<=75);});
 test('saving unrelated data never leaks unsaved work profile or temporary chat',()=>{const snapshot=personal.snapshot({profile:{},profileConsent:false,workProfile:{role:'Private'},workConsent:false,messages:[{text:'Private chat'}],tasks:[]});assert.equal(snapshot.workProfile,null);assert.deepEqual(snapshot.messages,[]);});
+
+test('schedule recovers expired tasks around calendar events and keeps time for breaks',()=>{
+ const at=time=>new Date('2026-11-06T'+time).toISOString();
+ const tasks=[
+  {id:'old',priority:2,startAt:new Date('2026-11-05T09:00').toISOString(),duration:20},
+  {id:'manual',startAt:at('09:25'),duration:15},
+  {id:'urgent',priority:1,duration:20},
+  {id:'auto',planned:true,startAt:at('10:40'),priority:3,duration:15}
+ ];
+ const proposal=work.plan(tasks,'2026-11-06','09:00','12:00',{
+  now:Date.parse(at('09:15')),recover:true,reorganize:true,breakMinutes:10,
+  events:[{startAt:at('10:10'),duration:20}]
+ });
+ assert.deepEqual(proposal.scheduled.map(t=>[t.id,t.startAt]),[
+  ['urgent',at('09:40')],['old',at('10:30')],['auto',at('11:00')]
+ ]);
+});
+
+test('daily reminder follows its original time zone when daylight saving starts',()=>{
+ const task={reminderAt:'2026-03-07T14:00:00Z',reminderRepeat:'daily',reminderTimeZone:'America/New_York'};
+ assert.equal(work.nextReminder(task,Date.parse('2026-03-07T15:00:00Z')),'2026-03-08T13:00:00.000Z');
+ assert.equal(work.nextReminder(task,Date.parse('2026-03-08T14:00:00Z')),'2026-03-09T13:00:00.000Z');
+ assert.equal(work.taskKey(' Revisión de ANILOX. '),work.taskKey('revision de anilox'));
+});
+
+test('planning tomorrow leaves a later appointment today in place',()=>{
+ const appointment={id:'today',startAt:new Date('2026-11-06T14:00').toISOString(),duration:30};
+ const options={now:Date.parse('2026-11-06T08:00'),recover:true,reorganize:true};
+ assert.deepEqual(work.plan([appointment],'2026-11-07','09:00','17:00',options).scheduled,[]);
+});

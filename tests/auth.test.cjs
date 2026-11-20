@@ -4,12 +4,20 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 const source=fs.readFileSync('web/auth.js','utf8');
 const tick=()=>new Promise(r=>setTimeout(r,15));
-function setup({data=null,error=null,signupError=null,saveError=null,loading=false}={}){
+function setup({data=null,error=null,signupError=null,saveError=null,loading=false,conflict=false}={}){
  const elements=new Map(),documentListeners={};
  const get=id=>{if(!elements.has(id))elements.set(id,{hidden:false,value:'',textContent:'',disabled:false,querySelectorAll:()=>[],reportValidity:()=>true});return elements.get(id);};
  get('workspace').hidden=true;
  let handler;const writes=[];const reads=[];const events=[];
- const client={from:()=>({select:()=>({eq:(column,id)=>{reads.push(id);return{maybeSingle:async()=>({data:data?{data}:null,error})};}}),upsert:async row=>{writes.push(row);return{error:saveError};}}),auth:{onAuthStateChange:fn=>handler=fn,signInWithPassword:async()=>({error:{message:'bad password'}}),signOut:async()=>({error:null}),signUp:async()=>({data:{session:null},error:signupError}),resetPasswordForEmail:async()=>({error:null}),updateUser:async()=>({error:null})}};
+ const savedRow=(row,uid)=>({select:()=>({maybeSingle:async()=>{
+   writes.push({...row,user_id:uid});
+   return {error:saveError,data:conflict||saveError?null:{updated_at:row.updated_at}};
+ }})});
+ const client={from:()=>({
+   select:()=>({eq:(column,id)=>{reads.push(id);return{maybeSingle:async()=>({data:data?{data,updated_at:'2026-01-01T00:00:00+00:00'}:null,error})};}}),
+   insert:row=>savedRow(row,row.user_id),
+   update:row=>({eq:(col,uid)=>({eq:()=>savedRow(row,uid)})})
+ }),auth:{onAuthStateChange:fn=>handler=fn,signInWithPassword:async()=>({error:{message:'bad password'}}),signOut:async()=>({error:null}),signUp:async()=>({data:{session:null},error:signupError}),resetPasswordForEmail:async()=>({error:null}),updateUser:async()=>({error:null})}};
  const window={supabase:{createClient:()=>client},dispatchEvent:e=>events.push(e)};
  const doc={readyState:loading?'loading':'complete',getElementById:get,addEventListener:(name,fn)=>documentListeners[name]=fn};
  vm.runInNewContext(source,{window,document:doc,location:{href:'https://example.pages.dev/'},URL,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},setTimeout,JSON,Date});
@@ -29,3 +37,12 @@ test('save reports actual persistence success and database failure',async()=>{fo
 test('save without an active account reports failure',async()=>{const s=setup();assert.equal(await s.window.nexoAccount.save({}),false);});
 test('fast account data waits for workspace scripts before publishing the session',async()=>{const data={profile:{name:'A'},tasks:[],messages:[]};const s=setup({data,loading:true});s.event('SIGNED_IN','user-a');await tick();assert.equal(s.get('workspace').hidden,true);assert.equal(s.events.length,0);s.ready();await tick();assert.equal(s.get('workspace').hidden,false);assert.equal(s.events.at(-1).detail.profile.name,'A');});
 test('logout while waiting for the page prevents stale account entry',async()=>{const s=setup({data:{profile:{},tasks:[],messages:[]},loading:true});s.event('SIGNED_IN','user-a');await tick();s.event('SIGNED_OUT');s.ready();await tick();assert.equal(s.get('workspace').hidden,true);assert.equal(s.events.at(-1).detail,null);});
+
+test('an out-of-date workspace cannot overwrite a newer save',async()=>{
+ const data={profile:{},messages:[],tasks:[]};
+ const s=setup({data,conflict:true});s.event('SIGNED_IN','user-a');await tick();
+ assert.equal(await s.window.nexoAccount.save(data),false);
+ assert.equal(await s.window.nexoAccount.save(data),false);
+ assert.equal(s.writes.length,1);
+ assert.match(s.get('syncStatus').textContent,/Otro dispositivo/);
+});

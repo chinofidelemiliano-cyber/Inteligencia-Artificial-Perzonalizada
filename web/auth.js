@@ -16,6 +16,8 @@
   let queue = Promise.resolve();
   let busy = false;
   let ready = false;
+  let revision = null;
+  let conflicted = false;
   const redirectTo = new URL('/', location.href).href;
   function message(text) { el('authStatus').textContent = text; }
   function registrationError(error) {
@@ -39,6 +41,8 @@
   function resetView() {
     ready = false;
     user = null;
+    revision = null;
+    conflicted = false;
     generation++;
     el('workspace').hidden = true;
     el('authPanel').hidden = false;
@@ -59,7 +63,7 @@
     el('workspace').hidden = true;
     el('authPanel').hidden = false;
     message('Cargando tu espacio…');
-    const {data,error} = await client.from('user_spaces').select('data').eq('user_id',user.id).maybeSingle();
+    const {data,error} = await client.from('user_spaces').select('data,updated_at').eq('user_id',user.id).maybeSingle();
     if (version !== generation) return;
     if (error) { message(dataError(error)); return; }
     const saved = data?.data;
@@ -69,6 +73,8 @@
     // Publish only after all deferred workspace modules can receive account state.
     if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
     if(version!==generation)return;
+    revision = data?.updated_at || null;
+    conflicted = false;
     ready = true;
     window.dispatchEvent(new CustomEvent('nexo-state',{detail:saved || null}));
     el('accountEmail').textContent = user.email || '';
@@ -77,7 +83,51 @@
     el('workspace').hidden = false;
     el('password').value = '';
   }
+  function activeUser() {
+    if (!ready || !user) throw new Error('Inicia sesión para administrar los avisos.');
+    return user.id;
+  }
   window.nexoAccount = {
+    isReady:()=>Boolean(ready && user),
+    async reminderPublicKey() {
+      const token = await this.accessToken();
+      const {data,error} = await client.functions.invoke('reminder-dispatch',{
+        body:{action:'bootstrap'},headers:{Authorization:'Bearer ' + token}
+      });
+      if (error) {
+        const details = await error.context?.json?.().catch(()=>null);
+        throw new Error(details?.error || 'No se pudo conectar al servicio de avisos en Supabase.');
+      }
+      if (!/^[A-Za-z0-9_-]{87}$/.test(data?.publicKey || '')) throw new Error('El servicio de avisos no devolvió una clave pública válida.');
+      return data.publicKey;
+    },
+    async saveReminderDevice(subscription) {
+      const userId = activeUser();
+      const {error} = await client.from('reminder_devices').upsert({
+        user_id:userId, endpoint:subscription.endpoint, p256dh:subscription.keys?.p256dh, auth:subscription.keys?.auth
+      }, {onConflict:'user_id,endpoint'});
+      if (error) throw new Error('Supabase rechazó el registro del dispositivo. Comprueba la configuración del servicio de avisos.');
+    },
+    async removeReminderDevice(endpoint) {
+      const {error} = await client.from('reminder_devices').delete().eq('user_id',activeUser()).eq('endpoint',endpoint);
+      if (error) throw new Error('No se pudo quitar el dispositivo de la cuenta. Comprueba tu conexión.');
+    },
+    async reminderDeviceStatus(endpoint) {
+      const uid = activeUser();
+      const [device, history] = await Promise.all([
+        client.from('reminder_devices').select('created_at').eq('user_id',uid).eq('endpoint',endpoint).maybeSingle(),
+        client.from('reminder_deliveries').select('occurrence,status,detail,opened_at').eq('user_id',uid).eq('endpoint',endpoint).order('updated_at',{ascending:false}).limit(5)
+      ]);
+      if (device.error || history.error) throw new Error('No se pudo leer el estado de avisos en Supabase.');
+      return {registered:Boolean(device.data),deliveries:history.data};
+    },
+    async openReminderDelivery(id) {
+      if (!ready || !user || !/^[a-f0-9-]{36}$/i.test(id)) return false;
+      const {data,error} = await client.from('reminder_deliveries').update({opened_at:new Date().toISOString()})
+        .eq('user_id',user.id).eq('id',id).select('task_id').maybeSingle();
+      if (error) throw new Error('No se confirmó la apertura del aviso.');
+      return data?.task_id || null;
+    },
     async accessToken() {
       if (!ready || !user) throw new Error('Inicia sesión para conversar.');
       const uid = user.id;
@@ -94,10 +144,22 @@
       queue = queue.then(async () => {
         if (version !== generation) return false;
         try {
-          const {error} = await client.from('user_spaces').upsert({user_id:uid,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+          if (conflicted) {
+            el('syncStatus').textContent = 'Otro dispositivo guardó cambios. Conserva una copia de tus ediciones de esta página antes de recargar.';
+            return false;
+          }
+          const timestamp = new Date(Math.max(Date.now(),(Date.parse(revision)||0)+1)).toISOString();
+          const table = client.from('user_spaces');
+          const result = revision
+            ? await table.update({data:snapshot,updated_at:timestamp}).eq('user_id',uid).eq('updated_at',revision).select('updated_at').maybeSingle()
+            : await table.insert({user_id:uid,data:snapshot,updated_at:timestamp}).select('updated_at').maybeSingle();
           if (version !== generation) return false;
-          el('syncStatus').textContent = error ? 'No se guardaron los cambios. Mantén esta página abierta y vuelve a intentar la acción.' : 'Cambios guardados en tu cuenta.';
-          return !error;
+          conflicted = result.error?.code === '23505' || (!result.error && !result.data);
+          if (!result.error && result.data) revision = result.data.updated_at;
+          el('syncStatus').textContent = conflicted ? 'Otro dispositivo guardó cambios. Conserva una copia de tus ediciones de esta página antes de recargar.'
+            : result.error ? 'No se guardaron los cambios. Mantén esta página abierta y vuelve a intentar la acción.'
+            : 'Cambios guardados en tu cuenta.';
+          return !conflicted && !result.error;
         } catch {
           if (version === generation) el('syncStatus').textContent = 'Sin conexión: los últimos cambios no se guardaron. Vuelve a intentar la acción.';
           return false;
@@ -156,10 +218,11 @@
     el('logout').disabled = true;
     await queue;
     try {
+      await window.liftsPush?.detachDevice();
       const {error} = await client.auth.signOut();
       if (error) {el('syncStatus').textContent='No se pudo cerrar la sesión. Inténtalo otra vez.';return;}
       resetView(); message('Sesión cerrada.');
-    } catch {el('syncStatus').textContent='No se pudo cerrar la sesión. Revisa tu conexión.';}
+    } catch {el('syncStatus').textContent='No se pudo cerrar la sesión. Comprueba la conexión y el estado de avisos de este dispositivo.';}
     finally {el('logout').disabled=false;}
   };
   let recovery = false;

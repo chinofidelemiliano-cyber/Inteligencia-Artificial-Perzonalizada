@@ -74,10 +74,20 @@ function cancelChat(){window.liftsVoice?.stop();$('streamingAnswer').textContent
 $('chat').onsubmit=async e=>{
   e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
   if(text.length>5000)return;
+  const action=window.liftsAssistantActions?.handle(text);
+  if(action){
+    state.messages.push({role:'user',text,source:'local'},{role:'assistant',text:action.reply,source:'local'});
+    $('question').value='';render();
+    const inVoice=window.liftsConversationUI?.active();
+    if(!inVoice)action.open?.();
+    const reply=inVoice&&action.open?action.reply+' Pulsa Revisar en Lifts para abrirlo.':action.reply;
+    window.dispatchEvent(new CustomEvent('lifts-chat-state',{detail:{phase:'reply',text:reply,open:inVoice?action.open:null}}));
+    return;
+  }
   const version=chatVersion;
   const controller=new AbortController();chatController=controller;chatBusy=true;
   $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a '+assistantName()+'…';
-  const history=state.messages.filter(m=>m.role==='user' || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
+  const history=state.messages.filter(m=>(m.role==='user'&&m.source!=='local') || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
   window.dispatchEvent?.(new CustomEvent('lifts-chat-state',{detail:{phase:'thinking'}}));
   const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName(),assistantPresentation:state.assistant?.presentation || 'neutral',conversationMode:window.liftsConversationUI?.active() || false};
   if($('shareProfile').checked)payload.profile={...state.profile};
@@ -170,7 +180,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},

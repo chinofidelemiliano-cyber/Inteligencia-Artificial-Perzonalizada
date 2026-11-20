@@ -113,15 +113,35 @@ La app conserva el chat general y añade estas capacidades:
 
 Los campos nuevos usan el JSON existente de `user_spaces`; no requieren SQL adicional. La instancia real de Supabase sigue necesitando las políticas y la función de cuota ya documentadas.
 
-## Recordatorios: alcance real
+## Agenda y cuestionario de flexografía
 
-**Activar notificaciones** solicita permiso mediante una acción del usuario y registra `web/sw.js`. **Probar aviso** permite comprobar la entrega al sistema. Los avisos de tareas se revisan mientras la página está abierta y puede ejecutarse, aproximadamente cada 30 segundos y al volver a primer plano. El navegador o el sistema pueden retrasarlos o bloquearlos; no son adecuados para avisos críticos de seguridad. Un permiso concedido no garantiza que se muestre una notificación.
+En **Trabajo → Cuestionario de flexografía** hay 10 casos con niveles intermedio y avanzado. Puedes revisar las cuatro explicaciones de cada caso, guardar intentos por cuenta y pedir a Workers AI una práctica nueva de cuatro preguntas. La generación usa la cuota existente y se valida su estructura. Contrasta la explicación técnica de un caso generado con el manual de tu equipo o las guías de tu proceso. Los casos incluidos usan mediciones y comparaciones que se pueden reproducir para justificar la respuesta.
 
-El service worker no tiene servidor push, suscripciones, cron, caché de cuentas ni tareas programadas. **No se envían notificaciones con Lifts cerrado.** En algunos teléfonos la capacidad depende de añadir la app a la pantalla de inicio. No se añade un servicio externo de notificaciones de pago.
+En **Agenda** puedes archivar pendientes, localizar títulos duplicados, añadir pasos manualmente o pedir sugerencias con IA y registrar los que completas. **Planifica mi día** recupera pendientes vencidos, deja espacio entre tareas y conserva las citas y bloques manuales vigentes. La opción de reorganizar permite mover bloques creados por propuestas. **Resumir mi jornada** muestra avances y propone el siguiente paso. Puedes preparar avisos recurrentes para revisar el inicio y el cierre del día. Los horarios se muestran en la zona del dispositivo.
 
-Para avisos fuera de Lifts, **Exportar al calendario** descarga un archivo ICS con bloques y alarmas. Debe importarse en un calendario privado y probar sus alertas: distintos calendarios pueden ignorar las alarmas importadas o requerir configurarlas. El archivo contiene títulos de trabajo. Los avisos de Lifts ocultan títulos por defecto; mostrarlos requiere marcar una opción que se restablece al cambiar de sesión.
+El chat escrito y la conversación por voz reconocen peticiones como «Hazme un examen avanzado de flexografía», «Organiza mi jornada de mañana», «Recuérdame revisar los anilox mañana a las 09:00» y «¿Qué pendientes tengo esta semana?». Las acciones que cambian tareas o agenda pasan por una vista de revisión antes de guardar. Los datos guardados se cargan al entrar en la misma cuenta desde otro dispositivo. Si dos sesiones editan a la vez, una revisión antigua se rechaza para proteger los cambios más recientes.
 
-Los recordatorios pueden marcarse Hecho, posponerse 10 minutos o reconocerse como vistos. Se registran por cuenta las marcas de entrega y reconocimiento. No se garantiza deduplicación absoluta entre varias pestañas o dispositivos ni exactitud de notificaciones en segundo plano.
+## Recordatorios y comprobación de entrega
+
+**Activar notificaciones** y **Probar aviso en pantalla** sirven para probar el permiso y la recepción local. Los avisos locales se revisan aproximadamente cada 30 segundos y al volver a primer plano si la página sigue abierta. Para avisos con Lifts cerrado, configura Web Push y activa **Avisos en segundo plano** en cada dispositivo. En iPhone compatible, añade Lifts a la pantalla de inicio, abre esa app y concede el permiso desde Agenda. En Chromium, usa **Instalar Lifts** cuando el navegador ofrezca la instalación. La app móvil es una PWA y requiere conexión para acceder a la cuenta.
+
+Los recordatorios se vinculan a tareas, revisiones de agenda o prácticas. Admiten aviso único, repetición diaria o semanal, prioridad y aplazamiento. **Comprobar último envío** muestra si el servicio aceptó el aviso, se reintentará, falló, caducó o se abrió. La aceptación por el proveedor no verifica que el sistema lo muestre en pantalla. La hora de envío depende del programador, el proveedor, la conectividad, el modo No molestar y los permisos. Los mensajes push son genéricos y el historial de intentos se conserva hasta 30 días. Al cerrar sesión, el dispositivo se desvincula; puedes volver a activarlo al entrar.
+
+### Activar Web Push en producción
+
+1. Aplica `supabase/reminder_push.sql` después de `supabase/schema.sql` en Supabase con PostgreSQL 16 o posterior. Si ya aplicaste ambas migraciones, continúa con `supabase/reminder_push_auto.sql`. Este segundo script instala el trabajo de Cron que revisa los recordatorios cada minuto.
+2. En **Edge Functions** reemplaza el código de `reminder-dispatch` por la versión de `supabase/functions/reminder-dispatch/index.ts` y vuelve a desplegar. Desactiva **Verify JWT with legacy secret** para esta función. La activación de un dispositivo valida la sesión de Supabase y el envío programado valida un secreto generado y guardado en la base. Con CLI también puedes usar `supabase functions deploy reminder-dispatch --no-verify-jwt`.
+3. Publica la versión actualizada de Lifts. En **Agenda**, pulsa **Activar avisos en segundo plano** y concede permiso. La función genera y conserva las claves la primera vez que se ejecuta la activación. Si había un par VAPID configurado en Supabase, se conserva al inicializar. La clave privada permanece en el esquema privado de la base.
+4. Guarda un recordatorio futuro de prueba, cierra Lifts y comprueba que el aviso aparece. Púlsalo y revisa **Comprobar último envío**. Repite en cada equipo. Si falla, comprueba que el trabajo `lifts-reminder-dispatch` esté activo en **Cron** y revisa los registros de `reminder-dispatch`.
+
+### Google Calendar y Gmail
+
+Crea un cliente OAuth de tipo **Aplicación web** en Google Cloud. Configura la pantalla de consentimiento, las cuentas de prueba si corresponde, autoriza el origen HTTPS de Lifts como origen JavaScript y habilita Google Calendar API y Gmail API. Introduce el ID público del cliente en Agenda. Cada operación usa un permiso independiente y un token de corta duración que permanece en memoria. Las aplicaciones públicas pueden requerir verificación de Google para permisos de Gmail.
+
+- **Consultar disponibilidad del día** trae los intervalos ocupados de tu calendario principal. Selecciona el día, consulta Google y vuelve a pulsar **Planifica mi día**. Lifts usa esas horas para evitar cruces.
+- **Sincronizar bloques y avisos con Google Calendar** crea o actualiza bloques y recordatorios en un calendario separado y privado. Los títulos pasan a Google. Vuelve a sincronizar después de editar, archivar o eliminar una tarea para reflejar los cambios en Google. Mantén la misma cuenta de Google para administrar ese calendario. Habilita sus avisos en la app de Calendar del teléfono o computadora.
+- **Ver correos recientes** muestra el asunto y remitente de hasta cinco mensajes de la bandeja de entrada. Su contenido no se comparte con la IA ni se conserva en Supabase.
+- **Exportar al calendario** sigue generando un archivo ICS para importar manualmente en un calendario de tu elección.
 
 ## Personaje y teléfono
 
