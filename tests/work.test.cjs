@@ -47,3 +47,21 @@ test('interval and alternate reminders advance on their original cadence without
  assert.equal(work.nextReminder(alternate,Date.parse('2026-11-07T19:00:00Z')),'2026-11-08T14:00:00.000Z');
  assert.equal(work.repeatMinutes('minutes:4'),0);
 });
+
+test('conditional reminders stop after completion, skip alternate days and honor the last day',()=>{
+ const time=Date.parse;
+ const task={
+  reminderAt:'2026-11-06T13:00:00.000Z',reminderRepeat:'alternate',
+  reminderTimeZone:'America/Mexico_City',reminderNudge:5,reminderUntil:'2026-11-08'
+ };
+ assert.equal(work.reminderOccurrence(task,time('2026-11-06T13:12:00Z')),'2026-11-06T13:10:00.000Z');
+ assert.equal(work.reminderOccurrence(task,time('2026-11-07T13:12:00Z')),'');
+ assert.equal(work.completeReminderCycle(task,time('2026-11-06T13:12:00Z')),true);
+ assert.equal(task.reminderAt,'2026-11-08T13:00:00.000Z');
+ assert.equal(work.reminderOccurrence(task,time('2026-11-06T13:17:00Z')),'');
+ assert.equal(work.reminderOccurrence(task,time('2026-11-08T13:12:00Z')),'2026-11-08T13:10:00.000Z');
+ assert.equal(work.reminderOccurrence(task,time('2026-11-10T13:12:00Z')),'');
+ const daily={...task,reminderRepeat:'daily',reminderUntil:'',reminderNudge:10};
+ assert.equal(work.reminderOccurrence(daily,time('2026-11-09T13:22:00Z')),'2026-11-09T13:20:00.000Z');
+ assert.equal(work.reminderOccurrence(daily,time('2026-11-09T12:59:00Z')),'');
+});

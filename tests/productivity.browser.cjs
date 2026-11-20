@@ -167,6 +167,22 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     await page.waitForFunction(()=>document.getElementById('pushStatus').textContent.includes('Dispositivo registrado'));
     await page.locator('#checkPush').click();
     await page.waitForFunction(()=>document.getElementById('pushStatus').textContent.includes('pendiente de reintento'));
+    await page.clock.setFixedTime(new Date('2026-10-15T06:00:00'));
+    await page.evaluate(text=>window.liftsWorkspace.ask(text),
+      'Recuérdame revisar la prensa hoy a las 07:00, días alternos, insiste cada 5 minutos, hasta 2026-10-18');
+    assert.equal(await page.locator('#reminderRepeat').inputValue(),'alternate');
+    assert.equal(await page.locator('#reminderNudge').inputValue(),'5');
+    assert.equal(await page.locator('#reminderUntil').inputValue(),'2026-10-18');
+    await page.locator('#saveReminder').click();
+    const followup = page.locator('#reminderItems article').filter({hasText:'revisar la prensa'});
+    await followup.getByText('Insiste cada 5 min',{exact:false}).waitFor();
+    await page.clock.setFixedTime(new Date('2026-10-15T07:10:00'));
+    await page.evaluate(()=>window.liftsWorkspace.render());
+    await followup.getByRole('button',{name:'Ya lo hice'}).click();
+    await page.getByText('Actividad de hoy marcada como hecha.',{exact:false}).waitFor();
+    const after = await page.evaluate(()=>window.saves.at(-1).tasks.find(t=>t.title==='revisar la prensa'));
+    assert.equal(after.done,false);
+    assert.equal(after.reminderAt,new Date('2026-10-17T07:00:00').toISOString());
     assert.deepEqual(errors,[]);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   } finally {

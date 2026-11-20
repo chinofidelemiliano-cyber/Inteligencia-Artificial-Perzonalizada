@@ -5,9 +5,10 @@ const OWNER_CONFIRMED_FREE_PLAN = true;
 const freeAiEnabled = env => (env.FREE_AI_CONFIRMED ?? String(OWNER_CONFIRMED_FREE_PLAN)) === 'true';
 const SUPABASE_URL = 'https://ubasjdaluswyxpzsnyug.supabase.co';
 const PUBLIC_KEY = 'sb_publishable_GH2AGtpyka8sgEfEJxZeDw_oJrXtgpD';
-const MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';
-const REVISION = 'lifts-reminders-r18';
-const json = (body,status=200) => new Response(JSON.stringify({...body,server:{revision:REVISION,model:MODEL}}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+const MODEL = '@cf/google/gemma-4-26b-a4b-it';
+const ALTERNATE_MODEL = '@cf/qwen/qwen3.8-27b';
+const REVISION = 'lifts-followups-r19';
+const json = (body,status=200,model=MODEL) => new Response(JSON.stringify({...body,server:{revision:REVISION,model}}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function bodyJSON(request) {
   const reader=request.body?.getReader();
   if(!reader)throw new Error('invalid');
@@ -41,7 +42,7 @@ export async function onRequestPost({request,env}) {
   const conversationalStyle=' Sé amable, cercano y paciente sin ser condescendiente. No confundas ir al punto con ser cortante. Reconoce únicamente emociones expresadas; no supongas cómo se siente la persona. No cierres de forma rutinaria con preguntas de atención al cliente. No afirmes sentir emociones humanas ni inventes recuerdos o vivencias. No repitas frases de respuestas previas ni uses un ejemplo de otro tema como respuesta actual. Evita halagos automáticos y responde al contenido antes de ofrecer otra cosa.';
   const teachingGuide=' Enseñanza práctica: cuando el usuario pregunte cómo hacer algo, resolver un ejercicio o pida paso a paso, no sustituyas el procedimiento por una lista de métodos. Elige un método adecuado y desarróllalo hasta terminar. Primero aclara brevemente el objetivo y el concepto necesario; después usa pasos numerados con una acción u operación concreta y explica por qué se aplica. Muestra los cálculos intermedios relevantes, no solo el resultado. Finaliza comprobando el resultado cuando sea posible. No uses una calculadora como sustituto de enseñar. No omitas pasos por considerar fácil el ejercicio; en modo breve compacta la explicación sin quitar sus operaciones esenciales. No preguntes si quiere los pasos después de que ya los pidió. No cierres con preguntas genéricas ni añadas alternativas hasta completar el método principal. Si faltan datos que afectan la seguridad o exactitud de un procedimiento técnico, solicita esos datos antes de inventar ajustes. Ejemplo pedagógico de referencia: para explicar cómo sacar la raíz cuadrada de 25, (1) define que buscamos el número no negativo que multiplicado por sí mismo da 25; (2) explica que se pueden comparar cuadrados, pues 4 × 4 = 16 y 5 × 5 = 25; (3) al encontrar la coincidencia, concluye que √25 = 5; (4) comprueba elevando 5 al cuadrado. Distingue la raíz principal no negativa de las dos soluciones de una ecuación x² = 25. Adapta el método a los números reales de la consulta; no repitas este ejemplo como si fuera la pregunta del usuario.';
   const labelGapGuide=' Referencia geométrica para etiquetas, solo cuando sea pertinente: el gap entre etiquetas es la separación libre entre bordes consecutivos. No lo confundas con presión de impresión, contacto anilox-placa, espacio entre cilindros o junta de placa. Si el usuario dice gap sin contexto, aclara cuál de esos conceptos quiere. Distingue gap longitudinal, en sentido de avance, de separación transversal entre pistas. Para un desarrollo efectivo R ocupado por n repeticiones iguales y equidistantes de una etiqueta de largo L medido EN SENTIDO DE AVANCE, el paso P = R / n y el gap longitudinal g = P - L = R / n - L. R, L y g deben usar la misma unidad; n es el número de etiquetas a lo largo de una vuelta, NO el número de pistas a lo ancho. R designa DESARROLLO o longitud de repetición, nunca radio en estas fórmulas. Usa r para radio y C = 2 × π × r solo para una circunferencia geométrica ideal, sin confundirla con el desarrollo efectivo del equipo. El paso P = L + g corresponde a UNA etiqueta y su separación; el desarrollo completo R = n × (L + g) solo coincide con el paso si n=1. No cambies el significado de un símbolo a mitad de la respuesta. El ciclo incluye la separación entre la última etiqueta y la primera de la vuelta siguiente. Ejemplo ilustrativo, no un ajuste recomendado: R=330 mm, n=3 y L=100 mm dan P=110 mm y g=10 mm; se verifica 3 × (100 + 10) = 330 mm. Si ya se midió el paso P, basta g=P-L. Si faltan R o P, n cuando haga falta y L, pide esos datos; puedes explicar la fórmula y un ejemplo claramente identificado, pero no dar un resultado para su trabajo. No supongas que un ancho de etiqueta es su largo de avance ni que cualquier circunferencia nominal es el desarrollo efectivo. Si g es negativo, los datos no caben en ese arreglo: revisa orientación, unidades y repeticiones, no recomiendes imprimir así. Esta fórmula supone repeticiones uniformes; si el arreglo no es uniforme o hay espacios especiales, pide el plano del troquel o layout. No existe un gap universal derivado del tipo de placa, rugosidad o absorción del sustrato. Elegir un gap objetivo depende del troquel, sensor y proceso; no inventes mínimos ni especificaciones de la máquina. Distingue borde de corte de etiqueta de borde de imagen impresa. Si un mensaje anterior contradice esta definición, corrígelo explícitamente en vez de reutilizarlo.';
-  const engines={balanced:MODEL,fast:'@cf/meta/llama-3.2-3b-instruct',deep:'@cf/meta/llama-3.3-70b-instruct-fp8-fast'};
+  const engines={balanced:MODEL,fast:'@cf/meta/llama-3.2-3b-instruct',deep:ALTERNATE_MODEL};
   const primary=!diagnostic && typeof body.engine==='string' && Object.hasOwn(engines,body.engine)?engines[body.engine]:MODEL;
   const streaming=!diagnostic && body.stream===true;
   const preferences={};
@@ -52,6 +53,7 @@ export async function onRequestPost({request,env}) {
   }
   const headers={apikey:PUBLIC_KEY,Authorization:authorization};
   let stage='SUPABASE_AUTH';
+  let selected=primary;
   try {
     const auth=await fetch(SUPABASE_URL+'/auth/v1/user',{headers,signal:AbortSignal.timeout(10000)});
     if(!auth.ok)return json({error:auth.status===401 || auth.status===403?'Tu sesión caducó. Vuelve a iniciar sesión.':'No se pudo verificar la sesión. Inténtalo más tarde.'},auth.status===401 || auth.status===403?401:503);
@@ -98,16 +100,22 @@ export async function onRequestPost({request,env}) {
     while(history[0]?.role==='assistant')history.shift();
     messages.push(...history.map(({role,content})=>({role,content})));
     stage='WORKERS_AI';
-    if(primary===MODEL)messages[0].content+=' /no_think';
     const options={messages,max_tokens:diagnostic?16:social?384:voiceMode&&detail!==detailOptions.deep?Math.min(768,detail.tokens):detail.tokens,temperature:0.3,...(streaming?{stream:true}:{})};
-    const selected=primary;
-    const result=await env.AI.run(selected,options);
+    let result;
+    try { result=await env.AI.run(selected,options); }
+    catch(error) {
+      const retired=/\bdeprecated\b/i.test(String(error?.message || '')) &&
+        /\b5028\b/.test(String(error?.code || '')+' '+String(error?.message || ''));
+      if(!retired)throw error;
+      selected=selected===MODEL?ALTERNATE_MODEL:MODEL;
+      result=await env.AI.run(selected,options);
+    }
     if(streaming){
       if(!result || typeof result.getReader!=='function')return json({error:'El modelo no devolvió una respuesta en tiempo real válida.'},502);
       return new Response(result,{headers:{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Lifts-Engine':selected===engines.fast?'fast':selected===engines.deep?'deep':'balanced','X-Lifts-Revision':REVISION}});
     }
     if(typeof result?.response!=='string' || !result.response.trim())return json({error:'El modelo no devolvió una respuesta. Inténtalo de nuevo.'},502);
-    return json({reply:result.response,engine:selected});
+    return json({reply:result.response,engine:selected},200,selected);
   } catch (error) {
     // Return only a controlled explanation and numeric provider code, never raw errors,
     // which may contain tokens, URLs, prompts or provider implementation details.
@@ -133,7 +141,7 @@ export async function onRequestPost({request,env}) {
         .replace(/cloudflare(?:\s+workers\s+ai)?|workers\s+ai/gi,'proveedor de IA')
         .replace(/[\x00-\x1f\x7f]/g,' ').slice(0,600);
     }
-    return json({error:'No se pudo generar la respuesta. '+guidance+' Diagnóstico: WORKERS_AI'+(numericCode?' / código '+numericCode:'')+'.',...(providerDetail?{providerDetail}:{})},503);
+    return json({error:'No se pudo generar la respuesta. '+guidance+' Diagnóstico: WORKERS_AI'+(numericCode?' / código '+numericCode:'')+'.',...(providerDetail?{providerDetail}:{})},503,selected);
   }
 }
 export const onRequestGet=({env})=>json({service:'Lifts · diagnóstico público de configuración',aiBindingAvailable:typeof env.AI?.run==='function',remoteAiEnabled:freeAiEnabled(env),note:'Esto comprueba la configuración, no ejecuta el modelo ni verifica una sesión.'});

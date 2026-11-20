@@ -105,7 +105,12 @@
     if(previous)state().tasks=state().tasks.map(t=>t.id===editing?task:t);else state().tasks.push(task);
     persist();cancelEdit();refresh();window.dispatchEvent(new CustomEvent('lifts-task-created',{detail:{title}}));$('taskFormStatus').textContent='Tarea preparada. Revisa el estado de guardado de tu cuenta.';
   }
-  function renderDue(){const overdue=work.due(state().tasks);const signature=JSON.stringify(overdue.map(t=>[t.id,t.title,t.reminderAt]));if(signature===dueSignature)return;dueSignature=signature;$('dueReminders').replaceChildren();for(const task of overdue){const row=document.createElement('div');row.className='reminder-card';note(row,'Es momento de: '+task.title);row.append(button('Hecho',()=>{task.done=true;task.completedAt=new Date().toISOString();persist();refresh();}),button('Posponer 10 min',()=>{task.snoozedFrom ||= task.reminderAt;task.reminderAt=new Date(Date.now()+600000).toISOString();task.remindedFor='';persist();refresh();}),button('Ya lo vi',()=>{const next=work.nextReminder({...task,reminderAt:task.reminderAnchorAt || task.snoozedFrom || task.reminderAt});
+  function renderDue(){const overdue=work.due(state().tasks);const signature=JSON.stringify(overdue.map(t=>[t.id,t.title,t.reminderAt]));if(signature===dueSignature)return;dueSignature=signature;$('dueReminders').replaceChildren();for(const task of overdue){const row=document.createElement('div');row.className='reminder-card';note(row,'Es momento de: '+task.title);
+    if(work.nudgeMinutes(task)){
+      const done=button('Ya lo hice',()=>window.liftsReminders.complete(task,done));
+      row.append(done);$('dueReminders').append(row);continue;
+    }
+    row.append(button('Hecho',()=>{task.done=true;task.completedAt=new Date().toISOString();persist();refresh();}),button('Posponer 10 min',()=>{task.snoozedFrom ||= task.reminderAt;task.reminderAt=new Date(Date.now()+600000).toISOString();task.remindedFor='';persist();refresh();}),button('Ya lo vi',()=>{const next=work.nextReminder({...task,reminderAt:task.reminderAnchorAt || task.snoozedFrom || task.reminderAt});
       if(next){task.reminderAt=next;task.snoozedFrom='';task.notifiedFor='';}else task.remindedFor=task.reminderAt;
       persist();refresh();}));$('dueReminders').append(row);}}
   async function notify(title,body,tag,intensity=2){if(!registration || !window.Notification || Notification.permission!=='granted')return false;try{await registration.showNotification(title,{body,tag,icon:'/assets/icon-192.png',badge:'/assets/favicon-32.png',silent:intensity===3,...(intensity===1?{vibrate:[180,90,180]}:{})});return true;}catch{return false;}}

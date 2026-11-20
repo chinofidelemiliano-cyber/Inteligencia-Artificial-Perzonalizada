@@ -23,7 +23,9 @@ test('push claims are account-scoped, lease-protected and recordable by the owni
     await db.exec(sql);
     const intervals = readFileSync('supabase/reminder_push_intervals.sql','utf8');
     await db.exec(intervals);
-    await db.exec(intervals);
+    const followups = readFileSync('supabase/reminder_push_followups.sql','utf8');
+    await db.exec(followups);
+    await db.exec(followups);
     await db.exec('grant select on public.user_spaces to service_role');
     const since = new Date(Date.now()-5*60000).toISOString();
     const recent = new Date(Date.now()-60000).toISOString();
@@ -31,7 +33,15 @@ test('push claims are account-scoped, lease-protected and recordable by the owni
     const five = new Date(Date.parse(recent)-10*60000).toISOString();
     const ten = new Date(Date.parse(recent)-20*60000).toISOString();
     const alternate = new Date(Date.parse(recent)-2*86400000).toISOString();
+    const hours = -(12-new Date().getUTCHours());
+    const zone = hours ? 'Etc/GMT'+(hours>0?'+':'')+hours : 'UTC';
+    const nudgeBase = new Date(Date.parse(recent)-10*60000).toISOString();
+    const nextDay = new Date(Date.parse(nudgeBase)+2*86400000).toISOString();
     const work = {tasks:[
+      {id:'followup',reminderAt:nudgeBase,reminderRepeat:'alternate',reminderTimeZone:zone,reminderNudge:5,reminderUntil:'2099-01-01'},
+      {id:'expired',reminderAt:nudgeBase,reminderRepeat:'daily',reminderTimeZone:zone,reminderNudge:10,reminderUntil:'2000-01-01'},
+      {id:'done-cycle',reminderAt:nextDay,reminderAnchorAt:nudgeBase,reminderRepeat:'alternate',reminderTimeZone:zone,reminderNudge:5},
+      {id:'skip-day',reminderAt:new Date(Date.parse(nudgeBase)-86400000).toISOString(),reminderRepeat:'alternate',reminderTimeZone:zone,reminderNudge:5},
       {id:'due',reminderAt:recent},
       {id:'weekly',reminderAt:weekly,reminderRepeat:'weekly',reminderTimeZone:'America/Mexico_City'},
       {id:'five',reminderAt:five,reminderRepeat:'minutes:5'},
@@ -50,9 +60,9 @@ test('push claims are account-scoped, lease-protected and recordable by the owni
     await db.exec('set role service_role');
     const claim = async () => (await db.query('select * from public.claim_due_reminder_push()')).rows;
     const delivery = await claim();
-    assert.equal(delivery.length,5);
+    assert.equal(delivery.length,6);
     const occurrences = (await db.query('select task_id, occurrence from public.reminder_deliveries')).rows;
-    for (const id of ['five','ten','alternate']) {
+    for (const id of ['five','ten','alternate','followup']) {
       const occurrence = occurrences.find(item=>item.task_id===id).occurrence;
       assert.equal(new Date(occurrence).toISOString(),recent);
     }
@@ -65,7 +75,7 @@ test('push claims are account-scoped, lease-protected and recordable by the owni
     assert.equal((await db.query('select * from public.reminder_deliveries')).rows.length,0);
     await assert.rejects(claim(),/permission denied/);
     await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
-    assert.equal((await db.query('update public.reminder_deliveries set opened_at=now() returning id')).rows.length,5);
+    assert.equal((await db.query('update public.reminder_deliveries set opened_at=now() returning id')).rows.length,6);
     await assert.rejects(db.query("update public.reminder_deliveries set status='accepted'"),/permission denied/);
   } finally { await db.close(); }
 });

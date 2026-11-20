@@ -16,14 +16,17 @@
       return {reply:'Preparé el cuestionario de flexografía. Puedes resolver la práctica incluida o generar una nueva con IA.',
         open:()=>window.liftsFlexoQuizUI.open(advanced)};
     }
-    const reminder = /^(?:recuérdame|recuerdame)\s+(.+?)(?:\s+(hoy|mañana|\d{4}-\d{2}-\d{2}))?\s+a\s+las?\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?((?:[,\s]+(?:con intensidad (?:alta|normal|suave)|cada (?:d[ií]a|semana|dos d[ií]as|2 d[ií]as|[0-9]{1,4} minutos?)|d[ií]as alternos|a diario)){0,2})$/i.exec(input);
+    const reminder = /^(?:recuérdame|recuerdame)\s+(.+?)(?:\s+(hoy|mañana|\d{4}-\d{2}-\d{2}))?\s+a\s+las?\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?((?:[,\s]+(?:con intensidad (?:alta|normal|suave)|cada (?:d[ií]a|semana|dos d[ií]as|2 d[ií]as|[0-9]{1,4} minutos?)|d[ií]as alternos|a diario|todos los d[ií]as|insiste cada (?:5|10) minutos?(?: si sigue pendiente)?|hasta (?:el )?\d{4}-\d{2}-\d{2})){0,5})$/i.exec(input);
     if (reminder) {
       const [, title, day, hour, minute, period, preferences] = reminder;
       const intensity = /intensidad alta/i.test(preferences) ? 1 : /intensidad suave/i.test(preferences) ? 3 : 2;
-      const minutesMatch = /cada ([0-9]{1,4}) minutos?/i.exec(preferences);
+      const insist = /insiste cada (5|10) minutos?(?: si sigue pendiente)?/i.exec(preferences);
+      const schedule = insist ? preferences.replace(insist[0],'') : preferences;
+      const until = /hasta (?:el )?(\d{4}-\d{2}-\d{2})/i.exec(schedule)?.[1] || '';
+      const minutesMatch = /cada ([0-9]{1,4}) minutos?/i.exec(schedule);
       const repeat = minutesMatch ? 'minutes:'+Number(minutesMatch[1]) :
-        /cada (?:dos|2) d[ií]as|d[ií]as alternos/i.test(preferences) ? 'alternate' :
-        /cada semana/i.test(preferences) ? 'weekly' : /cada d[ií]a|a diario/i.test(preferences) ? 'daily' : '';
+        /cada (?:dos|2) d[ií]as|d[ií]as alternos/i.test(schedule) ? 'alternate' :
+        /cada semana/i.test(schedule) ? 'weekly' : /cada d[ií]a|a diario|todos los d[ií]as/i.test(schedule) ? 'daily' : '';
       if (minutesMatch && !work.repeatMinutes(repeat)) return {reply:'El intervalo debe ser de 5 a 1440 minutos.'};
       const date = dateFrom(day?.toLowerCase());
       let hours = Number(hour);
@@ -34,9 +37,11 @@
       date.setHours(hours, minutes, 0, 0);
       if (!day && date <= new Date()) date.setDate(date.getDate() + 1);
       if (date <= new Date()) return {reply:'Esa hora ya pasó. Indícame una fecha y hora futuras.'};
+      if (until && (!dateFrom(until) || until<work.localDate(date))) return {reply:'El último día debe ser igual o posterior a la fecha de inicio.'};
+      if (insist && !['daily','alternate','weekly'].includes(repeat)) return {reply:'Para insistir, elige un horario diario, semanal o en días alternos.'};
       return {reply:'Preparé el recordatorio para ' + date.toLocaleString('es-MX', {dateStyle:'long',timeStyle:'short'}) +
         '. Revisa la intensidad y la repetición y guarda el aviso en Recordatorios.',
-        open:()=>window.liftsReminders.open(title, date, {intensity,repeat})};
+        open:()=>window.liftsReminders.open(title, date, {intensity,repeat,nudge:insist?.[1],until})};
     }
     const frequent = /^(?:recuérdame|recuerdame)\s+(.+?)\s+cada\s+(\d{1,4})\s+minutos?$/i.exec(input);
     if (frequent) {

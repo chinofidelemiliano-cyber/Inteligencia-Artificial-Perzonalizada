@@ -17,6 +17,9 @@
     $('reminderIntervalField').hidden = !custom;
     intervalInput.disabled = !custom;
     intervalInput.required = custom;
+    const scheduled = ['daily','alternate','weekly'].includes(repeatSelect.value);
+    $('reminderNudgeField').hidden = !scheduled;
+    $('reminderNudge').disabled = !scheduled;
   }
   function setRepeat(repeat) {
     const minutes = work.repeatMinutes(repeat);
@@ -45,6 +48,8 @@
     if (date) $('reminderDate').value = work.localInput(date);
     setRepeat(settings.repeat);
     $('reminderIntensity').value = String(settings.intensity || 2);
+    $('reminderNudge').value = settings.nudge || '';
+    $('reminderUntil').value = settings.until || '';
     $('reminderTitle').focus();
   }
 
@@ -55,6 +60,8 @@
     open(task.title, Number.isFinite(date.getTime()) ? date : undefined);
     editing = task.id;
     setRepeat(task.reminderRepeat);
+    $('reminderNudge').value = task.reminderNudge || '';
+    $('reminderUntil').value = task.reminderUntil || '';
     $('reminderIntensity').value = String(task.priority || 2);
     $('cancelReminderEdit').hidden = false;
   }
@@ -94,6 +101,12 @@
       status.textContent = 'Elige un intervalo entero entre 5 y 1440 minutos.';
       return;
     }
+    const reminderNudge = $('reminderNudge').disabled ? 0 : Number($('reminderNudge').value);
+    const reminderUntil = $('reminderUntil').value;
+    if (reminderUntil && reminderUntil<work.localDate(date)) {
+      status.textContent = 'El último día debe ser igual o posterior a la fecha de inicio.';
+      return;
+    }
     const priority = Number($('reminderIntensity').value);
     let task = state.tasks.find(item=>item.id===editing);
     if (!task) {
@@ -111,7 +124,7 @@
       task.snoozedFrom = '';
     }
     const rescheduled = task.reminderAt !== reminderAt && !oldNext;
-    Object.assign(task, {title,reminderAt,reminderRepeat,priority});
+    Object.assign(task, {title,reminderAt,reminderRepeat,reminderNudge,reminderUntil,priority});
     if (rescheduled && !reminderRepeat) task.reminderPaused = false;
     if (task.kind === 'reminder') task.date = work.localDate(date);
     $('cancelReminderEdit').hidden = false;
@@ -134,9 +147,11 @@
       const repetition = work.repeatLabel(task.reminderRepeat);
       const intensity = {1:'Alta',3:'Suave'}[task.priority] || 'Normal';
       const timing = Number.isFinite(date.getTime()) ? date.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : 'Revisa la fecha';
-      const seen = task.reminderPaused ? ' · En pausa' : task.remindedFor === task.reminderAt ? ' · Visto' : '';
+      const seen = work.reminderEnded(task) ? ' · Finalizado' : task.reminderPaused ? ' · En pausa' : task.remindedFor === task.reminderAt ? ' · Visto' : '';
       details.textContent = timing + ' · ' + repetition + ' · Intensidad ' + intensity.toLowerCase() +
-        (task.kind === 'reminder' ? '' : ' · Vinculado a Agenda') + seen;
+        (task.kind === 'reminder' ? '' : ' · Vinculado a Agenda') + seen +
+        (work.nudgeMinutes(task) ? ' · Insiste cada '+work.nudgeMinutes(task)+' min' : '') +
+        (task.reminderUntil ? ' · Hasta '+task.reminderUntil : '');
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'secondary';
@@ -191,10 +206,29 @@
           disable.disabled = false;
         }
       };
-      row.append(title,details,button,pause,disable);
+      row.append(title,details);
+      if (work.nudgeMinutes(task) && work.reminderOccurrence(task)) {
+        const done = document.createElement('button');
+        done.type = 'button';
+        done.textContent = 'Ya lo hice';
+        done.onclick = ()=>complete(task,done);
+        row.append(done);
+      }
+      row.append(button,pause,disable);
       list.append(row);
     }
   }
+  async function complete(task,button) {
+    if (save.disabled) return;
+    const version = generation;
+    const previous = {...task};
+    if (!work.completeReminderCycle(task)) return;
+    button.disabled = true;
+    if (await persist('Actividad de hoy marcada como hecha. Se conserva el próximo día programado.') === false && version === generation) {
+      Object.assign(task,previous);
+      button.disabled = false;
+    }
+  }
   window.addEventListener('nexo-state',()=>{reset();render();});
-  window.liftsReminders = {open,reset,render};
+  window.liftsReminders = {open,reset,render,complete};
 })();

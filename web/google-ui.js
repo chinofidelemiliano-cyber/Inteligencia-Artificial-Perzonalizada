@@ -239,8 +239,8 @@
       for (const task of selections) {
         const pending = !task.done && !task.archived;
         const minuteRepeat = work.repeatMinutes(task.reminderRepeat);
-        if(pending && minuteRepeat)minuteAlarms++;
-        const wantsAlarm = !minuteRepeat && !task.reminderPaused && pending && Number.isFinite(Date.parse(task.reminderAt)) &&
+        if(pending && (minuteRepeat || task.reminderUntil))minuteAlarms++;
+        const wantsAlarm = !task.reminderUntil && !minuteRepeat && !task.reminderPaused && pending && Number.isFinite(Date.parse(task.reminderAt)) &&
           (task.reminderRepeat || (Date.parse(task.reminderAt) > Date.now() && task.remindedFor !== task.reminderAt));
         const wantsBlock = !task.archived && Number.isFinite(Date.parse(task.startAt));
         try {
@@ -258,7 +258,7 @@
       }
       return {message:saved + ' bloques o avisos sincronizados · ' + removed + ' cancelados · ' + errors.length +
         ' fallos. Comprueba las notificaciones de Google Calendar en cada dispositivo.' +
-        (minuteAlarms?' Los avisos por minutos se mantienen en Lifts.':''),items:errors};
+        (minuteAlarms?' Los avisos por minutos o con fecha de término se mantienen en Lifts.':''),items:errors};
     });
   };
 

@@ -33,12 +33,45 @@
     const minutes=repeatMinutes(repeat);
     return minutes ? 'Cada '+minutes+' min' : ({daily:'A diario',alternate:'Días alternos',weekly:'Cada semana'}[repeat] || 'Una vez');
   }
+  function reminderDay(time, zone) {
+    const date=new Date(time);
+    if(!Number.isFinite(date.getTime()))return '';
+    if(!zone)return localDate(date);
+    try{
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+      return ['year','month','day'].map(key=>parts.find(part=>part.type===key).value).join('-');
+    }catch{return localDate(date);}
+  }
+  function reminderEnded(task, now=Date.now()) {
+    return Boolean(task.reminderUntil && reminderDay(now,task.reminderTimeZone)>task.reminderUntil);
+  }
+  function nudgeMinutes(task) {
+    return ['daily','alternate','weekly'].includes(task.reminderRepeat) && [5,10].includes(Number(task.reminderNudge))
+      ? Number(task.reminderNudge) : 0;
+  }
+  function completeReminderCycle(task,now=Date.now()) {
+    if(!nudgeMinutes(task)||!reminderOccurrence(task,now))return false;
+    const next=nextReminder({...task,reminderAt:task.reminderAnchorAt || task.reminderAt},now);
+    if(!next)return false;
+    task.reminderAnchorAt ||= task.reminderAt;
+    task.reminderAt=next;
+    task.snoozedFrom='';
+    task.remindedFor='';
+    task.notifiedFor='';
+    return true;
+  }
   function reminderOccurrence(task, now=Date.now()) {
     const active=Date.parse(task.reminderAt);
-    if(task.done||task.archived||task.reminderPaused||!Number.isFinite(active)||active>now)return '';
+    if(task.done||task.archived||task.reminderPaused||reminderEnded(task,now)||!Number.isFinite(active)||active>now)return '';
     const anchor=Date.parse(task.reminderAnchorAt);
-    const occurrence=task.snoozedFrom ? active : recurrenceAt(Number.isFinite(anchor)?anchor:active,task,now,false);
+    let occurrence=task.snoozedFrom ? active : recurrenceAt(Number.isFinite(anchor)?anchor:active,task,now,false);
     if(!Number.isFinite(occurrence)||occurrence<active)return '';
+    const minutes=nudgeMinutes(task);
+    if(minutes&&!task.snoozedFrom){
+      if(reminderDay(occurrence,task.reminderTimeZone)!==reminderDay(now,task.reminderTimeZone))return '';
+      const step=minutes*60000;
+      occurrence+=Math.floor((now-occurrence)/step)*step;
+    }
     const iso=new Date(occurrence).toISOString();
     return task.remindedFor===iso || (occurrence===active&&task.remindedFor===task.reminderAt) ? '' : iso;
   }
@@ -87,9 +120,9 @@
   const utc=value=>new Date(value).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
   function calendar(tasks,now=new Date()){
     const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lifts//Agenda//ES','CALSCALE:GREGORIAN'];
-    for(const t of tasks){const start=t.startAt || (!t.reminderPaused && t.reminderAt);if(t.done||t.archived||!start||!Number.isFinite(Date.parse(start)))continue;lines.push('BEGIN:VEVENT',`UID:${escapeICS(t.id)}@lifts`, `DTSTAMP:${utc(now)}`,`DTSTART:${utc(start)}`,`DTEND:${utc(Date.parse(start)+(Number(t.duration)||25)*60000)}`,`SUMMARY:${escapeICS(t.title)}`);
-      if(!t.reminderPaused&&t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt)))lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Recordatorio de Lifts',`TRIGGER;VALUE=DATE-TIME:${utc(t.reminderAt)}`,'END:VALARM');lines.push('END:VEVENT');}
+    for(const t of tasks){const start=t.startAt || (!t.reminderPaused && !reminderEnded(t,now.getTime()) && t.reminderAt);if(t.done||t.archived||!start||!Number.isFinite(Date.parse(start)))continue;lines.push('BEGIN:VEVENT',`UID:${escapeICS(t.id)}@lifts`, `DTSTAMP:${utc(now)}`,`DTSTART:${utc(start)}`,`DTEND:${utc(Date.parse(start)+(Number(t.duration)||25)*60000)}`,`SUMMARY:${escapeICS(t.title)}`);
+      if(!t.reminderPaused&&!reminderEnded(t,now.getTime())&&t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt)))lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Recordatorio de Lifts',`TRIGGER;VALUE=DATE-TIME:${utc(t.reminderAt)}`,'END:VALARM');lines.push('END:VEVENT');}
     lines.push('END:VCALENDAR');return lines.map(fold).join('\r\n')+'\r\n';
   }
-  const api={localDate,localInput,interval,overlaps,plan,due,reminderOccurrence,nextReminder,repeatMinutes,repeatLabel,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  const api={localDate,localInput,interval,overlaps,plan,due,reminderOccurrence,reminderEnded,nudgeMinutes,completeReminderCycle,nextReminder,repeatMinutes,repeatLabel,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
