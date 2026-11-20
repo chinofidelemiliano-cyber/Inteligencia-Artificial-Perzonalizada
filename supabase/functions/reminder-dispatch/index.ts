@@ -68,6 +68,27 @@ Deno.serve(async request => {
   if (error) return reply({error:'No se pudieron reclamar los avisos.'},503);
 
   const batch = data as Delivery[];
+  const titles = new Map<string,string>();
+  if (batch.length) {
+    const deliveryRows = await db.from('reminder_deliveries').select('id,user_id,task_id')
+      .in('id',batch.map(delivery=>delivery.delivery_id));
+    if (!deliveryRows.error && deliveryRows.data.length) {
+      const users = [...new Set(deliveryRows.data.map(row=>row.user_id))];
+      const spaces = await db.from('user_spaces').select('user_id,tasks:data->tasks')
+        .in('user_id',users).filter('data->notificationDetails','eq','true');
+      const optedIn = new Map(spaces.data?.map(space=>[space.user_id,space.tasks]));
+      for (const row of deliveryRows.data) {
+        const tasks = optedIn.get(row.user_id);
+        const task = Array.isArray(tasks) ? tasks.find((task): task is {id:string;title:string}=>
+          Boolean(task && typeof task==='object' && !Array.isArray(task) && task.id===row.task_id &&
+            typeof task.title==='string')) : null;
+        if (typeof task?.title === 'string') {
+          const title=task.title.replace(/[\x00-\x1f\x7f]/g,' ').trim().slice(0,120);
+          if (title) titles.set(row.id,title);
+        }
+      }
+    }
+  }
   let storageErrors = 0;
   for (let i = 0; i < batch.length; i += 8) {
     await Promise.all(batch.slice(i, i+8).map(async delivery => {
@@ -81,7 +102,7 @@ Deno.serve(async request => {
         } else {
           await webpush.sendNotification({
             endpoint:endpoint.href, keys:{p256dh:delivery.key_p256dh,auth:delivery.key_auth}
-          }, JSON.stringify({id:delivery.delivery_id,intensity:delivery.reminder_priority}), {
+          }, JSON.stringify({id:delivery.delivery_id,intensity:delivery.reminder_priority,title:titles.get(delivery.delivery_id)}), {
             TTL:3600, timeout:7000, urgency:delivery.reminder_priority === 1 ? 'high' : delivery.reminder_priority === 3 ? 'low' : 'normal',
             vapidDetails:{subject,publicKey,privateKey}
           });

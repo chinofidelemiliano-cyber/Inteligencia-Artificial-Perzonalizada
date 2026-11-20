@@ -50,9 +50,13 @@
       ? Number(task.reminderNudge) : 0;
   }
   function completeReminderCycle(task,now=Date.now()) {
-    if(!nudgeMinutes(task)||!reminderOccurrence(task,now))return false;
+    if((!nudgeMinutes(task)&&!task.habitId)||!reminderOccurrence(task,now))return false;
     const next=nextReminder({...task,reminderAt:task.reminderAnchorAt || task.reminderAt},now);
     if(!next)return false;
+    if(task.habitId){
+      const day=reminderDay(now,task.reminderTimeZone);
+      task.habitCompletions=[...new Set([day,...(task.habitCompletions || [])])].slice(0,45);
+    }
     task.reminderAnchorAt ||= task.reminderAt;
     task.reminderAt=next;
     task.snoozedFrom='';

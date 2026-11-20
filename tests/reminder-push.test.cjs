@@ -95,11 +95,14 @@ test('service worker displays a private reminder and opens the agenda with a rec
   const id='00000000-0000-4000-8000-000000000001';
   const pending = [];
   const waitUntil = promise=>pending.push(promise);
-  listeners.push({data:{json:()=>({id,title:'Título privado'})},waitUntil});
+  listeners.push({data:{json:()=>({id})},waitUntil});
   await Promise.all(pending);
   assert.equal(notifications.length,1);
   assert.equal(notifications[0].options.data.id,id);
-  assert.doesNotMatch(JSON.stringify(notifications),/Título privado/);
+  assert.equal(notifications[0].title,'Lifts · Recordatorio');
+  listeners.push({data:{json:()=>({id,title:'Tomar agua'})},waitUntil});
+  await Promise.all(pending);
+  assert.equal(notifications[1].title,'Tomar agua');
   listeners.notificationclick({notification:{data:{id},close(){}},waitUntil});
   await Promise.all(pending);
   assert.equal(opened[0].searchParams.get('view'),'reminders');

@@ -183,6 +183,47 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     const after = await page.evaluate(()=>window.saves.at(-1).tasks.find(t=>t.title==='revisar la prensa'));
     assert.equal(after.done,false);
     assert.equal(after.reminderAt,new Date('2026-10-17T07:00:00').toISOString());
+    await page.locator('#notificationDetails').check();
+    await page.getByText('Títulos visibles en los avisos de esta cuenta.',{exact:true}).waitFor();
+    await page.evaluate(()=>{
+      const saved=window.saves.at(-1);
+      window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(saved)}));
+      window.liftsWorkspace.open('reminders');
+    });
+    assert.equal(await page.locator('#notificationDetails').isChecked(),true);
+    await page.evaluate(async()=>{
+      const reg=await navigator.serviceWorker.ready;
+      Object.getPrototypeOf(reg).showNotification=async title=>{window.testNotificationTitle=title;};
+    });
+    await page.locator('#enableNotifications').click();
+    await page.locator('#testNotification').click();
+    await page.waitForFunction(()=>window.testNotificationTitle==='Lifts · Título de prueba');
+
+
+    await page.evaluate(text=>window.liftsWorkspace.ask(text),'Ayúdame a administrar mi dinero');
+    await page.locator('#routines').waitFor();
+    const hydration = page.locator('#routineChoices article').filter({hasText:'Hidratación'});
+    await hydration.getByRole('button',{name:'Preparar aviso'}).click();
+    assert.equal(await page.locator('#reminderTitle').inputValue(),'Tomar un vaso de agua');
+    await page.locator('#reminderDate').fill('2026-10-15T10:00');
+    await page.locator('#saveReminder').click();
+    await page.getByText('Recordatorio guardado.',{exact:true}).waitFor();
+    await page.clock.setFixedTime(new Date('2026-10-15T10:01:00'));
+    await page.evaluate(()=>{window.liftsWorkspace.open('routines');window.liftsWorkspace.render();});
+    await hydration.getByRole('button',{name:'Ya lo hice'}).click();
+    await hydration.getByText('1 registro en los últimos 7 días').waitFor();
+    await page.locator('#budgetAmount').fill('400.50');
+    await page.getByRole('button',{name:'Guardar tope'}).click();
+    await page.getByText('Tope del mes guardado.').waitFor();
+    await page.locator('#moneyAmount').fill('100.25');
+    await page.locator('#moneyNote').fill('Compra de prueba');
+    await page.getByRole('button',{name:'Registrar movimiento'}).click();
+    await page.getByText('Movimiento guardado.',{exact:true}).waitFor();
+    assert.match(await page.locator('#moneySummary').textContent(),/Disponible del tope \$300\.25/);
+    const account = await page.evaluate(()=>window.saves.at(-1));
+    assert.equal(account.finance.entries[0].cents,10025);
+    assert.equal(account.finance.budgets['2026-10'],40050);
+    assert.equal(account.tasks.find(t=>t.habitId==='water').habitCompletions[0],'2026-10-15');
     assert.deepEqual(errors,[]);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   } finally {

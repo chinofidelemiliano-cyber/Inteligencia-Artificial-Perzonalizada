@@ -19,7 +19,7 @@ window.addEventListener('nexo-state', e => {cancelChat();$('question').value='';
     state.messages=[];persist();
   }
   state.messages=[];state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
-function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','reminders','work','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
+function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','reminders','routines','work','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function renderMessageText(element,message){
@@ -57,7 +57,7 @@ function render(){
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
-  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
+  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsRoutines?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
 }
 $('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
 $('assistantForm').onsubmit=async event=>{
@@ -181,7 +181,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();window.liftsReminders?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();window.liftsReminders?.reset();window.liftsRoutines?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},

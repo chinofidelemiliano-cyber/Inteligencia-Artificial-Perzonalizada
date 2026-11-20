@@ -16,6 +16,10 @@
       return {reply:'Preparé el cuestionario de flexografía. Puedes resolver la práctica incluida o generar una nueva con IA.',
         open:()=>window.liftsFlexoQuizUI.open(advanced)};
     }
+    if (/^(?:ay[uú]dame a |quiero )?(?:administrar|organizar|revisar|registrar|controlar)\s+(?:mi dinero|mi presupuesto|mis gastos|mis ingresos|mis h[aá]bitos)\b/i.test(input)) {
+      return {reply:'Abrí Hábitos y dinero. Ahí puedes preparar tus avisos de seguimiento o revisar el presupuesto y los movimientos del mes.',
+        open:()=>window.liftsRoutines.open()};
+    }
     const reminder = /^(?:recuérdame|recuerdame)\s+(.+?)(?:\s+(hoy|mañana|\d{4}-\d{2}-\d{2}))?\s+a\s+las?\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?((?:[,\s]+(?:con intensidad (?:alta|normal|suave)|cada (?:d[ií]a|semana|dos d[ií]as|2 d[ií]as|[0-9]{1,4} minutos?)|d[ií]as alternos|a diario|todos los d[ií]as|insiste cada (?:5|10) minutos?(?: si sigue pendiente)?|hasta (?:el )?\d{4}-\d{2}-\d{2})){0,5})$/i.exec(input);
     if (reminder) {
       const [, title, day, hour, minute, period, preferences] = reminder;

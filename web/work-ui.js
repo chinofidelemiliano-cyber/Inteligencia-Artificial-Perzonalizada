@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id);const api=window.liftsWorkspace;const work=window.liftsWork;
   const state=()=>api.getState();const persist=()=>api.save();const refresh=()=>api.render();
   const fields={workRole:'role',workDuties:'duties',workShiftStart:'shiftStart',workShiftEnd:'shiftEnd',workChallenges:'challenges',workResources:'resources',workGoal:'goal'};
-  let proposal=null,editing=null,version=0,registration=null,notificationDetails=false,stepRequest=null,draftKind='';
+  let proposal=null,editing=null,version=0,registration=null,stepRequest=null,draftKind='';
   const notified=new Map();let dueSignature='';let backgroundPush=false;
   const today=()=>work.localDate(new Date());
   function stamp(value){return new Date(value).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'});}
@@ -35,7 +35,7 @@
       row.append(check,text,button(task.archived?'Recuperar':'Archivar',()=>{task.archived=!task.archived;persist();refresh();}),button('Editar',()=>editTask(task)),button('Eliminar',()=>{if(!confirm('¿Eliminar este pendiente?'))return;if(data.googleCalendarId && (task.reminderAt || task.startAt)){data.googleCancelledTasks=[...new Set([...(data.googleCancelledTasks||[]),task.id])];}data.tasks=data.tasks.filter(t=>t.id!==task.id);if(editing===task.id)cancelEdit();persist();refresh();}));$('taskList').append(row);}
     const current=$('focusTask').value;$('focusTask').replaceChildren();const none=document.createElement('option');none.value='';none.textContent='Enfoque sin tarea específica';$('focusTask').append(none);for(const task of pending){const option=document.createElement('option');option.value=task.id;option.textContent=task.title;$('focusTask').append(option);}$('focusTask').value=current;
     const profile=data.workProfile || {};for(const [id,key] of Object.entries(fields))$(id).value=profile[key] || (key==='shiftStart'?'09:00':key==='shiftEnd'?'17:00':'');$('workConsent').checked=data.workConsent===true;
-    notificationDetails=$('notificationDetails').checked;
+    $('notificationDetails').checked=data.notificationDetails===true;
     $('planDate').value ||= today();$('taskDate').value ||= today();
     renderDue();tickFocus();
   }
@@ -106,7 +106,7 @@
     persist();cancelEdit();refresh();window.dispatchEvent(new CustomEvent('lifts-task-created',{detail:{title}}));$('taskFormStatus').textContent='Tarea preparada. Revisa el estado de guardado de tu cuenta.';
   }
   function renderDue(){const overdue=work.due(state().tasks);const signature=JSON.stringify(overdue.map(t=>[t.id,t.title,t.reminderAt]));if(signature===dueSignature)return;dueSignature=signature;$('dueReminders').replaceChildren();for(const task of overdue){const row=document.createElement('div');row.className='reminder-card';note(row,'Es momento de: '+task.title);
-    if(work.nudgeMinutes(task)){
+    if(work.nudgeMinutes(task)||task.habitId){
       const done=button('Ya lo hice',()=>window.liftsReminders.complete(task,done));
       row.append(done);$('dueReminders').append(row);continue;
     }
@@ -115,7 +115,7 @@
       persist();refresh();}));$('dueReminders').append(row);}}
   async function notify(title,body,tag,intensity=2){if(!registration || !window.Notification || Notification.permission!=='granted')return false;try{await registration.showNotification(title,{body,tag,icon:'/assets/icon-192.png',badge:'/assets/favicon-32.png',silent:intensity===3,...(intensity===1?{vibrate:[180,90,180]}:{})});return true;}catch{return false;}}
   async function tickReminders(){updateCompanion();const currentVersion=version;const due=work.due(state().tasks).sort((a,b)=>(a.priority||2)-(b.priority||2)||a.reminderAt.localeCompare(b.reminderAt));if(backgroundPush){renderDue();return;}if(!registration || !window.Notification || Notification.permission!=='granted'){renderDue();return;}for(const task of due){const occurrence=work.reminderOccurrence(task);if(!occurrence||notified.get(task.id)===occurrence||task.notifiedFor===occurrence)continue;
-      const key=task.id+occurrence;notified.set(task.id,occurrence);const delivered=await notify(api.assistantName()+' · Recordatorio',notificationDetails?task.title:'Tienes un pendiente programado. Abre Lifts para verlo.',key,task.priority||2);if(currentVersion!==version)return;if(delivered){$('notificationStatus').textContent='Aviso aceptado por el sistema. Pulsa la notificación para confirmar que la viste.';}
+      const key=task.id+occurrence;notified.set(task.id,occurrence);const delivered=await notify(state().notificationDetails===true?task.title:api.assistantName()+' · Recordatorio','Tienes un pendiente programado. Abre Lifts para verlo.',key,task.priority||2);if(currentVersion!==version)return;if(delivered){$('notificationStatus').textContent='Aviso aceptado por el sistema. Pulsa la notificación para confirmar que la viste.';}
       else {if(notified.get(task.id)===occurrence)notified.delete(task.id);$('notificationStatus').textContent='No se pudo mostrar el aviso. Sigue pendiente en la agenda.';}}renderDue();}
   function tickFocus(){const session=state().focusSession;if(!session){$('focusClock').textContent=String(Number($('focusMinutes').value)||25).padStart(2,'0')+':00';return;}const remaining=Math.max(0,session.paused?session.remaining:session.endsAt-Date.now());$('focusClock').textContent=String(Math.floor(remaining/60000)).padStart(2,'0')+':'+String(Math.floor(remaining/1000)%60).padStart(2,'0');if(!session.paused&&remaining===0&&!session.finished){session.finished=true;if(session.kind==='break'&&session.taskId){const task=state().tasks.find(t=>t.id===session.taskId&&t.kind==='break');if(task){task.done=true;task.completedAt=new Date().toISOString();}queueMicrotask(()=>api.render());}$('focusStatus').textContent=session.kind==='break'?'Terminó tu pausa. Elige el siguiente paso cuando estés listo.':'Terminaste tu bloque. Haz una pausa y revisa cómo te fue.';notify(api.assistantName()+' · Enfoque',session.kind==='break'?'Tu pausa terminó. Podemos elegir el siguiente paso.':'Tu bloque terminó. Es momento de una pausa.','focus-'+session.endsAt);persist();}}
   $('taskFilter').onchange=render;$('cancelEditTask').onclick=cancelEdit;
@@ -151,8 +151,26 @@
   $('pauseFocus').onclick=()=>{const session=state().focusSession;if(!session||session.finished||session.paused)return;session.remaining=Math.max(0,session.endsAt-Date.now());session.paused=true;persist();$('focusStatus').textContent='En pausa. Pulsa Comenzar para continuar.';tickFocus();};
   $('resetFocus').onclick=()=>{state().focusSession=null;persist();$('focusStatus').textContent='Bloque terminado. Puedes elegir tu siguiente paso.';tickFocus();};
   $('enableNotifications').onclick=async()=>{if(!window.Notification || !navigator.serviceWorker){$('notificationStatus').textContent='Este navegador no permite estos avisos. Puedes exportar al calendario; en algunos teléfonos necesitas añadir Lifts a la pantalla de inicio.';return;}try{const permission=await Notification.requestPermission();if(permission==='granted'){await navigator.serviceWorker.register('/sw.js');registration=await navigator.serviceWorker.ready;void tickReminders();}$('notificationStatus').textContent=permission==='granted'?'Avisos habilitados en este dispositivo mientras Lifts pueda ejecutarse.':permission==='denied'?'Permiso bloqueado. Puedes cambiarlo en el navegador o usar tu calendario.':'No se concedió permiso. Los pendientes seguirán visibles en la agenda.';}catch{$('notificationStatus').textContent='No se pudieron activar los avisos. Usa la agenda o exporta al calendario.';}};
-  $('testNotification').onclick=async()=>{$('notificationStatus').textContent=await notify(api.assistantName(),'Este es un aviso de prueba. No incluye tus datos de trabajo.','lifts-test')?'Aviso enviado al sistema. Su visualización depende de tus ajustes de notificaciones.':'Activa los avisos y concede permiso primero.';};
-  $('notificationDetails').onchange=()=>{notificationDetails=$('notificationDetails').checked;};
+  $('testNotification').onclick=async()=>{$('notificationStatus').textContent=await notify(state().notificationDetails===true?'Lifts · Título de prueba':api.assistantName(),'Este es un aviso de prueba. No incluye tus datos de trabajo.','lifts-test')?'Aviso enviado al sistema. Su visualización depende de tus ajustes de notificaciones.':'Activa los avisos y concede permiso primero.';};
+  $('notificationDetails').onchange=async()=>{
+    const input=$('notificationDetails');
+    const account=state();
+    const previous=account.notificationDetails===true;
+    const requested=input.checked;
+    input.disabled=true;
+    // Keep the displayed choice separate until the account confirms the write.
+    account.notificationDetails=requested;
+    try{
+      if(await persist()===false)throw new Error();
+      if(account===state())$('notificationStatus').textContent=requested?'Títulos visibles en los avisos de esta cuenta.':'Títulos ocultos en los avisos de esta cuenta.';
+    }catch{
+      if(account===state()){
+        account.notificationDetails=previous;
+        input.checked=previous;
+        $('notificationStatus').textContent='No se pudo guardar la preferencia. Inténtalo de nuevo.';
+      }
+    }finally{if(account===state())input.disabled=false;}
+  };
   $('exportCalendar').onclick=()=>{if(!state().tasks.some(t=>!t.done&&(t.startAt||t.reminderAt))){$('notificationStatus').textContent='Añade al menos un bloque o recordatorio para exportar.';return;}const url=URL.createObjectURL(new Blob([work.calendar(state().tasks)],{type:'text/calendar;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download='lifts-agenda.ics';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('notificationStatus').textContent='Archivo preparado. Impórtalo en un calendario privado y comprueba sus alertas; cada app gestiona las alarmas de forma distinta.';};
   $('workForm').onsubmit=event=>{event.preventDefault();const data={};for(const [id,key]of Object.entries(fields))data[key]=$(id).value.trim();state().workProfile=data;state().workConsent=$('workConsent').checked;persist();$('planStart').value=data.shiftStart || '09:00';$('planEnd').value=data.shiftEnd || '17:00';refresh();$('workStatus').textContent='Contexto aplicado. Revisa el estado de guardado.';};
   $('forgetWork').onclick=()=>{state().workProfile=null;state().workConsent=false;$('workShare').checked=false;persist();refresh();$('workStatus').textContent='Borrado preparado. Revisa el estado de guardado.';};
@@ -169,7 +187,7 @@
     }).catch(()=>{});registration?.getNotifications().then(list=>list.forEach(n=>n.close())).catch(()=>{});proposal=null;cancelEdit();dueSignature='';
     $('planDate').value=today();$('taskDate').value=today();
     $('planStart').value=state().workProfile?.shiftStart || '09:00';$('planEnd').value=state().workProfile?.shiftEnd || '17:00';
-    $('planReorganize').checked=false;notified.clear();notificationDetails=false;$('notificationDetails').checked=false;$('workShare').checked=false;for(const id of ['workStatus','researchStatus','researchResults','researchFallback','schedulePreview','focusStatus'])$(id).replaceChildren();$('researchQuery').value='';$('researchButton').disabled=false;$('applySchedule').hidden=true;render();if(window.Notification?.permission==='granted'&&navigator.serviceWorker)navigator.serviceWorker.getRegistration('/').then(value=>{if(accountVersion===version){registration=value;void tickReminders();}}).catch(()=>{});});
+    $('planReorganize').checked=false;notified.clear();$('notificationDetails').disabled=false;$('workShare').checked=false;for(const id of ['workStatus','researchStatus','researchResults','researchFallback','schedulePreview','focusStatus'])$(id).replaceChildren();$('researchQuery').value='';$('researchButton').disabled=false;$('applySchedule').hidden=true;render();if(window.Notification?.permission==='granted'&&navigator.serviceWorker)navigator.serviceWorker.getRegistration('/').then(value=>{if(accountVersion===version){registration=value;void tickReminders();}}).catch(()=>{});});
   navigator.serviceWorker?.addEventListener('message',event=>{if(event.data?.type==='OPEN_AGENDA'){api.open('reminders');$('notificationStatus').textContent='Aviso abierto en este dispositivo.';}});
   window.addEventListener('pageshow',()=>{tickFocus();tickReminders();});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tickFocus();tickReminders();}});

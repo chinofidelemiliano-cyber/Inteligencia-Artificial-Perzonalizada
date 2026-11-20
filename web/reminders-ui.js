@@ -9,6 +9,7 @@
   const list = $('reminderItems');
   let editing = '';
   let generation = 0;
+  let habitDraft = '';
   const repeatSelect = $('reminderRepeat');
   const intervalInput = $('reminderInterval');
 
@@ -33,6 +34,7 @@
   function reset() {
     generation++;
     editing = '';
+    habitDraft = '';
     form.reset();
     syncInterval();
     status.textContent = '';
@@ -47,6 +49,7 @@
     $('reminderTitle').value = title.slice(0, 240);
     if (date) $('reminderDate').value = work.localInput(date);
     setRepeat(settings.repeat);
+    habitDraft = settings.habitId || '';
     $('reminderIntensity').value = String(settings.intensity || 2);
     $('reminderNudge').value = settings.nudge || '';
     $('reminderUntil').value = settings.until || '';
@@ -103,6 +106,11 @@
     }
     const reminderNudge = $('reminderNudge').disabled ? 0 : Number($('reminderNudge').value);
     const reminderUntil = $('reminderUntil').value;
+    if ((habitDraft || api.getState().tasks.find(task=>task.id===editing)?.habitId) &&
+        !['daily','alternate','weekly'].includes(reminderRepeat)) {
+      status.textContent = 'Elige una frecuencia diaria, semanal o en días alternos para registrar el hábito.';
+      return;
+    }
     if (reminderUntil && reminderUntil<work.localDate(date)) {
       status.textContent = 'El último día debe ser igual o posterior a la fecha de inicio.';
       return;
@@ -110,7 +118,8 @@
     const priority = Number($('reminderIntensity').value);
     let task = state.tasks.find(item=>item.id===editing);
     if (!task) {
-      task = {id:crypto.randomUUID(), kind:'reminder', done:false};
+      task = {id:crypto.randomUUID(),kind:'reminder',done:false};
+      if(habitDraft)task.habitId=habitDraft;
       state.tasks.push(task);
       editing = task.id;
     }
@@ -207,7 +216,7 @@
         }
       };
       row.append(title,details);
-      if (work.nudgeMinutes(task) && work.reminderOccurrence(task)) {
+      if ((work.nudgeMinutes(task) || task.habitId) && work.reminderOccurrence(task)) {
         const done = document.createElement('button');
         done.type = 'button';
         done.textContent = 'Ya lo hice';
@@ -230,5 +239,5 @@
     }
   }
   window.addEventListener('nexo-state',()=>{reset();render();});
-  window.liftsReminders = {open,reset,render,complete};
+  window.liftsReminders = {open,edit,reset,render,complete};
 })();
