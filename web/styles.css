@@ -43,3 +43,5 @@
   nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   nav button[data-page="reminders"] .nav-label { font-size: 8.5px; }
 }
+
+#moneyShortcutUrl { overflow-wrap: anywhere; }

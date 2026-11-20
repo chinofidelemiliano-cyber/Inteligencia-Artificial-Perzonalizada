@@ -15,6 +15,7 @@
   let editing = '';
   let generation = 0;
   let saving = false;
+  let expenseShortcut = null;
 
   function element(parent,tag,text) {
     const item = document.createElement(tag);
@@ -79,8 +80,65 @@
     $('moneyMonth').value = today().slice(0,7);
     resetEntry();
   }
+  function reportSections(report) {
+    const scope = report.partial ? 'Hasta el día '+report.lastDay+' de cada mes.' : 'Meses completos.';
+    const comparison = report.previousExpenses
+      ? (report.difference===0 ? 'Registraste el mismo gasto' :
+        'Gastaste '+money(Math.abs(report.difference))+(report.difference>0 ? ' más' : ' menos'))+
+        ' que en '+report.previousMonth+'. '+scope
+      : 'Sin gastos registrados en '+report.previousMonth+' para comparar. '+scope;
+    const totals = 'Ingresos '+money(report.income)+' · Gastos '+money(report.expenses)+' · Saldo '+money(report.balance);
+    const remaining = report.remaining===null ? '' : report.remaining>=0
+      ? '\nDisponible del tope: '+money(report.remaining) : '\nExceso sobre el tope: '+money(-report.remaining);
+    const categories = report.categories.map(item=>item.name+' · '+money(item.cents)+' · '+item.percent+' % del gasto registrado.');
+    const ideas = [];
+    if (report.remaining<0) ideas.push('Revisa qué gastos puedes aplazar. Reducir '+money(-report.remaining)+' igualaría tus gastos al tope del mes.');
+    if (report.adjustable && report.target>0) {
+      const tips = {
+        'Alimentación':'Compara comidas fuera y compras de despensa. Elige una comida fuera para sustituirla por una preparada.',
+        'Transporte':'Revisa si puedes agrupar traslados o cambiar un viaje en taxi por una opción más económica.',
+        'Otros':'Identifica suscripciones o compras ocasionales y elige una que puedas pausar.'
+      };
+      const item=report.adjustable;
+      ideas.push(item.name+': '+tips[item.name]+' Reducir un 10 % de esta categoría ahorraría '+money(report.target)+'.');
+      if (item.difference>0 && report.previousExpenses) {
+        ideas.push('En '+item.name+' registraste '+money(item.difference)+' más que en el periodo comparable anterior. Revisa qué movimiento explica ese aumento.');
+      }
+    }
+    if (!ideas.length) ideas.push('Registra los gastos que quieras revisar y separa las compras ajustables de los gastos necesarios.');
+    return [
+      {heading:'Resumen', body:totals+remaining},
+      {heading:'Comparación', body:comparison},
+      {heading:'Gasto por categoría', body:categories.join('\n') || 'Sin gastos registrados en el periodo.'},
+      {heading:'Ideas para ahorrar', body:ideas.join('\n')}
+    ];
+  }
+
+  function renderReport(month) {
+    const report=window.liftsFinanceReport.monthlyReport(ledger(),month,today());
+    const sections=reportSections(report);
+    const target=$('moneyReportBody');
+    target.replaceChildren();
+    for(const section of sections){
+      element(target,'h3',section.heading);
+      for(const line of section.body.split('\n'))element(target,'p',line);
+    }
+    $('moneyReportPdf').onclick=()=>{
+      const bytes=window.liftsPdf.make({title:'Reporte mensual de gastos',subtitle:report.month+' · MXN',sections});
+      const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+      const link=document.createElement('a');
+      link.href=url;
+      link.download='lifts-gastos-'+report.month+'.pdf';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+    };
+  }
+
   function renderMoney() {
-    const month = $('moneyMonth').value || today().slice(0,7);
+    const selected = $('moneyMonth').value;
+    const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(selected) ? selected : today().slice(0,7);
     const data = ledger();
     const cap = data.budgets[month];
     $('budgetAmount').value = Number.isSafeInteger(cap) ? (cap/100).toFixed(2) : '';
@@ -118,6 +176,7 @@
       });
     }
     if (!entries.length) element(list,'p','Todavía no hay movimientos registrados para este mes.');
+    renderReport(month);
     if (byCategory.size) element(summary,'p',[...byCategory].sort((a,b)=>b[1]-a[1]).map(([category,total])=>category+' '+money(total)).join(' · '));
   }
 
@@ -141,7 +200,10 @@
       }
       return false;
     } finally {
-      if (version===generation) saving = false;
+      if (version===generation) {
+        saving = false;
+        if(expenseShortcut) setTimeout(openExpense,0);
+      }
     }
   }
 
@@ -175,16 +237,54 @@
     }
   };
 
+  const shortcutUrl=new URL('/',location.origin);
+  shortcutUrl.hash='gasto';
+  $('moneyShortcutUrl').textContent=shortcutUrl.href;
+  $('copyMoneyShortcut').onclick=async()=>{
+    try {
+      await navigator.clipboard.writeText(shortcutUrl.href);
+      $('moneyShortcutStatus').textContent='Enlace copiado.';
+    } catch {
+      $('moneyShortcutStatus').textContent='Selecciona el enlace de arriba y cópialo.';
+    }
+  };
+
+  function openExpense() {
+    const signedIn=!$('workspace').hidden;
+    $('expenseShortcutAuthNotice').hidden=!expenseShortcut || signedIn;
+    if(!expenseShortcut||!signedIn||!api.getState().onboardingCompleted||saving)return;
+    const incoming=expenseShortcut;
+    expenseShortcut=null;
+    if(!$('routines').hidden && (editing||$('moneyAmount').value||$('moneyNote').value) &&
+        !confirm('Ya tienes un movimiento sin guardar. ¿Quieres reemplazarlo con el gasto del atajo?'))return;
+    resetEntry();
+    api.open('routines');
+    $('moneyAmount').value=incoming.amount;
+    $('moneyStatus').textContent=incoming.invalid
+      ? 'El importe del atajo no es válido. Escríbelo aquí antes de guardar.'
+      : 'Gasto del atajo preparado. Revisa el importe, la fecha y la categoría antes de guardarlo.';
+    $(incoming.amount?'moneyCategory':'moneyAmount').focus();
+  }
+  function receiveExpense() {
+    const incoming=window.liftsShortcut.parseExpense(location.href);
+    if(!incoming)return;
+    try{history.replaceState(history.state,'',incoming.cleanUrl);}catch{}
+    expenseShortcut=incoming;
+    openExpense();
+  }
+  window.addEventListener('hashchange',receiveExpense);
+  window.addEventListener('lifts-page',()=>queueMicrotask(openExpense));
   $('moneyMonth').onchange = renderMoney;
   $('moneyCancel').onclick = resetEntry;
   function render() {
     renderRoutines();
     renderMoney();
   }
-  window.addEventListener('nexo-state',()=>{reset();render();});
+  window.addEventListener('nexo-state',()=>{reset();render();queueMicrotask(openExpense);});
   window.liftsRoutines = {reset,render,open(){
     api.open('routines');
   }};
   reset();
   render();
+  receiveExpense();
 })();

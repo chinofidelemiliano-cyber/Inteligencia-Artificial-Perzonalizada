@@ -224,6 +224,21 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     assert.equal(account.finance.entries[0].cents,10025);
     assert.equal(account.finance.budgets['2026-10'],40050);
     assert.equal(account.tasks.find(t=>t.habitId==='water').habitCompletions[0],'2026-10-15');
+    await page.locator('#moneyReport summary').click();
+    await page.locator('#moneyReportBody').getByText('Ideas para ahorrar',{exact:true}).waitFor();
+    assert.match(await page.locator('#moneyReportBody').textContent(),/ahorraría \$10\.02/);
+    const pdfReady=page.waitForEvent('download');
+    await page.locator('#moneyReportPdf').click();
+    const pdf=await pdfReady;
+    assert.equal(pdf.suggestedFilename(),'lifts-gastos-2026-10.pdf');
+    assert.match((await readFile(await pdf.path())).subarray(0,8).toString(),/^%PDF-/);
+    const savesBefore=await page.evaluate(()=>window.saves.length);
+    await page.evaluate(()=>{location.hash='gasto&monto=67,50';});
+    await page.getByText('Gasto del atajo preparado.',{exact:false}).waitFor();
+    assert.equal(await page.locator('#moneyAmount').inputValue(),'67.50');
+    assert.equal(await page.locator('#moneyType').inputValue(),'expense');
+    assert.equal(await page.evaluate(()=>location.hash),'');
+    assert.equal(await page.evaluate(()=>window.saves.length),savesBefore);
     assert.deepEqual(errors,[]);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   } finally {

@@ -131,6 +131,10 @@ La casilla de títulos se guarda en la cuenta y se aplica a los avisos locales y
 
 **Hábitos y dinero** ofrece avisos opcionales de hidratación, pausa activa, revisión personal y revisión financiera. Ajusta la hora y la repetición, y confirma cada actividad para registrar el progreso. **Mi dinero** guarda los movimientos manuales, el tope mensual y los totales por categoría en la cuenta. Los cálculos usan centavos de MXN y esos registros quedan fuera del contexto que se envía al chat de IA.
 
+**Reporte mensual y sugerencias de ahorro** compara los gastos registrados con el mes anterior, muestra la distribución por categoría y calcula ejemplos de reducción. Para el mes en curso, se comparan los mismos días del mes anterior. Puedes descargar un PDF privado con los totales y sugerencias.
+
+**Atajos de iPhone.** Crea un atajo con las acciones **URL** (usa `https://lifts-asistente-virtual.pages.dev/#gasto`) y **Abrir URLs**. Si quieres indicar el importe en el atajo, agrega antes **Solicitar entrada** de tipo número y añade `&monto=` seguido de esa variable a la URL. El importe viaja en el fragmento, que la app elimina de la barra al recibirlo. Puedes confirmar el borrador una vez que inicies sesión.
+
 ### Activar Web Push en producción
 
 1. Aplica `supabase/reminder_push.sql` después de `supabase/schema.sql` en Supabase con PostgreSQL 16 o posterior. Si ya aplicaste ambas migraciones, continúa con `supabase/reminder_push_auto.sql`. Este script instala el trabajo de Cron que revisa los recordatorios cada minuto. Aplica `supabase/reminder_push_followups.sql` para activar intervalos, días alternos, insistencia y fechas de término con la aplicación cerrada. Esta actualización incluye el soporte de la migración anterior de intervalos.
