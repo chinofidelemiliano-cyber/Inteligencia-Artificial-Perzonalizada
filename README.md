@@ -113,6 +113,14 @@ La app conserva el chat general y añade estas capacidades:
 
 Los campos nuevos usan el JSON existente de `user_spaces`; no requieren SQL adicional. La instancia real de Supabase sigue necesitando las políticas y la función de cuota ya documentadas.
 
+## Academia de flexografía
+
+La nueva sección **Academia** agrupa 14 especialidades y cuatro niveles. Incluye lecciones con fundamentos, diagnóstico y ejercicios resueltos, seis comprobaciones numéricas opcionales, 19 fichas de defectos, un glosario y biblioteca con PDF de apuntes originales. El lector admite favoritos, notas privadas, progreso, reanudación y constancias internas por curso. Los simuladores de Lab, TVI, distorsión y registro muestran las hipótesis del cálculo. El atlas, los cortes y las curvas espectrales son ilustraciones didácticas.
+
+El contenido y los simuladores se cargan al abrir la Academia o al buscar sus lecciones. El tutor consulta el endpoint de chat existente con la pregunta y la lección activa. Las notas privadas y el historial académico quedan fuera de la consulta. Se conserva el control de sesión, cuota e IA del servidor. Los catálogos enlazados permiten verificar ediciones y referencias antes de aplicar un requisito. Para parámetros específicos de una Comco Cadet Model 700, usa el manual que corresponda al equipo y su revisión.
+
+El progreso académico vive en `academyProgress` en el espacio privado de la cuenta. El cambio es aditivo y no requiere SQL ni duplicar cuentas, registros, cursos breves o herramientas. La línea base local `backup/antes-academia` apunta a `e041d64`. Para un despliegue de pruebas, conserva ese commit como punto de retorno. El código anterior sigue leyendo los campos existentes de la cuenta.
+
 ## Agenda y cuestionario de flexografía
 
 En **Trabajo → Cuestionario de flexografía** hay 10 casos con niveles intermedio y avanzado. Puedes revisar las cuatro explicaciones de cada caso, guardar intentos por cuenta y pedir a Workers AI una práctica nueva de cuatro preguntas. La generación usa la cuota existente y se valida su estructura. Contrasta la explicación técnica de un caso generado con el manual de tu equipo o las guías de tu proceso. Los casos incluidos usan mediciones y comparaciones que se pueden reproducir para justificar la respuesta.
