@@ -118,3 +118,17 @@ Base `58f58b1`, respaldada en `backup/antes-bloques-paralelos`. La sincronizaci�
 Archivos por bloque: `web/academy-competencies.js`, `web/academy-ui.js`, `web/academy.css`; `web/work.js` y `web/work-ui.js`; `web/nexus-utilities-core.js` y `web/nexus-utilities-ui.js`; `web/nexus-operations-ui.js`. Integración en `web/index.html`, `web/app.js` y `web/nexus-core.js`.
 
 Las pruebas incluyen rutas ligadas a evidencias, carga y solapamientos, resultados locales sin solicitudes, permiso por defecto, borrador sin guardar, ejecución explícita, reintento sin duplicado y cambio de cuenta. Quedan pendientes los demás requisitos indicados en las tablas anteriores, entre ellos la bandeja universal, los permisos por herramienta, el historial de versiones y las utilidades de archivos.
+
+## Bandeja, versiones, evaluaciones y utilidades de archivos
+
+Base `56c8226` con respaldo en `backup/antes-cierre-nexus`. La integración externa de órdenes continúa diferida.
+
+| Requisitos | Cobertura | Límites |
+| --- | --- | --- |
+| 21 | Bandeja privada desde Agenda y buscador, con captura libre, estados pendiente y procesado, y preparación de tareas o recordatorios. | Los formularios de destino requieren su propio guardado. Quedan otros destinos. |
+| 54 | El diario Nexus conserva hasta doce versiones anteriores por registro, muestra las diferencias y permite restaurar con confirmación. El registro conserva su ID y su versión desplazada. | No incluye historiales de otros módulos ni almacena borradores temporales. |
+| 6, 55, 58 | Permisos independientes para crear una tarea y para guardar una captura desde Estado y permisos. Se ejecuta solo al pulsar el control correspondiente y guarda un registro con el tipo, el ID y el momento. | Se aplica a esos accesos de Nexus y reutiliza la autorización de cuenta. Quedan permisos para herramientas futuras. |
+| 44 | Redimensionamiento local y descarga de PNG o JPEG. Ajuste de calidad JPEG, vista previa y tamaños de origen y salida. | La imagen debe caber en los límites de tamaño y resolución de la herramienta. No se incluyen PDF ni QR en esta entrega. |
+| 50 | Evaluación manual de respuestas con corrección privada y recuperación por el buscador. El usuario puede eliminarla con confirmación. | El registro no se envía al modelo y no cambia su entrenamiento. |
+
+Archivos: `web/inbox.js`, `web/nexus-feedback.js`, `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/nexus-operations-ui.js`, `web/nexus-utilities-core.js`, `web/nexus-utilities-ui.js` e integración en `web/index.html`, `web/app.js`, `web/nexus-core.js` y `web/workspace-ui.js`. Se amplían las pruebas de navegador y de lógica para los cinco bloques. Permanecen pendientes los requisitos de las tablas anteriores que exceden esta cobertura.

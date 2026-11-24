@@ -103,6 +103,55 @@
     }
   }
 
-  const api={compareText,daysBetween,addDays,convertBase,encodeText,decodeText};
+  const maxImageBytes=16*1024*1024;
+  const maxOutputEdge=4096;
+
+  function validateImageSize(width,height){
+    if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||
+      width>16384||height>16384||width*height>24_000_000){
+      throw new Error('Admite imágenes de hasta 24 megapíxeles y 16 384 píxeles por lado.');
+    }
+  }
+
+  function inspectImage(buffer){
+    if(buffer.byteLength>maxImageBytes)throw new Error('Admite archivos de hasta 16 MiB.');
+    const bytes=new Uint8Array(buffer);
+    const data=new DataView(buffer);
+    const png=[137,80,78,71,13,10,26,10];
+    if(png.every((byte,index)=>bytes[index]===byte)){
+      if(bytes.length<33||data.getUint32(8)!==13||data.getUint32(12)!==0x49484452)throw new Error('La cabecera PNG está incompleta.');
+      const width=data.getUint32(16),height=data.getUint32(20);
+      validateImageSize(width,height);
+      return {width,height};
+    }
+    if(bytes[0]!==255||bytes[1]!==216)throw new Error('Elige un archivo PNG o JPEG.');
+    const frameMarkers=[0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf];
+    let offset=2;
+    while(offset<bytes.length&&bytes[offset++]===255){
+      while(bytes[offset]===255)offset++;
+      const marker=bytes[offset++];
+      if(marker===0xd9||marker===0xda||offset+2>bytes.length)break;
+      const length=data.getUint16(offset);
+      if(length<2||offset+length>bytes.length)break;
+      if(frameMarkers.includes(marker)&&length>=8){
+        const height=data.getUint16(offset+3),width=data.getUint16(offset+5);
+        validateImageSize(width,height);
+        return {width,height};
+      }
+      offset+=length;
+    }
+    throw new Error('No se pudieron leer las dimensiones del JPEG.');
+  }
+
+  function fitImage(width,height,maxWidth,maxHeight){
+    validateImageSize(width,height);
+    if([maxWidth,maxHeight].some(edge=>!Number.isInteger(edge)||edge<1||edge>maxOutputEdge)){
+      throw new Error('Introduce límites entre 1 y '+maxOutputEdge+' píxeles por lado.');
+    }
+    const scale=Math.min(1,maxWidth/width,maxHeight/height);
+    return {width:Math.max(1,Math.round(width*scale)),height:Math.max(1,Math.round(height*scale))};
+  }
+
+  const api={compareText,daysBetween,addDays,convertBase,encodeText,decodeText,inspectImage,fitImage,maxImageBytes,maxOutputEdge};
   if(typeof module==='object')module.exports=api;else root.liftsUtilitiesCore=api;
 })(globalThis);

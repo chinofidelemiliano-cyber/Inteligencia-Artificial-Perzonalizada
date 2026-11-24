@@ -64,3 +64,36 @@ test('recurrence requires verified evidence and counts distinct cases even with 
   assert.equal(groups[0].engineering.id,'f');
   assert.deepEqual(groups[0].cases.map(item=>[item.diagnosis.id,item.links.length]),[['a',2],['b',1]]);
 });
+
+test('journal retains prior content, restores it as a new change and keeps graph identity',()=>{
+  const {restoreRecord}=require('../web/nexus-journal.js');
+  const initial=record('mission',{title:'Proyecto original',status:'paused',stages:'Medición\nValidación',completed:['Medición']});
+  const updated=record('mission',{title:'Proyecto vigente',status:'active',stages:'Inspección',completed:[]},initial);
+  const [originalVersion]=updated.history;
+  assert.equal(originalVersion.title,initial.title);
+  assert.equal(originalVersion.status,'paused');
+  assert.deepEqual(originalVersion.completed,['Medición']);
+  assert.equal(originalVersion.history,undefined);
+  const restored=restoreRecord(updated,originalVersion.id);
+  assert.equal(restored.id,initial.id);
+  assert.equal(restored.createdAt,initial.createdAt);
+  assert.equal(restored.restoredFrom,originalVersion.id);
+  assert.equal(restored.title,initial.title);
+  assert.deepEqual(restored.completed,initial.completed);
+  assert.deepEqual(restored.history.map(version=>version.title),['Proyecto vigente','Proyecto original']);
+  assert.equal(restoreRecord(restored,originalVersion.id),restored);
+  assert.throws(()=>restoreRecord(restored,'otra-cuenta-o-versión'),/ya no está disponible/);
+});
+
+test('journal skips duplicate edits, bounds history and revalidates older content',()=>{
+  const {restoreRecord,historyLimit}=require('../web/nexus-journal.js');
+  let entry=record('knowledge',{title:'Ficha 0',status:'documented'});
+  assert.equal(record('knowledge',{title:'  Ficha 0  ',status:'documented'},entry),entry);
+  for(let index=1;index<=historyLimit+2;index++){
+    entry=record('knowledge',{title:'Ficha '+index,status:'documented'},entry);
+  }
+  assert.equal(entry.history.length,historyLimit);
+  assert.equal(entry.history.at(-1).title,'Ficha 2');
+  const bad={...entry.history[0],status:'verified',data:{source:'Manual'}};
+  assert.throws(()=>restoreRecord({...entry,history:[bad]},bad.id),/evidencia/);
+});

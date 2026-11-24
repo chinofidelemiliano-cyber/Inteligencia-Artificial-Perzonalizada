@@ -66,6 +66,9 @@
     for(const item of (api.getState().nexusJournal||[]).filter(item=>normalize(item.title).includes(term)).slice(0,5)){
       add(item.title+' · Nexus',()=>window.liftsNexus.open({id:'journal-record',key:item.id}));
     }
+    for(const item of (window.liftsFeedback?.search(value)||[]).slice(0,5)){
+      add(item.topic+' · Evaluación privada',()=>window.liftsNexus.open({id:'feedback-record',key:item.id}));
+    }
     try {
       const lessons=await window.liftsAcademy.search(value);
       if(version!==searchVersion||!dialog.open)return;

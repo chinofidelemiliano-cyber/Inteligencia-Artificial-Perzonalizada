@@ -15,6 +15,19 @@
   const tools = Object.freeze({
     utilities:plainPage('Utilidades locales','Comparar textos y hacer conversiones','Los datos introducidos permanecen en esta sesión.'),
     operations:plainPage('Estado y permisos','Consultar sincronización y controlar acciones de Nexus','La comprobación de IA se ejecuta por solicitud.'),
+    inbox:{
+      label:'Bandeja de entrada',purpose:'Capturar pendientes y preparar tareas o recordatorios',
+      input:'Sin parámetros',output:'Captura de Agenda',permission:'Sesión del propietario',
+      dependency:'Agenda',limitations:'Las conversiones quedan sujetas al guardado de cada herramienta.',
+      validate:key=>key==='',open:()=>root.liftsInbox.open()
+    },
+    'feedback-record':{
+      label:'Evaluación de respuesta guardada',purpose:'Reabrir una corrección en el espacio privado',
+      input:'Identificador de evaluación',output:'Evaluación en Estado y permisos',permission:'Sesión del propietario',
+      dependency:'Estado y permisos',limitations:'Comentarios registrados por el usuario.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsFeedback.openRecord(key)
+    },
     journal:plainPage('Misiones y conocimiento','Abrir decisiones, lecciones, experimentos y revisión crítica','Los registros se sincronizan al pulsar Guardar registro.'),
     'journal-record':{
       label:'Registro de Nexus',purpose:'Retomar una misión o un registro de trabajo',

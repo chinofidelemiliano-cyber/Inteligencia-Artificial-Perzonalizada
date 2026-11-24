@@ -37,6 +37,23 @@
       {label:'Desfavorable',value:high/100,difference:(high-baseline)/100}
     ]};
   }
+  const historyLimit=12;
+  function journalContent(record) {
+    const data=Object.fromEntries(Object.keys(kinds[record.kind].fields).map(key=>[key,record.data?.[key]||'']));
+    return {title:record.title,data,status:record.status||'',completed:[...(record.completed||[])]};
+  }
+
+  function retainVersion(next,previous) {
+    if(!previous)return next;
+    const history=previous.history||[];
+    const old=journalContent(previous);
+    if(JSON.stringify(old)===JSON.stringify(journalContent(next)))return previous;
+    return {...next,history:[{
+      id:crypto.randomUUID(),at:previous.updatedAt||previous.createdAt,...old,
+      ...(previous.restoredFrom?{restoredFrom:previous.restoredFrom}:{})
+    },...history].slice(0,historyLimit)};
+  }
+
   function record(kind,raw,previous=null) {
     if(!Object.hasOwn(kinds,kind))throw new Error('Tipo de registro desconocido.');
     const title=clean(raw.title,100);
@@ -54,7 +71,16 @@
       throw new Error('Registra autorización, pruebas, resultados, evidencia y plan de reversión.');
     }
     if(status==='answered'&&!data.answer)throw new Error('Registra la respuesta antes de cerrar la pregunta.');
-    return {id:previous?.id||crypto.randomUUID(),kind,title,data,status,completed,createdAt:previous?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const now=new Date().toISOString();
+    return retainVersion({id:previous?.id||crypto.randomUUID(),kind,title,data,status,completed,
+      createdAt:previous?.createdAt||now,updatedAt:now},previous);
+  }
+
+  function restoreRecord(previous,versionId) {
+    const version=previous.history?.find(item=>item.id===versionId);
+    if(!version)throw new Error('Esta versión ya no está disponible.');
+    const restored=record(previous.kind,{...version.data,title:version.title,status:version.status,completed:version.completed},previous);
+    return restored===previous?previous:{...restored,restoredFrom:version.id};
   }
   function relation(raw,records) {
     const {from,to,status}=raw;
@@ -124,7 +150,7 @@
     }
     return {count,mean,deviation:Math.sqrt(sumSquaredDeviations/(count-1))};
   }
-  const api={kinds,statuses,relationStates,steps,record,relation,compareCosts,timeline,measurementSummary,graphNodes,graphView,linkedCases};
+  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);

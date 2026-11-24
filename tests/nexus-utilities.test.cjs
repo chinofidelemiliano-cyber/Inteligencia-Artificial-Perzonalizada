@@ -53,3 +53,26 @@ test('round-trips UTF-8, accepts pasted line breaks and rejects invalid or nonca
   assert.throws(()=>tools.decodeText('Zh=='),/relleno inválidos/);
   assert.throws(()=>tools.decodeText('/w=='),/UTF-8 válido/);
 });
+
+test('recognizes PNG and JPEG dimensions and rejects oversized sources',()=>{
+  const png=new Uint8Array(33);
+  png.set([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82]);
+  const header=new DataView(png.buffer);
+  header.setUint32(16,1920);
+  header.setUint32(20,1080);
+  assert.deepEqual(tools.inspectImage(png.buffer),{width:1920,height:1080});
+  header.setUint32(16,30000);
+  assert.throws(()=>tools.inspectImage(png.buffer),/24 megapíxeles/);
+  const jpg=Uint8Array.from([255,216,255,224,0,2,255,192,0,8,8,0,40,0,80,1,255,217]);
+  assert.deepEqual(tools.inspectImage(jpg.buffer),{width:80,height:40});
+  assert.throws(()=>tools.inspectImage(jpg.slice(0,10).buffer),/dimensiones del JPEG/);
+  assert.throws(()=>tools.inspectImage(Uint8Array.from([1,2]).buffer),/PNG o JPEG/);
+});
+
+test('fits an image inside both bounds without enlargement or zero edges',()=>{
+  assert.deepEqual(tools.fitImage(1920,1080,640,480),{width:640,height:360});
+  assert.deepEqual(tools.fitImage(100,200,70,80),{width:40,height:80});
+  assert.deepEqual(tools.fitImage(80,40,1600,1600),{width:80,height:40});
+  assert.deepEqual(tools.fitImage(1,200,10,80),{width:1,height:80});
+  assert.throws(()=>tools.fitImage(80,40,4097,80),/límites/);
+});

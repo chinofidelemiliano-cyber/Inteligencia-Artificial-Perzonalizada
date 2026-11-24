@@ -154,9 +154,26 @@
     <button id="nexusRunAction" type="button" hidden></button>
     <button id="nexusRetryAction" type="button" class="secondary" hidden>Reintentar guardado de la tarea</button>
     <p id="nexusOperationNotice" role="status"></p>
-    <h3>Historial de tareas creadas desde Nexus</h3>
+    <h3>Próxima acción en la Bandeja</h3>
+    <label><input type="checkbox" id="nexusInboxPermission"> Autorizar captura desde este panel</label>
+    <button id="nexusSaveInboxPermission" type="button" class="secondary">Guardar permiso de Bandeja</button>
+    <button id="nexusRunInbox" type="button" hidden>Guardar próxima acción en Bandeja</button>
+    <h3>Historial de acciones de Nexus</h3>
     <ul id="nexusActionHistory"></ul>
   </article>
+  <details class="card" id="nexusFeedbackPanel">
+    <summary>Evaluaciones de respuestas</summary>
+    <p>Guarda tu evaluación y cualquier corrección que quieras encontrar después. Este registro se queda en tu espacio y no se envía al modelo.</p>
+    <form id="nexusFeedbackForm">
+      <label>Tema de la respuesta <input name="topic" maxlength="120" required></label>
+      <label for="nexusFeedbackVerdict">Tipo de evaluación</label><select id="nexusFeedbackVerdict" name="verdict"></select>
+      <label>Corrección o comentario <textarea name="correction" maxlength="1200"></textarea></label>
+      <button>Guardar evaluación</button>
+    </form>
+    <p id="nexusFeedbackStatus" role="status"></p>
+    <label>Buscar evaluaciones <input id="nexusFeedbackQuery" type="search" maxlength="120"></label>
+    <ul id="nexusFeedbackList"></ul>
+  </details>
 </section>
 <section id="journal" hidden aria-labelledby="journalTitle">
   <article class="card">
@@ -311,6 +328,7 @@
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
 <script src="nexus-operations-ui.js" defer></script>
+<script src="nexus-feedback.js" defer></script>
 <script src="nexus-utilities-core.js" defer></script>
 <script src="nexus-utilities-ui.js" defer></script>
 <script src="industrial-core.js" defer></script>
@@ -318,6 +336,7 @@
 <script src="google-ui.js" defer></script>
 <dialog id="installLiftsHelp" aria-labelledby="installLiftsTitle"><form method="dialog"><h2 id="installLiftsTitle">Instalar Lifts IA</h2><h3>iPhone o iPad</h3><p>Abre Lifts en Safari. Pulsa Compartir → Añadir a pantalla de inicio. Si ves «Abrir como app web», actívalo y pulsa Añadir.</p><h3>Android</h3><p>Abre Lifts en Chrome. Pulsa ⋮ → Instalar aplicación o Añadir a pantalla de inicio.</p><p class="notice">En computadora, busca Instalar aplicación en la barra de direcciones o en el menú de Chrome o Edge.</p><button>Cerrar</button></form></dialog>
 <script src="reminders-ui.js" defer></script>
+<script src="inbox.js" defer></script>
 <script src="finance-report.js" defer></script>
 <script src="routines-ui.js" defer></script>
 <script src="push-ui.js" defer></script>

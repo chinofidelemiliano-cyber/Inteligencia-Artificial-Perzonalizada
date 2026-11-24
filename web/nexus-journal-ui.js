@@ -56,6 +56,54 @@
     } finally {if(version===epoch)pending=false;}
   }
   $('journalRetry').onclick=()=>{if(retry)void save(retry);};
+  function renderRecordHistory(item) {
+    const history=node(form,'details');
+    node(history,'summary','Historial de versiones');
+    node(history,'p','Se conservan hasta '+core.historyLimit+' versiones anteriores. Restaurar una versión guarda el contenido actual en el historial.');
+    if(!item.history?.length){
+      node(history,'p','Todavía no hay versiones anteriores.');
+      return;
+    }
+    const format=new Intl.DateTimeFormat('es-MX',{dateStyle:'medium',timeStyle:'short'});
+    for(const [index,version] of item.history.entries()){
+      const entry=node(history,'details');
+      const date=new Date(version.at);
+      const when=Number.isFinite(+date)?format.format(date):'Fecha sin registrar';
+      const versionLabel='Versión anterior '+(index+1);
+      node(entry,'summary',versionLabel+' · '+when+' · '+version.title);
+      const content=node(entry,'dl');
+      const compare=(label,before,after)=>{
+        if(!before&&!after)return;
+        node(content,'dt',label);
+        node(content,'dd',before||'Sin registrar');
+        if(before!==after)node(content,'dd','Actual: '+(after||'Sin registrar'));
+      };
+      compare('Título',version.title,item.title);
+      const states=core.statuses[item.kind]||{};
+      compare('Estado',states[version.status]||version.status,states[item.status]||item.status);
+      for(const [key,label] of Object.entries(core.kinds[item.kind].fields)){
+        compare(label,version.data?.[key]||'',item.data?.[key]||'');
+      }
+      compare('Pasos realizados',(version.completed||[]).join(' · '),(item.completed||[]).join(' · '));
+      button(entry,'Restaurar '+versionLabel.toLowerCase(),()=>{
+        if(pending||editing!==item.id)return;
+        const current=records().find(record=>record.id===item.id);
+        if(!current)return;
+        if(!confirm('¿Restaurar «'+version.title+'»? La versión guardada actual quedará en el historial. Las ediciones que aún no guardaste se reemplazarán.'))return;
+        try{
+          const restored=core.restoreRecord(current,version.id);
+          if(restored===current){notice.textContent='Esta versión coincide con el registro actual.';return;}
+          commitRecord(restored,current,'Versión restaurada.');
+        }catch(error){notice.textContent=error.message;}
+      });
+    }
+  }
+  function commitRecord(item,old,message) {
+    state().nexusJournal=old?records().map(record=>record.id===old.id?item:record):[item,...records()];
+    window.liftsNexus?.checkpoint('journal-record',item.id,item.title,false);
+    renderList();renderGraph();renderEditor(item);renderTimeline();
+    void save(message);
+  }
   function renderEditor(item=null) {
     editing=item?.id||null;
     form.replaceChildren();
@@ -125,7 +173,10 @@
       const due=item.data.due;
       if(/^\d{4}-\d{2}-\d{2}$/.test(due))$('taskDate').value=due;
     });
-    if(item)button(form,'Dejar de editar',()=>renderEditor());
+    if(item){
+      button(form,'Dejar de editar',()=>renderEditor());
+      renderRecordHistory(item);
+    }
   }
   form.onsubmit=event=>{
     event.preventDefault();
@@ -134,10 +185,8 @@
       const values=new FormData(form);
       const old=records().find(item=>item.id===editing);
       const item=core.record(kind,{...Object.fromEntries(values),completed:values.getAll('completed')},old);
-      state().nexusJournal=old?records().map(record=>record.id===old.id?item:record):[item,...records()];
-      window.liftsNexus?.checkpoint('journal-record',item.id,item.title,false);
-      renderList();renderGraph();renderEditor(item);renderTimeline();
-      void save('Registro guardado.');
+      if(old&&item===old&&!retry){notice.textContent='El registro ya está actualizado.';return;}
+      commitRecord(item,old,'Registro guardado.');
     }catch(error){notice.textContent=error.message;}
   };
   function renderList() {

@@ -287,6 +287,16 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     await page.getByText('Continuidad de trabajo',{exact:true}).click();
     await page.getByRole('button',{name:'Retomar actividad',exact:true}).click();
     assert.equal(await editor.getByLabel('Título del registro',{exact:true}).inputValue(),'Medir tres órdenes');
+    await editor.getByLabel('Decisión',{exact:true}).fill('Programar otra medición');
+    await editor.getByRole('button',{name:'Guardar registro'}).click();
+    await page.locator('#journalStatus').getByText('Registro guardado.',{exact:true}).waitFor();
+    await editor.getByText('Historial de versiones',{exact:true}).click();
+    await editor.getByText(/Versión anterior 1/).first().click();
+    await editor.getByText('Actual: Programar otra medición',{exact:true}).waitFor();
+    page.once('dialog',dialog=>dialog.accept());
+    await editor.getByRole('button',{name:'Restaurar versión anterior 1',exact:true}).click();
+    await page.locator('#journalStatus').getByText('Versión restaurada.',{exact:true}).waitFor();
+    assert.equal(await editor.getByLabel('Decisión',{exact:true}).inputValue(),'Conservar una referencia');
     await page.getByText('Revisión por periodo',{exact:true}).click();
     await page.locator('#journalTimelineItems').getByRole('button',{name:'Reducir merma',exact:true}).click();
     assert.equal(await editor.getByLabel('Título del registro',{exact:true}).inputValue(),'Reducir merma');
@@ -377,6 +387,17 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     assert.equal(authorized.tasks[0].reminderAt,'');
     await operation.getByRole('button',{name:'Crear tarea en Agenda',exact:true}).click();
     await operation.getByText('Ya tienes una tarea pendiente con esa acción.',{exact:true}).waitFor();
+    assert.equal(await page.locator('#nexusRunInbox').isVisible(),false);
+    await operation.getByLabel('Autorizar captura desde este panel').check();
+    await operation.getByRole('button',{name:'Guardar permiso de Bandeja'}).click();
+    await operation.getByText('Permiso de Bandeja guardado.',{exact:true}).waitFor();
+    await operation.getByRole('button',{name:'Guardar próxima acción en Bandeja'}).click();
+    await operation.getByText('Próxima acción guardada en Bandeja.',{exact:true}).waitFor();
+    const permissions=await page.evaluate(()=>window.saves.at(-1));
+    assert.equal(permissions.tasks.length,1);
+    assert.equal(permissions.inbox[0].title,'Revisar muestra patrón');
+    assert.equal(permissions.nexusActionHistory[0].type,'inbox');
+
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
     await page.evaluate(()=>window.liftsWorkspace.open('operations'));
     assert.equal(await mode.inputValue(),'consult');
@@ -388,6 +409,23 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     await page.locator('#utilities').getByLabel('Texto nuevo').fill('Texto actualizado');
     await page.locator('#utilities').getByRole('button',{name:'Calcular',exact:true}).click();
     await page.locator('#utilities').getByText('Añadida, línea nueva 1',{exact:true}).waitFor();
+    await page.evaluate(()=>window.liftsWorkspace.open('home'));
+    await page.evaluate(()=>window.liftsWorkspace.ask('Explícame la capilaridad'));
+    await page.getByRole('button',{name:'Evaluar respuesta',exact:true}).last().click();
+    const feedback=page.locator('#nexusFeedbackForm');
+    assert.equal(await feedback.getByLabel('Tema de la respuesta').inputValue(),'Explícame la capilaridad');
+    await feedback.getByLabel('Tipo de evaluación').selectOption('incorrect');
+    await feedback.getByRole('button',{name:'Guardar evaluación'}).click();
+    await page.locator('#nexusFeedbackStatus').getByText(/Escribe una corrección/).waitFor();
+    await feedback.getByLabel('Corrección o comentario').fill('La humectación depende del sistema tinta y sustrato.');
+    await feedback.getByRole('button',{name:'Guardar evaluación'}).click();
+    await page.locator('#nexusFeedbackStatus').getByText('Evaluación guardada.',{exact:true}).waitFor();
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('humectacion');
+    await page.locator('#workspaceSearchResults').getByRole('button',{name:'Explícame la capilaridad · Evaluación privada',exact:true}).click();
+    await page.locator('#nexusFeedbackList').getByText(/depende del sistema tinta/).waitFor();
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
+    assert.equal(await page.evaluate(()=>window.liftsFeedback.search('humectacion').length),0);
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });
