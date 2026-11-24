@@ -32,7 +32,7 @@
     <div class="os-scene" aria-hidden="true">
       <div class="os-sun"></div>
       <div id="osWelcomeRobot"></div>
-      <svg class="os-welcome-pet" viewBox="22 767 111 165" aria-hidden="true"><image href="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></svg>
+      <div id="osWelcomePet" class="os-welcome-pet"><svg viewBox="22 767 111 165" aria-hidden="true"><image href="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></svg></div>
     </div>
   </section>
   <div class="os-access">
@@ -180,6 +180,65 @@
 <section id="negotiation" hidden aria-labelledby="negotiationTitle">
   <article class="card"><h2 id="negotiationTitle">Simulador de negociación</h2><div id="negotiationContent"></div></article>
 </section>
+<section id="characters" hidden aria-labelledby="charactersTitle"><article class="card">
+  <h2 id="charactersTitle">Personajes 3D</h2>
+  <label for="charactersPose">Expresión para los dos personajes</label><select id="charactersPose"></select>
+  <label for="charactersMode">Presentación durante esta sesión</label>
+  <select id="charactersMode"><option value="auto">Automática</option><option value="3d">Usar modelos 3D</option><option value="2d">Usar ilustraciones</option></select>
+  <p id="charactersStatus" role="status"></p>
+  <div class="os-character-gallery">
+    <figure><div id="characterStudioRobot" class="os-character-card"><img src="/assets/icon-192.png" width="192" height="192" alt="Ilustración de Lifts"></div><figcaption>Lifts</figcaption></figure>
+    <figure><div id="characterStudioPet" class="os-character-card"><svg viewBox="22 767 111 165" role="img" aria-label="Ilustración de la mascota de Lifts"><image href="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></svg></div><figcaption>Mascota de Lifts</figcaption></figure>
+  </div>
+</article></section>
+<section id="preflight" hidden aria-labelledby="preflightTitle"><article class="card">
+  <h2 id="preflightTitle">Lifts Preflight</h2>
+  <p>Revisa la geometría declarada por el PDF antes de producción. El archivo se procesa en este dispositivo.</p>
+  <form id="preflightForm">
+    <label for="preflightFile">PDF para revisar</label><input type="file" id="preflightFile" accept=".pdf,application/pdf" required>
+    <div class="field-grid">
+      <label>Ancho objetivo (mm) <input name="width" inputmode="decimal"></label>
+      <label>Alto objetivo (mm) <input name="height" inputmode="decimal"></label>
+      <label>Tolerancia dimensional (mm) <input name="tolerance" inputmode="decimal" value="0.5" required></label>
+      <label>Sangrado mínimo (mm) <input name="bleed" inputmode="decimal"></label>
+    </div><button>Revisar PDF</button>
+  </form>
+  <p id="preflightStatus" role="status"></p>
+  <div id="preflightResults" class="os-overflow"></div>
+  <button id="preflightDownload" type="button" class="secondary" hidden>Descargar reporte de revisión</button>
+  <h3>Revisión manual</h3><p>Confirma que el arte cubra el sangrado. Revisa márgenes, fuentes, resolución, tintas, sobreimpresiones, transparencias, troquel, códigos de barras y tamaños mínimos con las herramientas de preprensa.</p>
+</article></section>
+<section id="systems" hidden aria-labelledby="systemsHeading"><article class="card">
+  <h2 id="systemsHeading">Lifts Systems</h2>
+  <p>Registra variables, relaciones y retrasos. Las líneas discontinuas representan hipótesis.</p>
+  <label for="systemsPick">Mapas del espacio</label><select id="systemsPick"></select>
+  <label for="systemsTitle">Título del mapa</label><input id="systemsTitle" maxlength="100">
+  <button id="systemsSave" type="button">Guardar mapa</button>
+  <p id="systemsStatus" role="status"></p><button type="button" id="systemsRetry" class="secondary" hidden>Reintentar guardado del mapa</button>
+</article><div class="os-builder-layout">
+  <article class="card">
+    <h3>Variables</h3>
+    <form id="systemsNode"><label>Nombre de la variable <input name="name" maxlength="120" required></label>
+      <label>Observación <textarea name="notes" maxlength="500"></textarea></label>
+      <label><input name="bottleneck" type="checkbox"> Marcar como cuello de botella</label>
+      <button>Agregar variable</button></form><ol id="systemsComponents"></ol>
+    <h3>Relaciones</h3>
+    <form id="systemsEdge">
+      <label for="systemsFrom">Origen</label><select id="systemsFrom" name="from" required></select>
+      <label for="systemsTo">Destino</label><select id="systemsTo" name="to" required></select>
+      <label>Descripción de la relación <input name="label" maxlength="120" required></label>
+      <label for="systemsSign">Efecto en el destino</label><select id="systemsSign" name="sign"><option value="unknown">Sin determinar</option><option value="positive">Aumenta</option><option value="negative">Disminuye</option></select>
+      <label for="systemsRelationStatus">Estado de la relación</label><select id="systemsRelationStatus" name="status"><option value="hypothesis">Hipótesis</option><option value="observed">Observación registrada</option></select>
+      <label>Retraso medido (h) <input name="lag" maxlength="16" inputmode="decimal"></label>
+      <label>Evidencia de la relación <textarea name="evidence" maxlength="500"></textarea></label>
+      <button>Agregar relación</button>
+    </form>
+    <ul id="systemsLinks"></ul>
+  </article><article class="card">
+    <h3>Diagrama</h3><div id="systemsDiagram"></div>
+    <label for="systemsTrace">Seguir efectos desde</label><select id="systemsTrace"></select><div id="systemsResults"></div>
+  </article>
+</div></section>
 <section id="models" hidden aria-labelledby="personalModelsTitle">
   <article class="card"><h2 id="personalModelsTitle">Modelos mentales</h2>
     <label for="personalModelsSearch">Buscar un modelo mental</label><input id="personalModelsSearch" type="search" maxlength="120">
@@ -428,6 +487,9 @@
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
 <script src="personal-models.js" defer></script>
+<script src="personal-characters.js" defer></script>
+<script src="personal-systems.js" defer></script>
+<script src="personal-preflight-ui.js" type="module"></script>
 <script src="nexus-ui.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>

@@ -173,7 +173,8 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     assert.equal(await page.evaluate(()=>window.saves.at(-1).identityPreference),'circuit');
     assert.ok(await page.getByAltText('Lifts · Lifts Signature',{exact:true}).first().evaluate(img=>img.naturalWidth>0));
     await page.evaluate(()=>window.liftsWorkspace.open('home'));
-    await page.locator('#evolutionRobot svg').waitFor();
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await page.locator('#evolutionRobot > .lifts-robot').waitFor();
     await page.getByText('Personalizar inicio',{exact:true}).click();
     await page.getByRole('button',{name:'Ocultar Agenda',exact:true}).click();
     assert.equal(await page.locator('#evolutionPanels').getByRole('heading',{name:'Agenda'}).count(),0);

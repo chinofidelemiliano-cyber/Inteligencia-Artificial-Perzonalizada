@@ -34,6 +34,9 @@
         if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
       }
     },
+    preflight:plainPage('Lifts Preflight','Revisar dimensiones, orientación y cajas de sangrado PDF','Revisión geométrica local; otros atributos requieren comprobación manual.'),
+    systems:plainPage('Lifts Systems','Dibujar dependencias y ciclos entre variables','Las relaciones se interpretan a partir de los registros del usuario.'),
+    characters:plainPage('Personajes 3D','Explorar expresiones del robot y su mascota','Los modelos se cargan cuando la vista está visible.'),
     models:plainPage('Modelos mentales','Consultar ejercicios y preparar una revisión crítica','La biblioteca funciona con contenidos locales.'),
     radar:plainPage('Lifts Radar','Revisar alertas y pendientes de tus registros','Las comprobaciones se realizan al abrir esta vista.'),
     'builder-record':{
