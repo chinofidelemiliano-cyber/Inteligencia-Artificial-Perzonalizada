@@ -65,11 +65,42 @@
     if(status==='verified'&&!evidence)throw new Error('Agrega evidencia para verificar la relación.');
     return {id:crypto.randomUUID(),from,to,title,evidence,status};
   }
+  function graphNodes(space) {
+    return [
+      ...(space.nexusJournal||[]).map(item=>({id:item.id,title:item.title,category:kinds[item.kind]?.label,target:'journal-record'})),
+      ...(space.engineeringRecords||[]).map(item=>({id:item.id,title:item.data?.name,category:'Ficha de Ingeniería',target:'engineering-record'})),
+      ...(space.diagnosticCases||[]).map(item=>({id:item.id,title:item.data?.name,category:'Caso de diagnóstico',target:'diagnostic-record'}))
+    ].filter(item=>item.id&&item.title&&item.category);
+  }
+
+  function graphView(nodes,links) {
+    const byId=new Map(nodes.map(node=>[node.id,node]));
+    return links.filter(link=>byId.has(link.from)&&byId.has(link.to)&&Object.hasOwn(relationStates,link.status))
+      .map(link=>({...link,origin:byId.get(link.from),destination:byId.get(link.to)}));
+  }
+
+  function linkedCases(nodes,edges) {
+    const groups=new Map();
+    for(const edge of edges) {
+      if(edge.status!=='verified'||!edge.evidence?.trim())continue;
+      const pair=[edge.origin,edge.destination];
+      const engineering=pair.find(node=>node.target==='engineering-record');
+      const diagnosis=pair.find(node=>node.target==='diagnostic-record');
+      if(!engineering||!diagnosis)continue;
+      if(!groups.has(engineering.id))groups.set(engineering.id,new Map());
+      const cases=groups.get(engineering.id);
+      if(!cases.has(diagnosis.id))cases.set(diagnosis.id,{diagnosis,links:[]});
+      cases.get(diagnosis.id).links.push(edge);
+    }
+    return nodes.filter(node=>groups.get(node.id)?.size>=2)
+      .map(engineering=>({engineering,cases:[...groups.get(engineering.id).values()]}));
+  }
+
   function timeline(space,start,end) {
     const source=[
       [(space.nexusJournal||[]),'createdAt',item=>item.title,item=>kinds[item.kind]?.label,'journal-record'],
       [(space.engineeringRecords||[]),'at',item=>item.data?.name,()=> 'Ingeniería','engineering-record'],
-      [(space.diagnosticCases||[]),'at',item=>item.data?.name,()=> 'Diagnóstico','diagnostics'],
+      [(space.diagnosticCases||[]),'at',item=>item.data?.name,()=> 'Diagnóstico','diagnostic-record'],
       [(space.tasks||[]).filter(task=>task.done),'completedAt',item=>item.title,()=> 'Tarea completada','tasks']
     ];
     return source.flatMap(([records,field,title,type,target])=>records.flatMap(item=>{
@@ -93,7 +124,7 @@
     }
     return {count,mean,deviation:Math.sqrt(sumSquaredDeviations/(count-1))};
   }
-  const api={kinds,statuses,relationStates,steps,record,relation,compareCosts,timeline,measurementSummary};
+  const api={kinds,statuses,relationStates,steps,record,relation,compareCosts,timeline,measurementSummary,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);

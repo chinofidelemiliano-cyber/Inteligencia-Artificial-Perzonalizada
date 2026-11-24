@@ -57,8 +57,8 @@
     for(const item of (api.getState().engineeringRecords||[]).filter(item=>normalize(item.data.name+' '+item.data.model).includes(term)).slice(0,4)){
       add(item.data.name+' · Ficha de ingeniería',()=>window.liftsNexus.open({id:'engineering-record',key:item.id}));
     }
-    for(const item of (api.getState().diagnosticCases||[]).filter(item=>normalize(item.data.name+' '+item.data.symptoms).includes(term)).slice(0,4)){
-      add(item.data.name+' · Caso de diagnóstico',()=>api.open('diagnostics'));
+    for(const item of window.liftsDiagnostics.search(value).slice(0,4)){
+      add(item.data.name+' · Caso de diagnóstico',()=>window.liftsNexus.open({id:'diagnostic-record',key:item.id}));
     }
     for(const item of (api.getState().nexusJournal||[]).filter(item=>normalize(item.title).includes(term)).slice(0,5)){
       add(item.title+' · Nexus',()=>window.liftsNexus.open({id:'journal-record',key:item.id}));

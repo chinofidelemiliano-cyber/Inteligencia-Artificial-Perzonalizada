@@ -28,15 +28,27 @@ function action(parent,text,run){
 }
 const records=()=>api.getState().diagnosticCases||[];
 const values=()=>Object.fromEntries(new FormData(form));
+const traceFields={order:'Orden de producción',material:'Material o lote',ink:'Tinta o lote',anilox:'Anilox',plate:'Placa',die:'Suaje'};
+const traceLines=data=>Object.entries(traceFields).filter(([key])=>data[key]?.trim())
+  .map(([key,label])=>label+': '+data[key].trim());
+const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().trim();
+function search(query){
+  const term=normalize(query);
+  return records().filter(({data})=>normalize([data.name,data.machine,data.symptoms,data.cause,...traceLines(data)].join(' ')).includes(term));
+}
 function sections(data){
   const route=checks[data.problem]?.[data.pattern];
-  return route?[
+  if(!route)return [];
+  const report=[
     {heading:'Condición observada',body:'Máquina u orden: '+(data.machine||'Sin indicar')+'\n'+(data.symptoms||'Sin registrar')},
     {heading:'Hipótesis inicial',body:route[0]},
     {heading:'Comprobación e interpretación',body:route[1]+'\n'+route[2]},
     {heading:'Evidencia de la operación',body:data.evidence||'Sin mediciones registradas.'},
     {heading:'Causa y validación',body:'Causa confirmada por quien registra: '+(data.cause||'Pendiente de confirmar')+'\n'+(data.validation||'Sin validación registrada.')}
-  ]:[];
+  ];
+  const trace=traceLines(data);
+  if(trace.length)report.push({heading:'Trazabilidad',body:trace.join('\n')});
+  return report;
 }
 function update(){
   guide.replaceChildren();
@@ -47,20 +59,31 @@ function update(){
 }
 form.onchange=update;
 function load(record){
+  form.reset();
   id=record.id;
   for(const [key,value] of Object.entries(record.data))if(form.elements.namedItem(key))form.elements.namedItem(key).value=value;
+  $('diagnosticTrace').open=traceLines(record.data).length>0;
   update();status.textContent='Caso cargado. Al guardar se actualizará este registro.';
+  window.liftsNexus?.checkpoint('diagnostic-record',record.id,record.data.name);
   form.scrollIntoView({block:'start'});
+}
+function openSaved(key){
+  const record=records().find(item=>item.id===key);
+  if(!record)return false;
+  if($('diagnostics').hidden)api.open('diagnostics');
+  if($('diagnostics').hidden)return false;
+  load(record);
+  return true;
 }
 function renderHistory(){
   history.replaceChildren();
-  const query=$('diagnosticSearch').value.trim().toLowerCase();
-  const matching=records().filter(record=>[record.data.name,record.data.machine,record.data.symptoms,record.data.cause].join(' ').toLowerCase().includes(query));
+  const matching=search($('diagnosticSearch').value);
   if(!matching.length)node(history,'p','No hay casos que coincidan.');
   for(const item of matching){
     const entry=node(history,'article');entry.className='reminder-card';
     node(entry,'h4',item.data.name);
     node(entry,'p',[item.data.machine,item.data.cause?'Causa registrada':'En análisis',new Date(item.at).toLocaleDateString('es-MX')].filter(Boolean).join(' · '));
+    if(item.data.order)node(entry,'p','Orden: '+item.data.order);
     action(entry,'Cargar caso',()=>load(item));
   }
 }
@@ -152,16 +175,20 @@ for(const label of ['Referencia','Muestra']) {
     local.url=URL.createObjectURL(file);img.src=local.url;
   };
 }
-form.onreset=()=>{id='';status.textContent='';queueMicrotask(update);};
-function reset(){
-  version++;busy=false;form.reset();$('diagnosticSearch').value='';$('diagnosticPhotoStatus').textContent='';
+function clearPhotos(){
   for(const photo of photos){
     if(photo.url)URL.revokeObjectURL(photo.url);
+    photo.img.onload=null;photo.img.onerror=null;
     photo.url='';photo.img.removeAttribute('src');photo.input.value='';photo.wrapper.hidden=true;
     photo.zoom.disabled=true;photo.marker.hidden=true;photo.point.textContent='';
   }
+  $('diagnosticPhotoStatus').textContent='';
+}
+form.onreset=()=>{id='';status.textContent='';$('diagnosticTrace').open=false;clearPhotos();queueMicrotask(update);};
+function reset(){
+  version++;busy=false;form.reset();$('diagnosticSearch').value='';
   renderHistory();
 }
 window.addEventListener('lifts-page',event=>{if(event.detail?.page==='diagnostics'){update();renderHistory();}});
 window.addEventListener('nexo-state',reset);
-window.liftsDiagnostics={reset};
+window.liftsDiagnostics={reset,openSaved,search};

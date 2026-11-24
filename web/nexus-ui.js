@@ -61,7 +61,7 @@
   function open(target) {
     const checked=core.location(target?.id,target?.key);
     if(checked&&api.getState().onboardingCompleted){
-      if(!['engineering-record','journal-record'].includes(checked.id))return core.tools[checked.id].open(api,checked.id,checked.key);
+      if(!checked.id.endsWith('-record'))return core.tools[checked.id].open(api,checked.id,checked.key);
       openingRecord=true;
       try {
         if(!core.tools[checked.id].open(api,checked.id,checked.key))status.textContent='El registro ya no está disponible en tu espacio.';

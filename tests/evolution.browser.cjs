@@ -110,6 +110,50 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     assert.equal(fixture.diagnosticCases[0].data.name,'Desfase de muestra');
     assert.ok(fixture.excelProgress.inventory);
     assert.equal(fixture.engineeringRecords[0].data.target,'100');
+    await page.getByRole('button',{name:'Nuevo caso',exact:true}).click();
+    await page.getByLabel('Nombre del caso').fill('Segundo caso de registro');
+    await page.getByText('Datos de trazabilidad',{exact:true}).click();
+    await page.getByLabel('Orden de producción',{exact:true}).fill('ORD-749');
+    await page.getByLabel('Material o lote',{exact:true}).fill('Lote B21');
+    await page.locator('#diagnosticForm [name="symptoms"]').fill('Se documentó la separación en otra orden.');
+    await page.getByRole('button',{name:'Guardar caso'}).click();
+    await page.getByText('Caso guardado.',{exact:true}).waitFor();
+    const industrial=await page.evaluate(()=>window.saves.at(-1));
+    assert.equal(industrial.diagnosticCases.length,2);
+    assert.equal(industrial.diagnosticCases[0].data.order,'ORD-749');
+    const sheetId=industrial.engineeringRecords[0].id;
+    await page.evaluate(()=>window.liftsWorkspace.open('journal'));
+    await page.getByText('Relaciones de conocimiento',{exact:true}).click();
+    const chart=page.locator('#journalGraph');
+    for(const item of industrial.diagnosticCases){
+      await chart.getByLabel('Desde',{exact:true}).selectOption(sheetId);
+      await chart.getByLabel('Hacia',{exact:true}).selectOption(item.id);
+      await chart.getByLabel('Relación',{exact:true}).fill('Usa la misma ficha');
+      await chart.getByLabel('Estado de la relación',{exact:true}).selectOption('verified');
+      await chart.getByLabel('Evidencia de la relación').fill('Coincide el identificador de la ficha en el registro.');
+      await chart.getByRole('button',{name:'Registrar relación'}).click();
+      await page.getByText('Relación guardada.',{exact:true}).waitFor();
+    }
+    await chart.getByRole('heading',{name:/· 2 casos$/}).waitFor();
+    await chart.getByLabel('Registro central').selectOption(sheetId);
+    const map=chart.locator('.nexus-map');
+    await map.getByRole('button',{name:'Segundo caso de registro · Caso de diagnóstico',exact:true}).click();
+    assert.equal(await map.getByLabel('Registro central').inputValue(),industrial.diagnosticCases[0].id);
+    await map.getByRole('button',{name:'Segundo caso de registro · Caso de diagnóstico',exact:true}).click();
+    assert.equal(await page.getByLabel('Nombre del caso').inputValue(),'Segundo caso de registro');
+    assert.equal(await page.getByAltText('Referencia seleccionada').isVisible(),false);
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('ORD-749');
+    await page.locator('#workspaceSearchResults').getByRole('button',{name:'Segundo caso de registro · Caso de diagnóstico'}).click();
+    assert.equal(await page.getByLabel('Material o lote',{exact:true}).inputValue(),'Lote B21');
+    const traceDownload=page.waitForEvent('download');
+    await page.locator('#diagnosticPdf').click();
+    const traceFile=await traceDownload;
+    const tracePdf=await readFile(await traceFile.path(),'latin1');
+    assert.match(tracePdf,/ORD-749/);
+    assert.match(tracePdf,/Lote B21/);
+
+
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await page.evaluate(()=>window.liftsWorkspace.open('engineering'));
     await page.getByRole('button',{name:'Cargar ficha',exact:true}).click();

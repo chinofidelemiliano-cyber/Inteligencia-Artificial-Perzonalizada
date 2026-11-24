@@ -194,6 +194,15 @@
 <label>Problema<select name="problem"><option value="register">Desregistro</option><option value="pinhole">Huecos en sólidos</option><option value="cut">Corte y liner</option></select></label>
 <label>Comportamiento<select name="pattern"><option value="progressive">Progresa con las repeticiones</option><option value="fixed">Fijo en una posición o estación</option><option value="variable">Intermitente o cambia con velocidad</option></select></label>
 </div><div id="diagnosticGuide" class="academy-results" aria-live="polite"></div>
+<details id="diagnosticTrace"><summary>Datos de trazabilidad</summary>
+<div class="field-grid">
+<label>Orden de producción<input name="order" maxlength="100"></label>
+<label>Material o lote<input name="material" maxlength="120"></label>
+<label>Tinta o lote<input name="ink" maxlength="120"></label>
+<label>Anilox utilizado<input name="anilox" maxlength="100"></label>
+<label>Placa utilizada<input name="plate" maxlength="100"></label>
+<label>Suaje utilizado<input name="die" maxlength="100"></label>
+</div></details>
 <label>Síntomas y condiciones<textarea name="symptoms" maxlength="1200" required></textarea></label>
 <label>Mediciones y pruebas realizadas<textarea name="evidence" maxlength="1800"></textarea></label>
 <label>Causa confirmada con esas pruebas (opcional)<input name="cause" maxlength="240"></label>

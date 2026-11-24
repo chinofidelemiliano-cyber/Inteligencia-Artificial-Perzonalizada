@@ -6,6 +6,7 @@
   const records=()=>state().nexusJournal||[];
   const links=()=>state().nexusRelations||[];
   const form=$('journalEditor'), list=$('journalList'), graph=$('journalGraph'), notice=$('journalStatus');
+  let graphFocus='';
   let kind='mission', editing=null, epoch=0, pending=false, retry=null;
   function node(parent,tag,text) {
     const element=document.createElement(tag);
@@ -154,11 +155,68 @@
       button(row,'Abrir '+item.title,()=>{openRecord(item.id);form.elements.namedItem('title').focus();});
     }
   }
+  function openNode(item) {
+    if(item.target==='journal-record')return openRecord(item.id);
+    return window.liftsNexus.open({id:item.target,key:item.id});
+  }
+
+  function renderNeighborhood(parent,all,edges,names) {
+    const region=node(parent,'section');
+    region.className='nexus-map';
+    node(region,'h3','Mapa de relaciones');
+    const picker=select(region,'Registro central','focus',names,Object.hasOwn(names,graphFocus)?graphFocus:all[0].id);
+    const branches=node(region,'div');
+    branches.className='nexus-map-branches';
+    const redraw=()=>{
+      graphFocus=picker.value;
+      branches.replaceChildren();
+      const center=all.find(item=>item.id===graphFocus);
+      const hub=node(branches,'div');
+      hub.className='nexus-map-hub';
+      button(hub,names[center.id],()=>openNode(center));
+      const nearby=edges.filter(edge=>edge.from===center.id||edge.to===center.id);
+      if(!nearby.length){node(branches,'p','Este registro todavía no tiene relaciones guardadas.');return;}
+      const connections=node(branches,'ul');
+      for(const edge of nearby){
+        const outgoing=edge.from===center.id;
+        const related=outgoing?edge.destination:edge.origin;
+        const row=node(connections,'li');
+        node(row,'p',(outgoing?'→ ':'← ')+edge.title+' · '+core.relationStates[edge.status]);
+        if(edge.evidence)node(row,'p',edge.evidence);
+        button(row,names[related.id],()=>{picker.value=related.id;redraw();picker.focus();});
+        button(row,'Abrir registro relacionado',()=>openNode(related));
+      }
+    };
+    picker.onchange=redraw;
+    redraw();
+  }
+
+  function renderTraces(parent,all,edges) {
+    const section=node(parent,'section');
+    node(section,'h3','Fichas con casos recurrentes');
+    node(section,'p','Agrupa fichas con dos o más casos distintos vinculados mediante relaciones verificadas con evidencia. Compartir una ficha no demuestra una causa común.');
+    const groups=core.linkedCases(all,edges);
+    if(!groups.length){node(section,'p','Todavía no hay fichas con dos casos vinculados de esa forma.');return;}
+    for(const group of groups) {
+      const article=node(section,'article');
+      node(article,'h4',group.engineering.title+' · '+group.cases.length+' casos');
+      button(article,'Abrir ficha de Ingeniería',()=>openNode(group.engineering));
+      const list=node(article,'ul');
+      for(const entry of group.cases) {
+        const row=node(list,'li');
+        button(row,entry.diagnosis.title,()=>openNode(entry.diagnosis));
+        for(const link of entry.links)node(row,'p',link.title+' · '+link.evidence);
+      }
+    }
+  }
+
   function renderGraph() {
     graph.replaceChildren();
-    const all=records();
-    if(all.length<2){node(graph,'p','Guarda dos registros de Nexus para relacionarlos.');return;}
-    const names=Object.fromEntries(all.map(item=>[item.id,item.title+' · '+core.kinds[item.kind].label]));
+    const all=core.graphNodes(state());
+    if(all.length<2){node(graph,'p','Guarda dos registros de Nexus, Ingeniería o Diagnóstico para relacionarlos.');return;}
+    const edges=core.graphView(all,links());
+    const names=Object.fromEntries(all.map(item=>[item.id,item.title+' · '+item.category]));
+    renderNeighborhood(graph,all,edges,names);
     const relationForm=node(graph,'form');
     let relationId=null;
     select(relationForm,'Desde','from',names);
@@ -179,7 +237,7 @@
       }catch(error){notice.textContent=error.message;}
     };
     const map=node(graph,'ul');
-    for(const link of links().filter(link=>Object.hasOwn(names,link.from)&&Object.hasOwn(names,link.to))){
+    for(const link of edges){
       const row=node(map,'li',names[link.from]+' → '+link.title+' → '+names[link.to]+' · '+core.relationStates[link.status]);
       if(link.evidence)node(row,'p',link.evidence);
       button(row,'Editar relación',()=>{
@@ -188,8 +246,9 @@
         relationSave.textContent='Guardar cambios de relación';
         relationForm.elements.namedItem('title').focus();
       });
-      for(const key of ['from','to'])button(row,'Abrir '+names[link[key]],()=>openRecord(link[key]));
+      for(const key of ['from','to'])button(row,'Abrir '+names[link[key]],()=>openNode(key==='from'?link.origin:link.destination));
     }
+    renderTraces(graph,all,edges);
   }
   function openRecord(id) {
     const item=records().find(entry=>entry.id===id);
@@ -226,13 +285,16 @@
   $('journalTimeline').addEventListener('toggle',renderTimeline);
   $('journalPeriod').onchange=renderTimeline;
   $('journalTimelineQuery').oninput=renderTimeline;
-  window.addEventListener('lifts-page',({detail})=>{if(detail.page==='journal'&&$('journalTimeline').open)renderTimeline();});
+  window.addEventListener('lifts-page',({detail})=>{if(detail.page==='journal'){
+    if($('journalTimeline').open)renderTimeline();
+    renderGraph();
+  }});
   const picker=$('journalKind');
   for(const [key,schema] of Object.entries(core.kinds)){const option=node(picker,'option',schema.label);option.value=key;}
   picker.onchange=()=>{kind=picker.value;renderList();renderEditor();};
   $('journalQuery').oninput=renderList;
   function reset(){
-    epoch++;pending=false;retry=null;kind='mission';
+    epoch++;pending=false;retry=null;kind='mission';graphFocus='';
     $('journalRetry').hidden=true;
     $('journalLinks').open=false;
     $('journalTimeline').open=false;

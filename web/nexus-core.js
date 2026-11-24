@@ -33,6 +33,13 @@
       open:(_workspace,_id,key)=>root.liftsEngineering.openSaved(key)
     },
     diagnostics:plainPage('Diagnóstico guiado','Comparar fotografías y registrar casos','Las fotografías temporales y sus recortes requieren volver a cargarse.'),
+    'diagnostic-record':{
+      label:'Caso de diagnóstico guardado',purpose:'Abrir evidencia y observaciones guardadas',
+      input:'Identificador del caso',output:'Caso cargado en Diagnóstico',permission:'Sesión del propietario',
+      dependency:'Historial de Diagnóstico',limitations:'Las imágenes temporales requieren volver a cargarse.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsDiagnostics.openSaved(key)
+    },
     academy:academyView('Academia de flexografía','catalog'),
     library:academyView('Biblioteca técnica','library'),
     simulators:academyView('Simuladores de flexografía','tools'),
@@ -60,7 +67,7 @@
   function commands(query='') {
     const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
     const term=normalize(query.trim());
-    const results=Object.entries(tools).filter(([id,tool])=>!['lesson','engineering-record','journal-record'].includes(id)&&normalize(tool.label+' '+tool.purpose).includes(term))
+    const results=Object.entries(tools).filter(([id,tool])=>!['lesson','engineering-record','journal-record','diagnostic-record'].includes(id)&&normalize(tool.label+' '+tool.purpose).includes(term))
       .map(([id,tool])=>({label:tool.label,target:location(id,id==='excel'?'basics':'')}));
     const excelViews=[['Inventario de tintas · Excel','inventory'],['Desperdicio · Excel','waste'],['Pareto · Excel','pareto'],['Revisar CSV · Excel','csv']];
     if(term)for(const [label,key] of excelViews){

@@ -63,3 +63,17 @@ La continuidad de la etapa 1 ya reabre registros de Nexus por cuenta. Esta entre
 Archivos principales: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/index.html`, `web/nexus-core.js`, `web/nexus-ui.js`, `web/workspace-ui.js` y `web/app.js`. Evidencia de pruebas en `tests/nexus-journal.test.cjs` y `tests/evolution.browser.cjs`.
 
 Misiones, relaciones y registros admiten edición. Los archivos originales, adjuntos de evidencia, automatizaciones externas y la aprobación delegada quedan pendientes. Se mantienen los demás requisitos de las tablas anteriores.
+
+## Continuación industrial. Mapa y trazabilidad
+
+Base `88ddbca`, preservada en `backup/antes-trazabilidad`. Antes, las relaciones solo admitían registros del diario y la búsqueda de un caso abría el módulo general. La etapa conecta los historiales ya guardados y mantiene el esquema privado por cuenta.
+
+| Requisito | Estado de esta entrega | Alcance |
+| --- | --- | --- |
+| 8, 9 | Parcial | Mapa navegable con un nodo central, sus relaciones entrantes y salientes, estados y evidencia. Admite registros Nexus, fichas de Ingeniería y casos de diagnóstico. Los enlaces existentes conservan sus identificadores. |
+| 16, 31 | Parcial | Agrupa dos o más casos distintos con vínculos verificados y con evidencia a una misma ficha. Muestra casos, enlaces y evidencia. La agrupación describe registros y no establece causa, correlación estadística ni relación física. |
+| 7, 33 | Parcial | El mapa, el buscador y la línea del tiempo abren casos guardados directamente. La recuperación de sesión funciona con el mismo registro de herramientas. Seis campos opcionales registran orden, material, tinta, anilox, placa y suaje. El historial y el buscador aceptan esos datos y los informes PDF y Word los incorporan. Al cambiar de caso se limpian fotografías temporales. |
+
+Archivos modificados: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/nexus-core.js`, `web/nexus-ui.js`, `web/diagnostics-ui.js`, `web/workspace-ui.js`, `web/evolution.css`, `web/index.html`, `tests/nexus-journal.test.cjs` y `tests/evolution.browser.cjs`.
+
+Las coincidencias se limitan al espacio abierto y a relaciones registradas por el usuario. Quedan pendientes los componentes de máquina y sus dimensiones, la representación de recorridos, las reglas de compatibilidad, la vinculación con inventarios y órdenes externas, la aprobación por roles y los historiales de cambios.

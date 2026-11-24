@@ -48,3 +48,19 @@ test('experiment summaries calculate sample standard deviation',()=>{
   assert.throws(()=>measurementSummary('1'),/dos mediciones/);
   assert.throws(()=>measurementSummary('1 2mm'),/mediciones/);
 });
+
+test('recurrence requires verified evidence and counts distinct cases even with multiple links',()=>{
+  const {graphNodes,graphView,linkedCases}=require('../web/nexus-journal.js');
+  const space={engineeringRecords:[{id:'f',data:{name:'Ficha A'}}],diagnosticCases:[
+    {id:'a',data:{name:'Caso A'}},{id:'b',data:{name:'Caso B'}}
+  ]};
+  const nodes=graphNodes(space);
+  const edge=(id,from,to,status='verified',evidence='registro citado')=>({id,from,to,status,evidence});
+  const set=[edge('1','f','a'),edge('2','a','f'),edge('3','f','b','suggested'),edge('4','f','b','verified',' '),edge('5','f','missing')];
+  assert.equal(graphView(nodes,set).length,4);
+  assert.deepEqual(linkedCases(nodes,graphView(nodes,set)),[]);
+  const groups=linkedCases(nodes,graphView(nodes,[...set,edge('6','b','f')]));
+  assert.equal(groups.length,1);
+  assert.equal(groups[0].engineering.id,'f');
+  assert.deepEqual(groups[0].cases.map(item=>[item.diagnosis.id,item.links.length]),[['a',2],['b',1]]);
+});

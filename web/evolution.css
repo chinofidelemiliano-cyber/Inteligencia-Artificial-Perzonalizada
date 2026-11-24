@@ -51,3 +51,21 @@
 @media (prefers-reduced-motion:reduce) {
   #evolutionRobot * {animation: none !important; transition: none !important;}
 }
+
+.nexus-map {margin-block: 1rem 1.5rem;}
+.nexus-map-branches {display: grid; gap: .9rem; margin-block: 1rem;}
+.nexus-map-hub {
+  border-inline-start: .25rem solid var(--evo-cyan, #20d9f5);
+  padding-inline-start: .65rem;
+}
+.nexus-map-branches ul {display: grid; gap: .8rem; padding-inline-start: 1.35rem; list-style: none;}
+.nexus-map-branches li {
+  border-inline-start: 1px solid #6589b4;
+  padding-inline-start: .9rem;
+  overflow-wrap: anywhere;
+}
+.nexus-map-branches button {margin: .2rem .3rem .2rem 0;}
+@media (min-width: 760px) {
+  .nexus-map-branches {grid-template-columns: minmax(10rem, 1fr) minmax(0, 2fr); align-items: start;}
+  .nexus-map-branches ul {margin-block: 0;}
+}
