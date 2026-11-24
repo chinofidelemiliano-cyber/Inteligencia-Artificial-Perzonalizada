@@ -102,3 +102,19 @@ Se difiere la sincronización externa de órdenes e inventario. Se mantienen dis
 | 7 | Implementado para esta vista | Rutas y repasos usa el registro común de herramientas y el progreso por cuenta existente. |
 
 Cambios en `web/academy-paths.js`, `web/academy-ui.js`, `web/nexus-core.js` y `web/index.html`. Pruebas en `tests/academy-paths.test.cjs` y `tests/academy.browser.cjs`. La autoevaluación programa el repaso, mientras que la matriz de competencias, los proyectos de práctica y la evaluación de evidencias quedan pendientes. El repaso se consulta dentro de la aplicación y no programa avisos externos.
+
+## Entrega paralela. Aprendizaje, productividad, utilidades y permisos
+
+Base `58f58b1`, respaldada en `backup/antes-bloques-paralelos`. La sincronización externa de órdenes continúa diferida.
+
+| Requisitos | Cobertura de esta entrega | Límites |
+| --- | --- | --- |
+| 11, 13 | Matriz de las cinco competencias ligadas a las rutas. Guarda meta y evidencias de práctica, trabajo o evaluación, con resultados y lección opcional. | La evidencia está registrada por quien usa la cuenta. No acredita competencia profesional externamente. |
+| 26 | Agenda muestra el resto de la jornada, compromisos sin doble conteo, hueco más largo, estimación de carga y advertencia por exceso o fragmentación. | Usa duraciones registradas o las estimaciones indicadas por el planificador. |
+| 44 | Comparación por líneas, fechas naturales, conversión exacta de bases y Base64 de texto se ejecutan en el navegador. | La vista requiere que la aplicación ya esté cargada. No se incorporaron QR ni manipulación de archivos. |
+| 6, 55, 58 | Modos consulta, borrador y ejecución autorizada para una acción específica de Nexus. La ejecución parte de la próxima acción guardada, se dispara con el botón, crea una tarea sin fecha o aviso y anota identificador y hora. | Esta autorización no se extiende a otras herramientas. No ejecuta el modelo, ni acciones externas, ni cambios de agenda en segundo plano. |
+| 56 | Estado de sincronización de la cuenta y resultado de la comprobación real de IA de la sesión. Usa el botón existente para solicitar una prueba. | No incluye medición de almacenamiento ni monitorización externa. |
+
+Archivos por bloque: `web/academy-competencies.js`, `web/academy-ui.js`, `web/academy.css`; `web/work.js` y `web/work-ui.js`; `web/nexus-utilities-core.js` y `web/nexus-utilities-ui.js`; `web/nexus-operations-ui.js`. Integración en `web/index.html`, `web/app.js` y `web/nexus-core.js`.
+
+Las pruebas incluyen rutas ligadas a evidencias, carga y solapamientos, resultados locales sin solicitudes, permiso por defecto, borrador sin guardar, ejecución explícita, reintento sin duplicado y cambio de cuenta. Quedan pendientes los demás requisitos indicados en las tablas anteriores, entre ellos la bandeja universal, los permisos por herramienta, el historial de versiones y las utilidades de archivos.

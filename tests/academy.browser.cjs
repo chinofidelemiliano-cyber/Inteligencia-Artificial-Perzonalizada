@@ -106,6 +106,23 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByRole('button',{name:'Pude explicarla',exact:true}).click();
     await page.locator('#academyContent summary').filter({hasText:'Programado para'}).waitFor();
     assert.equal(await page.locator('#academyContent select').inputValue(),'fingerprint');
+    await page.getByRole('button',{name:'Competencias y evidencias',exact:true}).click();
+    await page.getByRole('heading',{name:'Matriz de competencias',exact:true}).waitFor();
+    const fingerprint=page.getByRole('row').filter({hasText:'Validar un fingerprint'});
+    assert.match(await fingerprint.textContent(),/Sin evidencia registrada/);
+    await page.getByRole('combobox',{name:'Meta de competencia',exact:true}).selectOption('2');
+    await page.getByRole('button',{name:'Guardar meta de competencia',exact:true}).click();
+    await page.getByText('Meta de competencia guardada.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Guardar evidencia',exact:true}).click();
+    await page.getByText(/Describe qué hiciste y qué resultado/).waitFor();
+    await page.getByRole('combobox',{name:'Nivel respaldado por la evidencia',exact:true}).selectOption('2');
+    await page.getByRole('combobox',{name:'Lección vinculada a la evidencia',exact:true}).selectOption('preprensa/fingerprint-data');
+    await page.getByLabel('Trabajo realizado y resultado observado').fill('Medí dos muestras y comprobé que la curva produjo el tono esperado.');
+    await page.getByRole('button',{name:'Guardar evidencia',exact:true}).click();
+    await page.getByText('Evidencia de competencia guardada.',{exact:true}).waitFor();
+    assert.match(await fingerprint.textContent(),/Aplicación con apoyo/);
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).academyProgress.competencies.fingerprint.evidence[0].level),2);
+
 
     await page.getByRole('button',{name:'Plegar menú',exact:true}).click();
     assert.ok(await page.locator('html').evaluate(root=>root.classList.contains('sidebar-folded')));
@@ -123,6 +140,11 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByRole('button',{name:'Rutas y repasos',exact:true}).click();
     await page.getByText('Puedes añadir una lección al repaso desde el lector.',{exact:true}).waitFor();
     assert.equal(await page.locator('#academyContent select').inputValue(),'');
+    await page.getByRole('button',{name:'Competencias y evidencias',exact:true}).click();
+    await page.getByRole('button',{name:'Validar un fingerprint',exact:true}).click();
+    await page.getByText('Todavía no hay evidencias para esta competencia.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+
 
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

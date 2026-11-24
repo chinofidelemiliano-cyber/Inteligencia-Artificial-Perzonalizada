@@ -35,8 +35,8 @@
 
   async function load() {
     if(modules)return modules;
-    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js'),import('./academy-paths.js')])
-      .then(([data,tools,paths])=>modules={data,tools,paths}).catch(error=>{loading=null;throw error;});
+    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js'),import('./academy-paths.js'),import('./academy-competencies.js')])
+      .then(([data,tools,paths,competencies])=>modules={data,tools,paths,competencies}).catch(error=>{loading=null;throw error;});
     return loading;
   }
   let navigation=0;
@@ -57,7 +57,7 @@
       view=next;current=key;
       status.textContent='';
       render();
-      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',lesson:'lesson'};
+      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',competencies:'competencies',lesson:'lesson'};
       window.liftsNexus?.checkpoint(ids[next],next==='lesson'?key:'',next==='lesson'?find(key).lesson.title:'');
     } catch {
       if(version!==generation||request!==navigation)return;
@@ -116,7 +116,96 @@
     else if(view==='tools')renderTools();
     else if(view==='library')renderLibrary();
     else if(view==='paths')renderPaths();
+    else if(view==='competencies')renderCompetencies();
     else renderCatalog();
+  }
+  function renderCompetencies(){
+    const card=node(shell,'article',undefined,'card');
+    const {goals,routeTo}=modules.paths;
+    const {levels,evidenceTypes,criteria,validateEvidence,levelFromEvidence}=modules.competencies;
+    const valid=new Set(catalogKeys());
+    heading(card,'Matriz de competencias');
+    node(card,'p','Registra prácticas, experiencias o evaluaciones. El nivel mostrado resume las evidencias que tú registras. Las lecturas y los repasos conservan su propio progreso.');
+    button(card,'Volver a rutas y repasos',()=>open('paths'));
+
+    const table=node(card,'table',undefined,'academy-competency-table');
+    node(table,'caption','Nivel registrado y meta por competencia');
+    const header=node(node(table,'thead'),'tr');
+    for(const label of ['Competencia','Nivel respaldado','Meta','Actividades pendientes'])node(header,'th',label).scope='col';
+    const body=node(table,'tbody');
+    for(const [id,goal] of Object.entries(goals)){
+      const record=progress().competencies?.[id];
+      const row=node(body,'tr');
+      const title=node(row,'th');title.scope='row';
+      button(title,goal.label,()=>open('competencies',id));
+      node(row,'td',levels[levelFromEvidence(record?.evidence)]);
+      node(row,'td',levels[record?.target]||levels[3]);
+      const remaining=routeTo(goal.target,valid).filter(key=>!progress().done[key]).length;
+      node(row,'td',remaining?remaining+' por leer':'Lecturas completadas');
+    }
+    const selected=Object.hasOwn(goals,current)?current:Object.hasOwn(goals,progress().goal)?progress().goal:Object.keys(goals)[0];
+    const goal=goals[selected], record=progress().competencies?.[selected];
+    const route=routeTo(goal.target,valid);
+    const detail=node(card,'section');
+    heading(detail,goal.label);
+    node(detail,'p',criteria[selected]);
+    const selectedKey=current;
+    const update=async (patch,message)=>{
+      const all=progress().competencies||{};
+      if(await save({competencies:{...all,[selected]:{...all[selected],...patch}}},message)&&view==='competencies'&&current===selectedKey)render();
+    };
+    const levelOptions=(select)=>levels.forEach((label,id)=>{
+      if(id)node(select,'option',label).value=String(id);
+    });
+    const target=document.createElement('select');
+    target.setAttribute('aria-label','Meta de competencia');
+    levelOptions(target);target.value=String(record?.target||3);
+    field('Meta de competencia',target,detail);
+    button(detail,'Guardar meta de competencia',()=>update({target:Number(target.value)},'Meta de competencia guardada.'));
+    const pending=node(detail,'details');
+    node(pending,'summary','Lecciones relacionadas');
+    const outline=node(pending,'ol');
+    for(const key of route){
+      const row=node(outline,'li');
+      button(row,find(key).lesson.title,()=>open('lesson',key));
+      node(row,'span',progress().done[key]?' · Lectura completada':' · Pendiente');
+    }
+    heading(detail,'Añadir evidencia');
+    const type=document.createElement('select');type.setAttribute('aria-label','Tipo de evidencia');
+    for(const [key,label] of Object.entries(evidenceTypes))node(type,'option',label).value=key;
+    field('Tipo de evidencia',type,detail);
+    const level=document.createElement('select');level.setAttribute('aria-label','Nivel respaldado por la evidencia');
+    levelOptions(level);field('Nivel respaldado por la evidencia',level,detail);
+    const lesson=document.createElement('select');lesson.setAttribute('aria-label','Lección vinculada a la evidencia');
+    node(lesson,'option','Sin lección vinculada').value='';
+    for(const key of route)node(lesson,'option',find(key).lesson.title).value=key;
+    field('Lección vinculada a la evidencia',lesson,detail);
+    const description=document.createElement('textarea');description.maxLength=1500;
+    field('Trabajo realizado y resultado observado',description,detail);
+    button(detail,'Guardar evidencia',async()=>{
+      try{
+        const evidence=validateEvidence({description:description.value,type:type.value,level:Number(level.value),lesson:lesson.value},route);
+        const existing=progress().competencies?.[selected]?.evidence||[];
+        await update({evidence:[{...evidence,id:crypto.randomUUID(),at:new Date().toISOString()},...existing]},'Evidencia de competencia guardada.');
+      }catch(error){status.textContent=error.message;}
+    });
+    heading(detail,'Evidencias registradas');
+    if(!record?.evidence?.length)node(detail,'p','Todavía no hay evidencias para esta competencia.');
+    else{
+      const entries=node(detail,'ul',undefined,'academy-competency-evidence');
+      for(const item of record.evidence){
+        const entry=node(entries,'li');
+        node(entry,'strong',evidenceTypes[item.type]+' · '+levels[item.level]);
+        if(item.at)node(entry,'p',new Date(item.at).toLocaleDateString('es-MX'));
+        node(entry,'p',item.description);
+        if(item.lesson&&find(item.lesson))button(entry,find(item.lesson).lesson.title,()=>open('lesson',item.lesson));
+        button(entry,'Quitar evidencia',()=>{
+          if(!confirm('¿Quitar esta evidencia de tu registro privado?'))return;
+          const existing=progress().competencies?.[selected]?.evidence||[];
+          return update({evidence:existing.filter(evidence=>evidence.id!==item.id)},'Evidencia retirada.');
+        });
+      }
+    }
   }
   function renderPaths(){
     const card=node(shell,'article',undefined,'card');
@@ -133,6 +222,7 @@
       if(!Object.hasOwn(goals,select.value)){status.textContent='Elige un objetivo de estudio.';return;}
       if(await save({goal:select.value},'Objetivo guardado.')&&view==='paths')render();
     });
+    button(card,'Competencias y evidencias',()=>open('competencies',select.value));
     const guide=node(card,'div');
     const draw=()=>{
       guide.replaceChildren();
@@ -227,6 +317,7 @@
       .sort((a,b)=>a.course.level-b.course.level).find(({course,lesson})=>!data.done[lessonKey(course,lesson)]);
     if(next)button(route,next.lesson.title,()=>open('lesson',lessonKey(next.course,next.lesson)));
     else node(route,'p','Completaste las lecciones del catálogo.');
+    button(route,'Competencias y evidencias',()=>open('competencies'));
     heading(route,'Historial de aprendizaje');
     const valid=data.history.flatMap(key=>find(key)?[{key,...find(key)}]:[]);
     if(!valid.length)node(route,'p','Las lecciones completadas aparecerán aquí.');

@@ -13,6 +13,8 @@
     open:(_workspace,_id,key)=>root.liftsAcademy.open(view,key)
   });
   const tools = Object.freeze({
+    utilities:plainPage('Utilidades locales','Comparar textos y hacer conversiones','Los datos introducidos permanecen en esta sesión.'),
+    operations:plainPage('Estado y permisos','Consultar sincronización y controlar acciones de Nexus','La comprobación de IA se ejecuta por solicitud.'),
     journal:plainPage('Misiones y conocimiento','Abrir decisiones, lecciones, experimentos y revisión crítica','Los registros se sincronizan al pulsar Guardar registro.'),
     'journal-record':{
       label:'Registro de Nexus',purpose:'Retomar una misión o un registro de trabajo',
@@ -49,6 +51,7 @@
     },
     academy:academyView('Academia de flexografía','catalog'),
     library:academyView('Biblioteca técnica','library'),
+    competencies:academyView('Competencias y evidencias','competencies'),
     'study-paths':academyView('Rutas y repasos','paths'),
     simulators:academyView('Simuladores de flexografía','tools'),
     lesson:academyView('Lección de flexografía','lesson',true),

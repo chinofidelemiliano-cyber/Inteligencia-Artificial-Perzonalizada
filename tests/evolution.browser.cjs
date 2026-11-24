@@ -349,6 +349,45 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     assert.equal(stored.diagnosticCases[0].data.orderLink,orderId);
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
     assert.equal(await page.evaluate(id=>window.liftsIndustrial.openOrder(id),orderId),false);
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:{
+      ...window.fixture,nexusContext:{next:'Revisar muestra patrón'}
+    }})));
+    await page.evaluate(()=>window.liftsWorkspace.open('operations'));
+    const operation=page.locator('#operations'), mode=page.locator('#nexusActionMode');
+    assert.equal(await operation.getByText('Próxima acción guardada: Revisar muestra patrón').count(),1);
+    assert.equal(await page.locator('#nexusRunAction').isVisible(),false);
+    await mode.selectOption('draft');
+    await operation.getByRole('button',{name:'Guardar permiso',exact:true}).click();
+    await operation.getByText('Permiso guardado.',{exact:true}).waitFor();
+    await operation.getByRole('button',{name:'Preparar borrador en Agenda',exact:true}).click();
+    assert.equal(await page.locator('#taskTitle').inputValue(),'Revisar muestra patrón');
+    assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().tasks.length),0);
+    await page.evaluate(()=>window.liftsWorkspace.open('operations'));
+    await mode.selectOption('authorized');
+    await operation.getByRole('button',{name:'Guardar permiso',exact:true}).click();
+    await operation.getByText('Permiso guardado.',{exact:true}).waitFor();
+    await page.evaluate(()=>window.rejectNextSave=true);
+    await operation.getByRole('button',{name:'Crear tarea en Agenda',exact:true}).click();
+    await operation.getByText(/La tarea quedó en esta sesión/).waitFor();
+    await operation.getByRole('button',{name:'Reintentar guardado de la tarea',exact:true}).click();
+    await operation.getByText('Tarea guardada en Agenda.',{exact:true}).waitFor();
+    const authorized=await page.evaluate(()=>window.saves.at(-1));
+    assert.equal(authorized.tasks.length,1);
+    assert.equal(authorized.nexusActionHistory[0].id,authorized.tasks[0].id);
+    assert.equal(authorized.tasks[0].reminderAt,'');
+    await operation.getByRole('button',{name:'Crear tarea en Agenda',exact:true}).click();
+    await operation.getByText('Ya tienes una tarea pendiente con esa acción.',{exact:true}).waitFor();
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
+    await page.evaluate(()=>window.liftsWorkspace.open('operations'));
+    assert.equal(await mode.inputValue(),'consult');
+    await operation.getByText('Todavía no hay tareas registradas por esta acción.',{exact:true}).waitFor();
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('utilidades locales');
+    await page.locator('#workspaceSearchResults').getByRole('button',{name:'Utilidades locales',exact:true}).click();
+    await page.locator('#utilities').getByLabel('Texto anterior').fill('Texto original');
+    await page.locator('#utilities').getByLabel('Texto nuevo').fill('Texto actualizado');
+    await page.locator('#utilities').getByRole('button',{name:'Calcular',exact:true}).click();
+    await page.locator('#utilities').getByText('Añadida, línea nueva 1',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

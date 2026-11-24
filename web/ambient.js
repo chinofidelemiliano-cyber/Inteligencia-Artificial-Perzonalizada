@@ -29,7 +29,7 @@
   function restart(){clear();dock.dataset.state='rest';step=0;if(!halted())advance();}
   function sync(){document.body.classList.toggle('effects-paused',paused||document.hidden);document.body.classList.toggle('effects-reduced',reduced.matches);toggle.setAttribute('aria-pressed',String(paused));toggle.title=paused?'Reanudar animaciones':'Pausar animaciones';toggle.setAttribute('aria-label',toggle.title+' decorativas');if(!workspace.hidden)pet.querySelectorAll('image').forEach(image=>{if(!image.hasAttribute('href'))image.setAttribute('href',image.dataset.src);});restart();}
   toggle.onclick=()=>{paused=!paused;try{localStorage.setItem('lifts-effects-paused',String(paused));}catch{}sync();};
-  recall.onclick=()=>{clear();dock.dataset.state='greeting';step=1;floating.focus();};
+  recall.onclick=()=>{clear();dock.dataset.state='rest';step=0;floating.focus();};
   floating.addEventListener('pointerenter',()=>{hovered=true;restart();});floating.addEventListener('pointerleave',()=>{hovered=false;restart();});
   dock.addEventListener('focusin',()=>{clear();dock.dataset.state='rest';});dock.addEventListener('focusout',()=>queueMicrotask(restart));
   new MutationObserver(restart).observe(face,{attributes:true,attributeFilter:['data-phase']});

@@ -141,3 +141,12 @@ html[data-lifts-page="academy"] main > header { justify-content:flex-end; }
 .identity-preview img:nth-child(2) { width:72%; height:auto; min-width:0; }
 .identity-preview.small { max-width:10rem; align-self:start; background:#133048; }
 .diagnostic-point { position:absolute; width:15px; height:15px; transform:translate(-50%,-50%); border:2px solid #e01d25; border-radius:50%; box-shadow:0 0 0 2px white; z-index:1; pointer-events:none; }
+
+.academy-competency-table {width: 100%; margin-block: 1rem; border-collapse: collapse; table-layout: fixed;}
+.academy-competency-table th,.academy-competency-table td {padding: .45rem .35rem; text-align: start; vertical-align: top; border-bottom: 1px solid #66819b55; overflow-wrap: anywhere;}
+.academy-competency-table button {text-align: start; padding: .35rem; max-width: 100%; overflow-wrap: anywhere;}
+.academy-competency-evidence li {margin-block: 1rem; overflow-wrap: anywhere;}
+@media (max-width: 650px) {
+  .academy-competency-table {font-size: .82rem;}
+  .academy-competency-table button {font-size: inherit;}
+}

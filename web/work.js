@@ -4,6 +4,25 @@
   const localInput=date=>`${localDate(date)}T${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
   function interval(date,time,duration){const start=new Date(`${date}T${time}`);const minutes=Number(duration);if(!Number.isFinite(start.getTime()) || !Number.isFinite(minutes) || minutes<5 || minutes>720)return null;return{start:start.getTime(),end:start.getTime()+minutes*60000};}
   function overlaps(a,b){return a.start<b.end && b.start<a.end;}
+  function captureTask(title){
+    const clean=typeof title==='string'?title.trim():'';
+    if(!clean||clean.length>240)throw new TypeError('Escribe un título de 1 a 240 caracteres.');
+    return {id:crypto.randomUUID(),title:clean,date:'',done:false,priority:2,duration:25,startAt:'',reminderAt:'',reminderRepeat:'',steps:[]};
+  }
+  function capacity(start,end,fixed) {
+    let cursor=start,busy=0,longestGap=0;
+    for(const block of fixed) {
+      const from=Math.max(start,block.start);
+      const until=Math.min(end,block.end);
+      if(until<=cursor)continue;
+      longestGap=Math.max(longestGap,from-cursor);
+      busy+=until-Math.max(cursor,from);
+      cursor=until;
+    }
+    const shift=Math.max(0,end-start);
+    return {shift,busy,available:shift-busy,longestGap:Math.max(longestGap,end-cursor)};
+  }
+  const taskMinutes=task=>Math.min(720,Math.max(5,Number(task.duration)||25));
   function plan(tasks,date,startTime='09:00',endTime='17:00', options={}){
     const shift=interval(date,startTime,5);const end=interval(date,endTime,5);if(!shift || !end)return{error:'Revisa la fecha y el horario de tu jornada.'};
     let stop=end.start;if(stop<=shift.start){const following=new Date(stop);following.setDate(following.getDate()+1);stop=following.getTime();}
@@ -16,13 +35,13 @@
       return (options.recover&&expired&&(localDate(new Date(start))<date || options.reorganize&&t.planned===true)) ||
         (options.reorganize&&t.planned===true&&start>=earliest&&start<stop);
     };
-    const fixed=[...tasks.filter(t=>!movable(t)),...(options.events || [])].filter(t=>!t.done && t.startAt).map(t=>({start:Date.parse(t.startAt),end:Date.parse(t.startAt)+(Number(t.duration)||25)*60000})).filter(b=>Number.isFinite(b.start)&&b.end>shift.start&&b.start<stop).sort((a,b)=>a.start-b.start);
+    const fixed=[...tasks.filter(t=>!movable(t)),...(options.events || [])].filter(t=>!t.done && t.startAt).map(t=>({start:Date.parse(t.startAt),end:Date.parse(t.startAt)+(Number(t.duration)||25)*60000})).filter(b=>Number.isFinite(b.start)&&Number.isFinite(b.end)&&b.end>b.start&&b.end>shift.start&&b.start<stop).sort((a,b)=>a.start-b.start);
     const pending=tasks.filter(t=>!t.done&&movable(t)&&(!t.date||t.date<=date)).sort((a,b)=>(Number(a.priority)||2)-(Number(b.priority)||2)||(a.date||'9999').localeCompare(b.date||'9999'));
-    const scheduled=[],remaining=[];let cursor=earliest;
-    for(const task of pending){const minutes=Math.min(720,Math.max(5,Number(task.duration)||25));let candidate={start:cursor,end:cursor+minutes*60000};for(const block of fixed){if(overlaps(candidate,block)){candidate={start:block.end,end:block.end+minutes*60000};}}
-      if(candidate.end>stop){remaining.push(task.id);continue;}scheduled.push({id:task.id,startAt:new Date(candidate.start).toISOString(),duration:minutes});cursor=candidate.end+(options.breakMinutes || 0)*60000;
+    const scheduled=[],remaining=[];let cursor=earliest,estimated=0,unplaced=0;
+    for(const task of pending){const minutes=taskMinutes(task);estimated+=minutes*60000;let candidate={start:cursor,end:cursor+minutes*60000};for(const block of fixed){if(overlaps(candidate,block)){candidate={start:block.end,end:block.end+minutes*60000};}}
+      if(candidate.end>stop){remaining.push(task.id);unplaced+=minutes*60000;continue;}scheduled.push({id:task.id,startAt:new Date(candidate.start).toISOString(),duration:minutes});cursor=candidate.end+(options.breakMinutes || 0)*60000;
     }
-    return{scheduled,remaining};
+    return{scheduled,remaining,capacity:{...capacity(earliest,stop,fixed),estimated,unplaced}};
   }
   function repeatMinutes(repeat) {
     const match=/^minutes:([1-9][0-9]{0,3})$/.exec(repeat || '');
@@ -128,5 +147,5 @@
       if(!t.reminderPaused&&!reminderEnded(t,now.getTime())&&t.reminderAt&&Number.isFinite(Date.parse(t.reminderAt)))lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Recordatorio de Lifts',`TRIGGER;VALUE=DATE-TIME:${utc(t.reminderAt)}`,'END:VALARM');lines.push('END:VEVENT');}
     lines.push('END:VCALENDAR');return lines.map(fold).join('\r\n')+'\r\n';
   }
-  const api={localDate,localInput,interval,overlaps,plan,due,reminderOccurrence,reminderEnded,nudgeMinutes,completeReminderCycle,nextReminder,repeatMinutes,repeatLabel,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  const api={localDate,localInput,interval,overlaps,plan,captureTask,due,reminderOccurrence,reminderEnded,nudgeMinutes,completeReminderCycle,nextReminder,repeatMinutes,repeatLabel,taskKey,calendar};root.liftsWork=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -65,3 +65,34 @@ test('conditional reminders stop after completion, skip alternate days and honor
  assert.equal(work.reminderOccurrence(daily,time('2026-11-09T13:22:00Z')),'2026-11-09T13:20:00.000Z');
  assert.equal(work.reminderOccurrence(daily,time('2026-11-09T12:59:00Z')),'');
 });
+
+test('capacity merges overlapping commitments, clips elapsed time and distinguishes fragmented gaps',()=>{
+ const tasks=[
+  {id:'committed',startAt:new Date('2026-11-06T09:00').toISOString(),duration:60},
+  {id:'fragmented',duration:60}
+ ];
+ const upcoming=work.plan(tasks,'2026-11-06','09:00','12:00',{
+  now:Date.parse('2026-11-06T09:15'),
+  events:[
+   {startAt:new Date('2026-11-06T09:30').toISOString(),duration:60},
+   {startAt:new Date('2026-11-06T11:00').toISOString(),duration:30}
+  ]
+ });
+ assert.deepEqual(Object.fromEntries(Object.entries(upcoming.capacity).map(([key,ms])=>[key,ms/60000])),
+  {shift:165,busy:105,available:60,longestGap:30,estimated:60,unplaced:60});
+ assert.deepEqual(upcoming.remaining,['fragmented']);
+ const elapsed=work.plan(tasks,'2026-11-06','09:00','12:00',{now:Date.parse('2026-11-06T14:00')});
+ assert.equal(elapsed.capacity.available,0);
+ assert.equal(elapsed.capacity.longestGap,0);
+});
+
+test('authorized capture task factory uses standard defaults without allocating a date or reminder',()=>{
+ const captured=work.captureTask('  Medir repetición  ');
+ assert.match(captured.id,/^[a-f0-9-]{36}$/);
+ assert.deepEqual({...captured,id:null},{
+  id:null,title:'Medir repetición',date:'',done:false,priority:2,duration:25,startAt:'',reminderAt:'',reminderRepeat:'',steps:[]
+ });
+ assert.throws(()=>work.captureTask('  '),TypeError);
+ assert.throws(()=>work.captureTask('a'.repeat(241)),TypeError);
+ assert.notEqual(work.captureTask(captured.title).id,captured.id);
+});

@@ -121,6 +121,10 @@ test('mobile productivity flows, quiz progress, private Google requests and push
     assert.equal(saved.tasks[2].steps.length,3);
     await page.evaluate(text=>window.liftsWorkspace.ask(text),'Organiza mi jornada de mañana');
     await page.locator('#applySchedule').waitFor({state:'visible'});
+    const capacity=page.getByRole('region',{name:'Capacidad de la jornada'});
+    await capacity.getByText(/Turno por delante: 480 min/).waitFor();
+    await capacity.getByText(/Pendientes estimados: 25 min/).waitFor();
+
     await page.locator('#applySchedule').click();
     assert.equal(await page.evaluate(()=>window.saves.at(-1).tasks[2].planned),true);
     await page.locator('#reviewDay').click();

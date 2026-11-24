@@ -145,7 +145,38 @@
     if(pending.length)note($('schedulePreview'),'Siguiente paso sugerido: '+pending[0].title+'. Si el bloque es demasiado grande, divídelo en pasos o reprograma lo que no quepa.');
     for(const task of complete)note($('schedulePreview'),'Completada · '+task.title);
   }
-  $('suggestSchedule').onclick=()=>{proposal=planDay();$('schedulePreview').replaceChildren();$('applySchedule').hidden=true;if(proposal.error){note($('schedulePreview'),proposal.error);return;}for(const block of proposal.scheduled){const task=state().tasks.find(t=>t.id===block.id);note($('schedulePreview'),stamp(block.startAt)+' · '+task.title+' · '+block.duration+' min');}note($('schedulePreview'),proposal.remaining.length?`${proposal.remaining.length} tarea(s) no caben en esta jornada. Ajusta el alcance o programa otro día.`:proposal.scheduled.length?'Propuesta lista. Revisa los horarios y los descansos antes de aplicarla.':'No hay tareas sin horario que programar para este día.');$('applySchedule').hidden=!proposal.scheduled.length;};
+  function showCapacity(target,capacity) {
+    const format=new Intl.NumberFormat('es',{maximumFractionDigits:1});
+    const mins=amount=>format.format(amount/60000)+' min';
+    const summary=document.createElement('section');
+    summary.setAttribute('aria-label','Capacidad de la jornada');
+    const title=document.createElement('h4');
+    title.textContent='Capacidad de la jornada';
+    summary.append(title);
+    note(summary,'Turno por delante: '+mins(capacity.shift)+' · Compromisos existentes: '+mins(capacity.busy)+
+      ' · Tiempo libre antes de pausas: '+mins(capacity.available)+'.');
+    note(summary,'Pendientes estimados: '+mins(capacity.estimated)+' · Mayor hueco continuo: '+mins(capacity.longestGap)+'.');
+    if(capacity.estimated>capacity.available){
+      note(summary,'La carga supera el tiempo libre por '+mins(capacity.estimated-capacity.available)+' antes de contar pausas.');
+    }else if(capacity.unplaced){
+      note(summary,'Aunque el total estimado cabe, quedan '+mins(capacity.unplaced)+' sin asignar. Revisa la duración de cada bloque, los huecos y las pausas.');
+    }
+    target.append(summary);
+  }
+  $('suggestSchedule').onclick=()=>{
+    proposal=planDay();
+    const preview=$('schedulePreview');
+    preview.replaceChildren();
+    $('applySchedule').hidden=true;
+    if(proposal.error){note(preview,proposal.error);return;}
+    showCapacity(preview,proposal.capacity);
+    for(const block of proposal.scheduled){
+      const task=state().tasks.find(t=>t.id===block.id);
+      note(preview,stamp(block.startAt)+' · '+task.title+' · '+block.duration+' min');
+    }
+    note(preview,proposal.remaining.length?`${proposal.remaining.length} tarea(s) no caben en esta jornada. Ajusta el alcance o programa otro día.`:proposal.scheduled.length?'Propuesta lista. Revisa los horarios y los descansos antes de aplicarla.':'No hay tareas sin horario que programar para este día.');
+    $('applySchedule').hidden=!proposal.scheduled.length;
+  };
   $('applySchedule').onclick=()=>{if(!proposal?.scheduled)return;const fresh=planDay();if(JSON.stringify(fresh.scheduled)!==JSON.stringify(proposal.scheduled)){$('schedulePreview').textContent='La agenda cambió. Pulsa Proponer horario para revisarla de nuevo.';$('applySchedule').hidden=true;proposal=null;return;}for(const block of proposal.scheduled){const task=state().tasks.find(t=>t.id===block.id);if(task&&!task.done)Object.assign(task,block,{planned:true});}persist();proposal=null;$('applySchedule').hidden=true;$('schedulePreview').textContent='Propuesta aplicada. Revisa el estado de guardado.';refresh();};
   $('startFocus').onclick=()=>{const minutes=Number($('focusMinutes').value);if(!Number.isFinite(minutes)||minutes<1||minutes>120){$('focusStatus').textContent='Elige entre 1 y 120 minutos.';return;}const previous=state().focusSession;const remaining=previous?.paused?previous.remaining:minutes*60000;state().focusSession={endsAt:Date.now()+remaining,remaining,paused:false,finished:false,kind:previous?.paused?previous.kind||'task':'task',taskId:$('focusTask').value};persist();$('focusStatus').textContent='Un paso a la vez. Puedes pausar cuando lo necesites.';tickFocus();};
   $('pauseFocus').onclick=()=>{const session=state().focusSession;if(!session||session.finished||session.paused)return;session.remaining=Math.max(0,session.endsAt-Date.now());session.paused=true;persist();$('focusStatus').textContent='En pausa. Pulsa Comenzar para continuar.';tickFocus();};
@@ -192,7 +223,7 @@
   window.addEventListener('pageshow',()=>{tickFocus();tickReminders();});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tickFocus();tickReminders();}});
   setInterval(tickFocus,1000);setInterval(tickReminders,30000);
-  window.liftsWorkUI={render,addTask,context,reviewDay,preparePlan(date,reorganize){
+  window.liftsWorkUI={render,addTask,captureTask:work.captureTask,context,reviewDay,preparePlan(date,reorganize){
     api.open('tasks');$('planDate').value=date;$('planReorganize').checked=reorganize;
     $('suggestSchedule').click();$('schedulePreview').scrollIntoView({block:'center'});
   },openReminder(taskId){

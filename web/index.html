@@ -35,7 +35,11 @@
 <section id="home"><section class="voice-stage" id="voiceStage" hidden aria-label="Conversación con tu asistente"><small>CONVERSEMOS, UN PASO A LA VEZ</small><div class="face-avatar" id="faceAvatar" data-phase="idle" aria-hidden="true"><span class="face-antenna"></span><span class="face-head"><span class="face-eye left"></span><span class="face-eye right"></span><span class="face-mouth"></span></span><span class="face-shoulders"></span><span class="robot-arm left"></span><span class="robot-arm right"></span><span class="robot-leg left"></span><span class="robot-leg right"></span></div><h2 id="voiceStageName">Lifts</h2><p id="voiceStageStatus" role="status" aria-live="polite">Pulsa Hablar cuando quieras.</p><p id="voiceCaption" class="voice-caption"></p><div class="face-controls"><button id="startTalking" type="button">🎙 Hablar</button><button id="readStageReply" type="button" class="secondary">Escuchar otra vez</button><button id="interruptTalking" type="button" class="secondary">Interrumpir</button><button id="showWrittenChat" type="button" class="secondary">Ver conversación escrita</button><button id="openVoiceAction" type="button" hidden>Revisar en Lifts</button><button id="stopConversation" type="button" class="secondary">Salir del modo voz</button></div><p id="voiceInputHelp" class="notice"></p><details class="voice-disclosure"><summary>Micrófono y privacidad</summary><p class="notice">Al entrar en este modo se activa el micrófono, con tu permiso, y se reinicia la escucha entre frases. Lifts prepara algunas acciones en tu dispositivo. Los demás dictados se envían a la IA y consumen la cuota habitual. Puedes pausar el micrófono o salir. El reconocimiento lo gestiona el navegador o sistema y puede requerir conexión. Puedes interrumpir o salir en cualquier momento. No escucha en segundo plano.</p></details></section><div class="voice-entry"><p id="appLaunchHint" class="notice"></p><button id="installLifts" type="button" class="secondary">Instalar Lifts IA</button><button id="startConversation" type="button">Conversar cara a cara</button><p>Escucha las respuestas y ve a tu asistente hablar. El texto sigue disponible cuando lo necesites.</p></div><section class="evolution-home" aria-label="Panel de inicio">
   <details id="nexusPanel" class="card">
     <summary>Continuidad de trabajo</summary>
-    <button type="button" class="secondary" data-page="journal">Misiones y conocimiento</button>
+    <div class="evolution-controls">
+      <button type="button" class="secondary" data-page="journal">Misiones y conocimiento</button>
+      <button type="button" class="secondary" data-page="utilities">Utilidades locales</button>
+      <button type="button" class="secondary" data-page="operations">Estado y permisos</button>
+    </div>
     <p id="nexusActivity"></p>
     <p id="nexusLimit" class="notice"></p>
     <button id="nexusResume" type="button" class="secondary" hidden>Retomar actividad</button>
@@ -122,6 +126,37 @@
 <div class="academy-tabs"><button type="button" id="academyCatalogButton">Explorar cursos</button><button type="button" id="academyToolsButton" class="secondary">Simuladores</button><button type="button" id="academyLibraryButton" class="secondary">Biblioteca</button><button type="button" id="academyPathsButton" class="secondary">Rutas y repasos</button></div>
 </div><div class="academy-progress"><label for="academyProgress">Progreso general</label><progress id="academyProgress" value="0" max="1"></progress><p id="academyProgressText"></p><button type="button" class="secondary" id="academyContinue" hidden>Continuar estudiando</button></div></div>
 <p id="academyStatus" role="status"></p><div id="academyContent"></div>
+</section>
+<section id="utilities" hidden aria-label="Utilidades locales"><div id="nexusUtilities"></div></section>
+<section id="operations" hidden aria-labelledby="nexusOperationsTitle">
+  <article class="card">
+    <h2 id="nexusOperationsTitle">Estado y permisos de Nexus</h2>
+    <dl>
+      <dt>Sincronización de la cuenta</dt><dd id="nexusSyncState"></dd>
+      <dt>Última comprobación de IA en esta sesión</dt><dd id="nexusAIState"></dd>
+    </dl>
+    <p>La prueba de IA usa una consulta de tu cuota. Puedes seguir usando Agenda, Academia y las utilidades locales si el modelo falla.</p>
+    <button id="nexusCheckAI" type="button" class="secondary">Comprobar IA desde Nexus</button>
+  </article>
+  <article class="card">
+    <h3>Próxima acción en la Agenda</h3>
+    <p>El permiso se aplica solo a esta acción de Nexus. Para cambiarlo, selecciona el modo y guarda.</p>
+    <form id="nexusActionSettings">
+      <label for="nexusActionMode">Modo de la próxima acción</label>
+      <select id="nexusActionMode">
+        <option value="consult">Consulta · ver la acción</option>
+        <option value="draft">Colaboración · preparar borrador</option>
+        <option value="authorized">Ejecución autorizada · guardar una tarea simple al pulsar el botón</option>
+      </select>
+      <button>Guardar permiso</button>
+    </form>
+    <p id="nexusActionPreview"></p>
+    <button id="nexusRunAction" type="button" hidden></button>
+    <button id="nexusRetryAction" type="button" class="secondary" hidden>Reintentar guardado de la tarea</button>
+    <p id="nexusOperationNotice" role="status"></p>
+    <h3>Historial de tareas creadas desde Nexus</h3>
+    <ul id="nexusActionHistory"></ul>
+  </article>
 </section>
 <section id="journal" hidden aria-labelledby="journalTitle">
   <article class="card">
@@ -275,6 +310,9 @@
 <script src="nexus-ui.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
+<script src="nexus-operations-ui.js" defer></script>
+<script src="nexus-utilities-core.js" defer></script>
+<script src="nexus-utilities-ui.js" defer></script>
 <script src="industrial-core.js" defer></script>
 <script src="industrial-ui.js" defer></script>
 <script src="google-ui.js" defer></script>
