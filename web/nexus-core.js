@@ -41,6 +41,16 @@
     privacy:plainPage('Privacidad y memoria','Consultar, recuperar y archivar recuerdos privados','Los recuerdos dependen del espacio autenticado.'),
     calculatorHub:plainPage('Centro de calculadoras','Convertir unidades y consultar herramientas flexográficas, fechas y presupuestos','Las conversiones se hacen en el navegador.'),
     field:plainPage('Modo de campo','Capturar mediciones y abrir diagnóstico, procedimientos y equipos','El cronómetro dura esta sesión. Las mediciones se guardan al confirmar el borrador.'),
+    'guardian-philosophy':{
+      label:'Curso de filosofía práctica',purpose:'Estudiar argumentos, diálogo socrático, estoicismo, ética y epistemología',
+      input:'Sin parámetros',output:'Curso con avance privado',permission:'Sesión del propietario',
+      dependency:'Guardian',limitations:'El curso introductorio consta de cinco lecciones.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('guardian');
+        const course=root.document.getElementById('philosophyCourse');
+        if(course&&!course.closest('[hidden]')){course.open=true;course.scrollIntoView({block:'start'});}
+      }
+    },
     guardian:plainPage('Lifts Guardian','Preparar la jornada y dar seguimiento a compromisos','El resumen se calcula al abrir la vista con tus registros guardados.'),
     radar:plainPage('Lifts Radar','Revisar alertas y pendientes de tus registros','Las comprobaciones se realizan al abrir esta vista.'),
     'builder-record':{

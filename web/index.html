@@ -279,6 +279,13 @@
     <label for="guardianReferenceQuery">Buscar tema de lectura</label><input type="search" id="guardianReferenceQuery" maxlength="120">
     <div id="guardianReferenceResults"></div>
   </details>
+  <details id="philosophyCourse" class="card" data-guardian-detail>
+    <summary>Curso de filosofía práctica</summary>
+    <p id="philosophyProgress"></p>
+    <label for="philosophyPick">Lección de filosofía</label><select id="philosophyPick"></select>
+    <div id="philosophyLesson"></div>
+    <p id="philosophyStatus" role="status"></p>
+  </details>
   <details class="card" id="guardianClipboard" data-guardian-detail>
     <summary>Captura rápida</summary>
     <form id="guardianClipboardForm">
@@ -363,6 +370,13 @@
       <button>Convertir unidades</button>
     </form>
     <p id="hubResult" role="status"></p>
+  </article>
+  <article class="card">
+    <h3>Cálculos con fórmula</h3>
+    <label for="formulaPick">Elegir cálculo</label><select id="formulaPick"></select>
+    <p id="formulaUse"></p><p id="formulaExpression"></p>
+    <form id="formulaForm"><div id="formulaInputs"></div><button>Calcular fórmula</button></form>
+    <p id="formulaResult" role="status"></p>
   </article>
 </section>
 <section id="field" hidden aria-labelledby="fieldTitle">
@@ -650,7 +664,9 @@
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
 <script src="guardian-reference.js" defer></script>
+<script src="guardian-philosophy.js" defer></script>
 <script src="guardian-calculator.js" defer></script>
+<script src="guardian-formulas.js" defer></script>
 <script src="guardian.js" defer></script>
 <script src="guardian-field.js" defer></script>
 <script src="guardian-field-audio.js" defer></script>

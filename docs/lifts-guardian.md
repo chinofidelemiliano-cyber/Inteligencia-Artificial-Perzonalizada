@@ -11,7 +11,7 @@ Lifts ya tiene Agenda y enfoque, recordatorios configurables, hábitos, Radar, m
 | 3 · Routine | Parcial | Doce plantillas, pasos editables, material previo, temporizador web, lectura compatible y últimos veinte resultados. Faltan reglas condicionales ampliadas e integración con avisos. |
 | 4 · Follow-up | Implementado | Diez categorías, compromiso, fecha, hora opcional, prioridad, cierre, reapertura y borradores de mensaje y recordatorio. |
 | 5 · Memory Assistant | Parcial | Categoría, contexto, fecha de alta, búsqueda local, archivo y recuperación. Consulta local mediante «Busca en mis recuerdos sobre…», por texto o dictado del chat. Falta captura dedicada por voz. |
-| 6 · Calculator Hub | Parcial | Centro que enlaza Ingeniería, Builder, utilidades y presupuesto. Convierte longitudes, masas, duraciones y presión, muestra la sustitución y recibe valores de Captura rápida. Falta el catálogo completo de fórmulas. |
+| 6 · Calculator Hub | Parcial | Centro que enlaza Ingeniería, Builder, utilidades y presupuesto. Convierte longitudes, masas, duraciones y presión, muestra la sustitución y recibe valores de Captura rápida. Incluye doce fórmulas adicionales probadas. Falta el catálogo completo. |
 | 7 · Time Intelligence | Parcial | Agenda, cruces y planificación existentes. Falta ampliar el análisis temporal solicitado. |
 | 8 · Field Mode | Parcial | Cronómetro local, mediciones con unidad como borrador de experimento y accesos a equipos, procedimientos y fotos de diagnóstico. Incluye grabación local, reproducción y descarga de audio. Faltan fichas mediante QR y captura de parámetros especializada. |
 | 9 · Document Intelligence | Parcial | Utilidades PDF locales y biblioteca existentes. Falta ampliar extracción y análisis. |
@@ -20,17 +20,17 @@ Lifts ya tiene Agenda y enfoque, recordatorios configurables, hábitos, Radar, m
 | 12 · Quick Reference | Parcial | Consulta rápida filtrable de ocho lecturas con fuentes. Faltan fichas científicas, técnicas y profesionales. |
 | 13 · Voice | Parcial | La voz existente se complementa con lectura de pasos de rutina. Comandos para abrir Guardian y Modo de campo y buscar recuerdos. Faltan los demás comandos especializados. |
 | 14 · Protocols | Parcial | Procedimientos Nexus y ejecución guiada de rutinas. Faltan plantillas y reglas de protocolos especializados. |
-| 15 · Philosophy | Parcial | Lecturas introductorias de Epicteto, Aristóteles y Platón. Faltan cursos profundos, ramas, escuelas y autores. |
-| 16 · Stoic | Parcial | Lectura y ejercicio para distinguir lo que depende de uno. Falta el recorrido completo. |
+| 15 · Philosophy | Parcial | Curso inicial de cinco lecciones con teoría, casos, ejercicios, fuentes y avance. Faltan historia completa, otras ramas, escuelas y autores. |
+| 16 · Stoic | Parcial | Lección, lectura y ejercicio para distinguir lo que depende de uno. Falta el recorrido completo. |
 | 17 · Wisdom | Parcial | Una lectura diaria rotativa, referencias y borrador de reflexión. Faltan biblioteca personal de frases y tarjetas descargables. |
-| 18 · Socrates | Parcial | Ejercicio de aclaración socrática. Falta diálogo ramificado. |
-| 19 · Logic | Parcial | Una ficha inicial de inferencia. Faltan herramientas de análisis y ejercicios ampliados. |
+| 18 · Socrates | Parcial | Lección y ejercicio de aclaración socrática. Falta diálogo ramificado. |
+| 19 · Logic | Parcial | Ficha y lección de premisas, validez e inferencia. Faltan herramientas de análisis y ejercicios ampliados. |
 | 20 · Psychology | Parcial | Ficha y ejercicio de planes condicionales para preparar respuestas a interrupciones. Falta el desarrollo temático completo. |
 | 21 · Neuroscience | Parcial | Ficha de sueño y consolidación de memoria con referencia bibliográfica y ejercicio. Faltan cursos y ejercicios del resto de temas. |
 | 22 · Cognitive Biases | Parcial | Ficha de sesgo de confirmación. Faltan los demás sesgos y actividades. |
 | 23 · Journal | Parcial | El diario Nexus recibe borradores de reflexión. Faltan modalidades adicionales. |
 | 24 · Life Lessons | Parcial | Lecciones aprendidas Nexus con fuentes e integración desde lecturas. Faltan más conexiones. |
-| 25 · Ethics | Parcial | Una ficha breve de práctica de virtud. Faltan marcos y análisis de dilemas. |
+| 25 · Ethics | Parcial | Ficha y lección de ética de la virtud y juicio práctico. Faltan marcos y análisis de dilemas. |
 | 26 · Learn Something | Parcial | Rotación diaria de ocho fichas con ejercicio. Falta personalización y seguimiento. |
 | 27 · Complementarias | Parcial | Se conservan las utilidades existentes. Falta la ampliación solicitada. |
 | 28 · Smart Clipboard | Parcial | Pegar texto, aritmética, fechas ISO, instrucciones, tabla, URL, nota y misión. Puede abrir la conversión con cantidades y unidades reconocidas. Faltan mediciones y clasificación avanzada. |
@@ -77,3 +77,10 @@ El flujo se ejecuta localmente. Las pruebas incluyen fechas contradictorias, fec
 
 
 Modo de campo permite grabar observaciones de hasta un minuto con el micrófono en navegadores compatibles. Solicita permiso al pulsar Grabar, permite escuchar y descargar en el formato nativo del navegador y libera el micrófono al detener o salir. El clip temporal se elimina al cambiar de vista o de cuenta. El archivo descargado permanece en el dispositivo. El recorrido de Chromium usa un micrófono simulado y descarga un WebM real.
+
+
+## Filosofía y calculadoras
+
+Abre **Guardian → Curso de filosofía práctica**, o busca el curso por nombre. Incluye cinco lecciones con teoría, aplicación, fuentes y práctica con retroalimentación. El progreso se guarda en `guardianPhilosophy` al acertar y se recupera con la cuenta. Las fuentes son referencias de consulta y los textos de las lecciones son explicaciones propias.
+
+**Guardian → Calculadoras → Cálculos con fórmula** presenta doce operaciones con valores de ejemplo, fórmula, supuestos y resultado. La lógica en `web/guardian-formulas.js` valida magnitudes, denominadores, rangos e intervalos y funciona sin IA. Los datos de ejemplo son didácticos. `tests/guardian-formulas.test.cjs` verifica resultados y errores. El recorrido móvil comprueba la separación entre etiquetas, la retroalimentación de filosofía y la recuperación del progreso.

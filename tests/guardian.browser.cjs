@@ -167,6 +167,31 @@ test('Guardian focuses, saves follow-ups, restores its data and clears drafts be
     await page.getByLabel('Unidad de destino').selectOption('mm');
     await page.getByRole('button',{name:'Convertir unidades'}).click();
     await page.getByText(/= 25[.,]4 mm/).waitFor();
+    await page.getByLabel('Elegir cálculo').selectOption('labels');
+    await page.getByRole('button',{name:'Calcular fórmula'}).click();
+    await page.getByText(/Resultado: 10 mm/).waitFor();
+    await page.locator('#formulaInput0').fill('250');
+    await page.getByRole('button',{name:'Calcular fórmula'}).click();
+    await page.getByText('Las etiquetas no caben en el desarrollo indicado.').waitFor();
+
+    await page.evaluate(()=>window.liftsWorkspace.open('guardian'));
+    await page.getByText('Curso de filosofía práctica',{exact:true}).click();
+    await page.getByLabel('Lección de filosofía').selectOption('ethics');
+    await page.getByText(/El término medio no se obtiene/).waitFor();
+    await page.getByRole('radio',{name:'Promediando las dos opciones extremas.'}).check();
+    await page.getByRole('button',{name:'Comprobar y guardar avance'}).click();
+    await page.getByText(/Revisa tu respuesta/).waitFor();
+    assert.equal(await page.evaluate(()=>Boolean(window.saved.guardianPhilosophy?.ethics)),false);
+    await page.getByRole('radio',{name:'Examinando los hechos, responsabilidades y consecuencias concretas.'}).check();
+    await page.getByRole('button',{name:'Comprobar y guardar avance'}).click();
+    await page.getByText('1 de 5 lecciones completadas',{exact:true}).waitFor();
+    const studied=await page.evaluate(()=>window.saved);
+    await page.evaluate(data=>{
+      window.dispatchEvent(new CustomEvent('nexo-state',{detail:data}));
+      window.liftsWorkspace.open('guardian');
+    },studied);
+    await page.getByText('Curso de filosofía práctica',{exact:true}).click();
+    await page.getByText('1 de 5 lecciones completadas',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });
