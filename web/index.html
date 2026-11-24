@@ -35,6 +35,7 @@
 <section id="home"><section class="voice-stage" id="voiceStage" hidden aria-label="Conversación con tu asistente"><small>CONVERSEMOS, UN PASO A LA VEZ</small><div class="face-avatar" id="faceAvatar" data-phase="idle" aria-hidden="true"><span class="face-antenna"></span><span class="face-head"><span class="face-eye left"></span><span class="face-eye right"></span><span class="face-mouth"></span></span><span class="face-shoulders"></span><span class="robot-arm left"></span><span class="robot-arm right"></span><span class="robot-leg left"></span><span class="robot-leg right"></span></div><h2 id="voiceStageName">Lifts</h2><p id="voiceStageStatus" role="status" aria-live="polite">Pulsa Hablar cuando quieras.</p><p id="voiceCaption" class="voice-caption"></p><div class="face-controls"><button id="startTalking" type="button">🎙 Hablar</button><button id="readStageReply" type="button" class="secondary">Escuchar otra vez</button><button id="interruptTalking" type="button" class="secondary">Interrumpir</button><button id="showWrittenChat" type="button" class="secondary">Ver conversación escrita</button><button id="openVoiceAction" type="button" hidden>Revisar en Lifts</button><button id="stopConversation" type="button" class="secondary">Salir del modo voz</button></div><p id="voiceInputHelp" class="notice"></p><details class="voice-disclosure"><summary>Micrófono y privacidad</summary><p class="notice">Al entrar en este modo se activa el micrófono, con tu permiso, y se reinicia la escucha entre frases. Lifts prepara algunas acciones en tu dispositivo. Los demás dictados se envían a la IA y consumen la cuota habitual. Puedes pausar el micrófono o salir. El reconocimiento lo gestiona el navegador o sistema y puede requerir conexión. Puedes interrumpir o salir en cualquier momento. No escucha en segundo plano.</p></details></section><div class="voice-entry"><p id="appLaunchHint" class="notice"></p><button id="installLifts" type="button" class="secondary">Instalar Lifts IA</button><button id="startConversation" type="button">Conversar cara a cara</button><p>Escucha las respuestas y ve a tu asistente hablar. El texto sigue disponible cuando lo necesites.</p></div><section class="evolution-home" aria-label="Panel de inicio">
   <details id="nexusPanel" class="card">
     <summary>Continuidad de trabajo</summary>
+    <button type="button" class="secondary" data-page="journal">Misiones y conocimiento</button>
     <p id="nexusActivity"></p>
     <p id="nexusLimit" class="notice"></p>
     <button id="nexusResume" type="button" class="secondary" hidden>Retomar actividad</button>
@@ -121,6 +122,26 @@
 <div class="academy-tabs"><button type="button" id="academyCatalogButton">Explorar cursos</button><button type="button" id="academyToolsButton" class="secondary">Simuladores</button><button type="button" id="academyLibraryButton" class="secondary">Biblioteca</button></div>
 </div><div class="academy-progress"><label for="academyProgress">Progreso general</label><progress id="academyProgress" value="0" max="1"></progress><p id="academyProgressText"></p><button type="button" class="secondary" id="academyContinue" hidden>Continuar estudiando</button></div></div>
 <p id="academyStatus" role="status"></p><div id="academyContent"></div>
+</section>
+<section id="journal" hidden aria-labelledby="journalTitle">
+  <article class="card">
+    <h2 id="journalTitle">Misiones y conocimiento</h2>
+    <p>Registros privados de Nexus. Guarda evidencia para respaldar lo que das por verificado.</p>
+    <label for="journalKind">Tipo de registro</label><select id="journalKind"></select>
+    <label for="journalQuery">Buscar en este tipo de registro</label><input id="journalQuery" type="search" maxlength="100">
+    <div id="journalList"></div>
+    <form id="journalEditor"></form>
+    <p id="journalStatus" role="status"></p>
+    <button id="journalRetry" type="button" class="secondary" hidden>Reintentar guardado de Nexus</button>
+    <details id="journalTimeline">
+      <summary>Revisión por periodo</summary>
+      <label>Periodo <select id="journalPeriod"><option value="day">Hoy</option><option value="week">Esta semana</option><option value="month">Este mes</option><option value="year">Este año</option></select></label>
+      <label>Filtrar acontecimientos <input id="journalTimelineQuery" type="search" maxlength="100"></label>
+      <p class="notice">Incluye registros de Nexus, fichas de Ingeniería, diagnósticos y tareas completadas con fecha registrada.</p>
+      <ul id="journalTimelineItems"></ul>
+    </details>
+    <details id="journalLinks"><summary>Relaciones de conocimiento</summary><div id="journalGraph"></div></details>
+  </article>
 </section>
 <section id="privacy" hidden aria-labelledby="privacyHeading">
   <article class="card">
@@ -227,6 +248,8 @@
 <script src="evolution-ui.js" defer></script>
 <script src="nexus-core.js" defer></script>
 <script src="nexus-ui.js" defer></script>
+<script src="nexus-journal.js" defer></script>
+<script src="nexus-journal-ui.js" defer></script>
 <script src="google-ui.js" defer></script>
 <dialog id="installLiftsHelp" aria-labelledby="installLiftsTitle"><form method="dialog"><h2 id="installLiftsTitle">Instalar Lifts IA</h2><h3>iPhone o iPad</h3><p>Abre Lifts en Safari. Pulsa Compartir → Añadir a pantalla de inicio. Si ves «Abrir como app web», actívalo y pulsa Añadir.</p><h3>Android</h3><p>Abre Lifts en Chrome. Pulsa ⋮ → Instalar aplicación o Añadir a pantalla de inicio.</p><p class="notice">En computadora, busca Instalar aplicación en la barra de direcciones o en el menú de Chrome o Edge.</p><button>Cerrar</button></form></dialog>
 <script src="reminders-ui.js" defer></script>

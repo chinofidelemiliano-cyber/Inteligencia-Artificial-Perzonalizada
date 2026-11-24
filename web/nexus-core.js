@@ -13,6 +13,14 @@
     open:(_workspace,_id,key)=>root.liftsAcademy.open(view,key)
   });
   const tools = Object.freeze({
+    journal:plainPage('Misiones y conocimiento','Abrir decisiones, lecciones, experimentos y revisión crítica','Los registros se sincronizan al pulsar Guardar registro.'),
+    'journal-record':{
+      label:'Registro de Nexus',purpose:'Retomar una misión o un registro de trabajo',
+      input:'Identificador del registro',output:'Editor del registro existente',permission:'Sesión del propietario',
+      dependency:'Misiones y conocimiento',limitations:'Solo recupera la última versión guardada.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsJournal.openRecord(key)
+    },
     tasks:plainPage('Agenda','Consultar pendientes','Los cambios de tareas se guardan desde Agenda.'),
     reminders:plainPage('Recordatorios','Consultar avisos','La entrega depende de la configuración de avisos.'),
     engineering:plainPage('Ingeniería · Placas y distorsión','Calcular distorsión y guardar fichas','Las entradas sin guardar requieren volver a capturarse.'),
@@ -52,7 +60,7 @@
   function commands(query='') {
     const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
     const term=normalize(query.trim());
-    const results=Object.entries(tools).filter(([id,tool])=>!['lesson','engineering-record'].includes(id)&&normalize(tool.label+' '+tool.purpose).includes(term))
+    const results=Object.entries(tools).filter(([id,tool])=>!['lesson','engineering-record','journal-record'].includes(id)&&normalize(tool.label+' '+tool.purpose).includes(term))
       .map(([id,tool])=>({label:tool.label,target:location(id,id==='excel'?'basics':'')}));
     const excelViews=[['Inventario de tintas · Excel','inventory'],['Desperdicio · Excel','waste'],['Pareto · Excel','pareto'],['Revisar CSV · Excel','csv']];
     if(term)for(const [label,key] of excelViews){

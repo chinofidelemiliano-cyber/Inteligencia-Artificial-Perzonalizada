@@ -46,3 +46,20 @@ La disponibilidad de datos en producción, la restauración de respaldos de usua
 - Las pruebas automatizadas cubren la lista autorizada, las claves inválidas y el contexto limitado a campos editables.
 - Chromium comprueba que Ctrl+K abre el buscador, que el chat abre herramientas sin llamar al modelo y que la cuenta puede retomar una lección, una práctica de Excel y una ficha real guardada previamente. También prueba fallo y reintento de sincronización y cambio entre dos espacios simulados.
 - Cloudflare Pages Functions compila con Wrangler. El despliegue público y las pruebas con dos cuentas reales requieren acceso a los servicios correspondientes.
+
+## Continuación. Misiones, conocimiento y revisiones
+
+La continuidad de la etapa 1 ya reabre registros de Nexus por cuenta. Esta entrega añade un diario estructurado dentro de Lifts. Se reutilizan el buscador, la autorización por propietario, la exportación JSON del espacio y el formulario de Agenda. Los cambios son locales a la cuenta y su sincronización usa la infraestructura existente. La rama `backup/antes-misiones` conserva el punto de partida en Git.
+
+| Requisito | Estado de esta entrega | Alcance y límites |
+| --- | --- | --- |
+| 4, 7 | Implementado | Registrar, editar, pausar, cancelar, reanudar y recuperar misiones. Cierre condicionado a etapas realizadas y a evidencia registrada por el usuario. El texto de la evidencia requiere revisión humana. |
+| 8, 9, 14 | Parcial | Enlaces explícitos, editables y navegables entre registros Nexus. Identifica relaciones sugeridas, registradas y verificadas. Incluye fuentes, evidencia, aplicabilidad, contradicciones y preguntas. Falta mapa visual y conexión directa con documentos, máquinas y cursos. |
+| 15, 19, 20, 25 | Parcial | Fichas de revisión crítica y premortem, decisiones y lecciones aprendidas. El usuario registra hipótesis, sesgos, contraargumentos y evidencias. Quedan pendientes el análisis automático, las recomendaciones y la detección de casos relacionados. |
+| 17, 18, 32 | Parcial | Experimentos con media y desviación muestral, comparación de tres escenarios de costo y control de cambios con verificación explícita. Quedan pendientes ANOVA, gráficas, sensibilidad multivariable y aprobación por roles. |
+| 22, 23 | Parcial | Línea del tiempo por fechas registradas para misiones y otros registros Nexus, fichas de Ingeniería, diagnóstico y tareas completadas. Filtros diario, semanal, mensual y anual. Falta análisis de compromisos incumplidos y de tiempos registrados. |
+| 24, 27, 37 | Parcial | Procedimientos con listas de pasos, verificaciones y resultados. Reuniones con acuerdos y una acción que abre un borrador en Agenda. Quedan pendientes el historial por ejecución, versiones, y generación de minutas desde el registro. |
+
+Archivos principales: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/index.html`, `web/nexus-core.js`, `web/nexus-ui.js`, `web/workspace-ui.js` y `web/app.js`. Evidencia de pruebas en `tests/nexus-journal.test.cjs` y `tests/evolution.browser.cjs`.
+
+Misiones, relaciones y registros admiten edición. Los archivos originales, adjuntos de evidencia, automatizaciones externas y la aprobación delegada quedan pendientes. Se mantienen los demás requisitos de las tablas anteriores.

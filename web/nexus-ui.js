@@ -46,7 +46,7 @@
     if(version===pending)status.textContent=ok?message:'El cambio está en esta sesión. Puedes volver a guardar antes de salir.';
   }
 
-  function checkpoint(id,key='',label='') {
+  function checkpoint(id,key='',label='',persist=true) {
     if(!window.nexoAccount?.isReady?.())return;
     const state=api.getState();
     const target=core.location(id,key);
@@ -55,16 +55,16 @@
     if(old?.target.id===id&&old.target.key===key)return;
     state.nexusCheckpoint={target,label:label||core.tools[id].label,at:new Date().toISOString()};
     render();
-    void sync('Punto de trabajo guardado.');
+    if(persist)void sync('Punto de trabajo guardado.');
   }
 
   function open(target) {
     const checked=core.location(target?.id,target?.key);
     if(checked&&api.getState().onboardingCompleted){
-      if(checked.id!=='engineering-record')return core.tools[checked.id].open(api,checked.id,checked.key);
+      if(!['engineering-record','journal-record'].includes(checked.id))return core.tools[checked.id].open(api,checked.id,checked.key);
       openingRecord=true;
       try {
-        if(!core.tools[checked.id].open(api,checked.id,checked.key))status.textContent='La ficha ya no está disponible en tu historial.';
+        if(!core.tools[checked.id].open(api,checked.id,checked.key))status.textContent='El registro ya no está disponible en tu espacio.';
       } finally {openingRecord=false;}
     }
   }

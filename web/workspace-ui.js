@@ -60,6 +60,9 @@
     for(const item of (api.getState().diagnosticCases||[]).filter(item=>normalize(item.data.name+' '+item.data.symptoms).includes(term)).slice(0,4)){
       add(item.data.name+' · Caso de diagnóstico',()=>api.open('diagnostics'));
     }
+    for(const item of (api.getState().nexusJournal||[]).filter(item=>normalize(item.title).includes(term)).slice(0,5)){
+      add(item.title+' · Nexus',()=>window.liftsNexus.open({id:'journal-record',key:item.id}));
+    }
     try {
       const lessons=await window.liftsAcademy.search(value);
       if(version!==searchVersion||!dialog.open)return;
