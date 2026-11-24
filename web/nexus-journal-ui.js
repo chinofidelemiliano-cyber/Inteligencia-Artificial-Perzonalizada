@@ -129,6 +129,7 @@
       for(const box of checklist.querySelectorAll('input'))box.checked=item?.completed?.includes(box.value)||false;
     }
     const saveButton=node(form,'button','Guardar registro');saveButton.type='submit';
+    if(kind==='reading')button(form,'Subrayar un PDF en Utilidades',()=>window.liftsNexus.open({id:'pdf-markup',key:''}));
     if(kind==='scenario') {
       const result=node(form,'div');
       const calculate=()=>{
@@ -429,6 +430,7 @@
     renderList();renderEditor();renderGraph();renderTimeline();renderLifeMap();
   }
   window.addEventListener('nexo-state',reset);
+  window.addEventListener('lifts-backup-restored',()=>{renderList();renderGraph();renderTimeline();renderLifeMap();});
   window.liftsJournal={openRecord,prepareDraft,reset};
   reset();
 })();

@@ -13,6 +13,27 @@
     open:(_workspace,_id,key)=>root.liftsAcademy.open(view,key)
   });
   const tools = Object.freeze({
+    backup:{
+      label:'Recuperar respaldo de Lifts',purpose:'Revisar una exportación JSON y recuperar registros privados',
+      input:'Sin parámetros',output:'Centro de privacidad',permission:'Sesión del propietario',
+      dependency:'Privacidad y memoria',limitations:'La recuperación admite colecciones concretas de la exportación.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('privacy');
+        const details=root.document.getElementById('nexusBackup')?.querySelector('details');
+        if(details&&!details.closest('[hidden]')){details.open=true;details.scrollIntoView({block:'start'});}
+      }
+    },
+    negotiation:plainPage('Simulador de negociación','Practicar entrevistas, acuerdos y conversaciones difíciles','Ejercicios guiados en el navegador.'),
+    'pdf-markup':{
+      label:'Subrayar un PDF',purpose:'Marcar regiones sobre un PDF local y descargar una copia',
+      input:'Sin parámetros de navegación',output:'Vista de subrayado',permission:'Sesión del propietario',
+      dependency:'Utilidades locales',limitations:'Los archivos y marcas temporales se mantienen en esta sesión.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('utilities');
+        const panel=root.document.getElementById('nexusPdfMarkup');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
     utilities:plainPage('Utilidades locales','Comparar textos y hacer conversiones','Los datos introducidos permanecen en esta sesión.'),
     operations:plainPage('Estado y permisos','Consultar sincronización y controlar acciones de Nexus','La comprobación de IA se ejecuta por solicitud.'),
     inbox:{

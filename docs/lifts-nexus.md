@@ -152,3 +152,21 @@ Archivos de diario: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/inde
 La herramienta de QR acepta hasta 500 bytes UTF-8 de texto o enlace y genera un PNG. La prueba en Chromium decodifica el PNG y comprueba que el contenido coincida exactamente. El generador local `qrcode-generator` se carga bajo demanda y conserva su licencia MIT en `web/nexus-utilities-qr-license.txt`. El panel de PDF combina archivos en orden editable y extrae páginas elegidas. Se carga bajo demanda y procesa en un trabajador local. Genera un archivo nuevo a partir de páginas. Las anotaciones, campos de formulario y firmas no se trasladan. Los archivos protegidos quedan fuera del alcance.
 
 Pendientes fuera de órdenes incluyen el subrayado directo sobre documentos privados, la simulación conversacional de negociación, la recuperación probada de respaldos de usuarios y las integraciones de permisos para futuras acciones. Las utilidades locales requieren que la aplicación y sus componentes estén disponibles en el navegador.
+
+## Tres bloques de cierre. Negociación, PDF y respaldos
+
+Base `a01a43b`, preservada en `backup/antes-respaldo-negociacion`. Las órdenes no forman parte de esta entrega.
+
+### Comprobación de recuperación
+
+El respaldo del espacio se descarga en **Privacidad y memoria → Exportar datos del espacio (JSON)**. En la misma pantalla, el panel de recuperación revisa un archivo de ese formato y muestra qué puede añadir a la cuenta abierta. El titular confirma antes de aplicar el plan. Los identificadores que ya existen permanecen con sus datos actuales.
+
+La verificación local usa datos de prueba, la aplicación y las políticas reales de aislamiento ejecutadas en PostgreSQL embebido. El ensayo modifica solamente la fila de la cuenta autenticada y comprueba que la segunda cuenta conserve sus datos. Esto cubre una recuperación desde un archivo del usuario. La restauración de un respaldo completo de Supabase requiere acceso administrativo y un proyecto de ensayo independiente.
+
+| Requisito | Cobertura | Límite |
+| --- | --- | --- |
+| 41 | Simulador ramificado con cinco prácticas, reacciones a cada intervención, revisión en criterios explícitos y guardado privado voluntario. | Evalúa las decisiones de los casos guiados. No interpreta discurso libre ni representa a una persona real. |
+| 43, 44 | Abrir un PDF local, visualizar páginas, señalar regiones y descargar una copia con marcas. Acceso desde Utilidades, buscador y ficha de lectura. | Las marcas se guardan visualmente en una copia de las páginas. No se trasladan anotaciones, enlaces, formularios ni firmas. El espacio de cuenta no recibe el archivo. |
+| 59 | Recuperación con vista previa y confirmación de tareas, conversaciones en texto, recuerdos, capturas y registros Nexus. El ensayo de dos cuentas comprueba el aislamiento. | Las tareas se restauran sin bloques ni alarmas. Permisos, enlaces, producción y configuración quedan fuera de esta recuperación. |
+
+Archivos principales: `web/negotiation.js`, `web/negotiation-ui.js`, `web/nexus-pdf-markup.js`, `web/nexus-pdf-markup-core.js`, `web/nexus-pdf-markup-worker.js`, `web/nexus-pdf-entry.js`, `web/nexus-backup.js`, `web/index.html`, `web/nexus-core.js` y `web/app.js`. El renderizador PDF.js 6.5.438 se carga bajo demanda y su licencia Apache 2.0 está en `web/vendor/pdfjs-LICENSE.txt`. El flujo de recuperación conserva el formato de exportación del usuario.

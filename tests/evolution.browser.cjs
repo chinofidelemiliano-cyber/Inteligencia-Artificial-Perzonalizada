@@ -462,6 +462,13 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     await page.getByRole('heading',{name:'Combinar y extraer páginas de PDF',exact:true}).waitFor();
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
     assert.equal(await page.locator('#nexusPdfPanel input[type=file]').count(),0);
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('Subrayar un PDF');
+    await page.locator('#workspaceSearchResults').getByRole('button',{name:'Subrayar un PDF',exact:true}).click();
+    await page.getByLabel('PDF para resaltar',{exact:true}).waitFor();
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
+    assert.equal(await page.locator('#nexusPdfMarkupPanel input[type=file]').count(),0);
+
 
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

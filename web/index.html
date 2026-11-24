@@ -39,6 +39,7 @@
       <button type="button" class="secondary" data-page="journal">Misiones y conocimiento</button>
       <button type="button" class="secondary" data-page="utilities">Utilidades locales</button>
       <button type="button" class="secondary" data-page="operations">Estado y permisos</button>
+      <button type="button" class="secondary" data-page="negotiation">Practicar negociación</button>
     </div>
     <p id="nexusActivity"></p>
     <p id="nexusLimit" class="notice"></p>
@@ -134,6 +135,14 @@
     <p id="nexusPdfLoading" role="status"></p>
     <div id="nexusPdfPanel"></div>
   </details>
+  <details id="nexusPdfMarkup" class="card">
+    <summary>Subrayar un PDF</summary>
+    <p id="nexusPdfMarkupLoading" role="status"></p>
+    <div id="nexusPdfMarkupPanel"></div>
+  </details>
+</section>
+<section id="negotiation" hidden aria-labelledby="negotiationTitle">
+  <article class="card"><h2 id="negotiationTitle">Simulador de negociación</h2><div id="negotiationContent"></div></article>
 </section>
 <section id="operations" hidden aria-labelledby="nexusOperationsTitle">
   <article class="card">
@@ -221,6 +230,7 @@
     <h3>Mis recuerdos</h3><ul id="memoryList" class="memory-list"></ul>
     <h3>Datos de mi espacio</h3><p>La exportación incluye la información que conserva el espacio de trabajo, como tus tareas, preferencias, conversaciones guardadas y recuerdos. Protege el archivo descargado.</p>
     <button id="exportSpace" type="button" class="secondary">Exportar datos del espacio (JSON)</button>
+    <div id="nexusBackup"></div>
   </article>
 </section>
 <section id="identity" hidden aria-label="Propuestas de identidad de Lifts">
@@ -339,11 +349,14 @@
 <script src="nexus-ui.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
+<script src="nexus-backup.js" defer></script>
 <script src="nexus-operations-ui.js" defer></script>
 <script src="nexus-feedback.js" defer></script>
 <script src="nexus-utilities-core.js" defer></script>
 <script src="nexus-utilities-ui.js" defer></script>
 <script src="nexus-pdf-entry.js" defer></script>
+<script src="negotiation.js" defer></script>
+<script src="negotiation-ui.js" defer></script>
 <script src="industrial-core.js" defer></script>
 <script src="industrial-ui.js" defer></script>
 <script src="google-ui.js" defer></script>

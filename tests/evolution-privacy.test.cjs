@@ -45,6 +45,18 @@ test('the real SQL policies isolate two authenticated accounts and deny anonymou
     await db.query('insert into public.user_spaces(user_id,data) values($1,$2)',[a,{privateMemories:[{title:'A privado'}]}]);
     assert.deepEqual((await db.query('select user_id from public.user_spaces')).rows,[{user_id:a}]);
     await assert.rejects(db.query('update public.user_spaces set user_id=$1 where user_id=$2',[b,a]),/row-level security/);
+    const {parseBackup,planRestore}=require('../web/nexus-backup.js');
+    const [{data:before}]=(await db.query('select data from public.user_spaces where user_id=$1',[a])).rows;
+    const itemId='00000000-0000-4000-8000-000000000009';
+    const backup=parseBackup(JSON.stringify({profile:{},onboardingCompleted:true,tasks:[],savedConversations:[],privateMemories:[{id:itemId,title:'Captura local',text:'Recuperada'}]}));
+    const plan=planRestore(before,backup);
+    assert.equal(plan.total,1);
+    const restored={...before,...plan.patch};
+    const outcome=await db.query('update public.user_spaces set data=$1 where user_id=$2 returning data',[restored,a]);
+    assert.equal(outcome.rows[0].data.privateMemories.length,2);
+    assert.ok(outcome.rows[0].data.privateMemories.some(item=>item.id===itemId));
+    assert.deepEqual((await db.query('update public.user_spaces set data=$1 where user_id=$2 returning user_id',[restored,b])).rows,[]);
+
     await authenticate(b);
     assert.deepEqual((await db.query('select data from public.user_spaces')).rows,[{data:{privateMemories:[{title:'B privado'}]}}]);
     await db.exec('reset role; set role anon;');
