@@ -115,11 +115,13 @@ Los campos nuevos usan el JSON existente de `user_spaces`; no requieren SQL adic
 
 ## Academia de flexografía
 
-La nueva sección **Academia** agrupa 14 especialidades y cuatro niveles. Incluye lecciones con fundamentos, diagnóstico y ejercicios resueltos, seis comprobaciones numéricas opcionales, 19 fichas de defectos, un glosario y biblioteca con PDF de apuntes originales. El lector admite favoritos, notas privadas, progreso, reanudación y constancias internas por curso. Los simuladores de Lab, TVI, distorsión y registro muestran las hipótesis del cálculo. El atlas, los cortes y las curvas espectrales son ilustraciones didácticas.
+La sección **Academia** reúne 15 cursos y siete niveles, con 35 lecciones. Incluye lecciones con fundamentos, diagnóstico y ejercicios resueltos, seis comprobaciones numéricas opcionales, 19 fichas de defectos, un glosario y biblioteca con PDF de apuntes originales. El lector admite favoritos, notas privadas, progreso, reanudación y constancias internas por curso. Los simuladores de Lab, TVI, distorsión y registro muestran las hipótesis del cálculo. El atlas, los cortes y las curvas espectrales son ilustraciones didácticas.
 
 El contenido y los simuladores se cargan al abrir la Academia o al buscar sus lecciones. El tutor consulta el endpoint de chat existente con la pregunta y la lección activa. Las notas privadas y el historial académico quedan fuera de la consulta. Se conserva el control de sesión, cuota e IA del servidor. Los catálogos enlazados permiten verificar ediciones y referencias antes de aplicar un requisito. Para parámetros específicos de una Comco Cadet Model 700, usa el manual que corresponda al equipo y su revisión.
 
 El progreso académico vive en `academyProgress` en el espacio privado de la cuenta. El cambio es aditivo y no requiere SQL ni duplicar cuentas, registros, cursos breves o herramientas. La línea base local `backup/antes-academia` apunta a `e041d64`. Para un despliegue de pruebas, conserva ese commit como punto de retorno. El código anterior sigue leyendo los campos existentes de la cuenta.
+
+La etapa Lifts AI 2.0 añade los recorridos **Ingeniería**, **Diagnóstico guiado** y **Lifts Excel** desde Academia y búsqueda global. **Perfil → Comparar propuestas de logotipo** abre las tres opciones de identidad. Consulta el [registro de desarrollo](docs/lifts-2-registro.md) para conocer las pruebas y el alcance pendiente.
 
 ## Agenda y cuestionario de flexografía
 

@@ -111,6 +111,10 @@
   function renderCatalog() {
     const card=node(shell,'article',undefined,'card');
     heading(card,'Especialidades');
+    const connections=node(card,'div',undefined,'academy-tabs');
+    button(connections,'Ingeniería · Placas y distorsión',()=>api.open('engineering'));
+    button(connections,'Lifts Excel',()=>api.open('excel'));
+    button(connections,'Diagnóstico guiado',()=>api.open('diagnostics'));
     const bar=node(card,'div',undefined,'academy-search');
     const input=document.createElement('input');
     input.type='search';input.placeholder='Ej. anilox o metamerismo';input.value=filter;
@@ -181,6 +185,13 @@
     const level=document.createElement('select');
     for(const value of ['Introducción','Explicación técnica','Análisis avanzado'])node(level,'option',value);
     field('Nivel de explicación',level,form);
+    const prompts=node(form,'div',undefined,'academy-tabs');
+    for(const [label,request] of [
+      ['Explícame por qué','Explica por qué ocurre el fenómeno principal y describe un supuesto que cambie el resultado.'],
+      ['Explícalo más fácil','Explícalo desde cero, con una analogía y su límite.'],
+      ['Quiero profundizar','Relaciona esta lección con otro tema y explica qué mediciones faltan para aplicar el modelo.'],
+      ['Explícame la fórmula','Explica variables, unidades, operaciones y una forma de comprobar la fórmula paso a paso.']
+    ])button(prompts,label,()=>{question.value=request;question.focus();});
     const send=node(form,'button','Consultar al tutor');
     const answer=node(panel,'div',undefined,'academy-answer');answer.setAttribute('role','status');
     form.onsubmit=async event=>{
@@ -266,6 +277,42 @@
     control.oninput=redraw;redraw();
     node(parent,'p','HSL organiza colores de pantalla. El tono opuesto aquí no predice una formulación de tinta.','notice');
   }
+  function studioPanel(parent,course,lesson) {
+    const details=node(parent,'details');node(details,'summary','Preparar presentación PowerPoint');
+    node(details,'p','Las diapositivas contienen puntos breves y el desarrollo se incluye en las notas del instructor.').className='notice';
+    const form=node(details,'form');
+    const audience=document.createElement('select');
+    for(const value of ['Personal de producción','Preprensa y montaje','Calidad y supervisión','Personas que inician'])node(audience,'option',value);
+    field('Público de capacitación',audience,form);
+    const minutes=document.createElement('input');minutes.type='number';minutes.min=5;minutes.max=240;minutes.value=30;minutes.required=true;
+    field('Duración sugerida (minutos)',minutes,form);
+    const topics=node(form,'fieldset');node(topics,'legend','Lecciones que incluirás');
+    const selected=course.lessons.map(item=>{
+      const input=document.createElement('input');input.type='checkbox';input.checked=item===lesson;input.style.width='auto';
+      const label=node(topics,'label');label.append(input,document.createTextNode(' '+item.title));
+      return input;
+    });
+    const submit=node(form,'button','Descargar presentación editable');
+    const message=node(form,'p');message.setAttribute('role','status');
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      if(submit.disabled)return;
+      const lessons=course.lessons.filter((_,index)=>selected[index].checked);
+      if(!lessons.length){message.textContent='Selecciona al menos una lección.';return;}
+      const account=generation,reading=current;
+      submit.disabled=true;message.textContent='Preparando diapositivas…';
+      try{
+        const {exportCoursePresentation}=await import('./studio-pptx.js');
+        if(account!==generation||reading!==current)return;
+        await exportCoursePresentation(course,lessons,{
+          minutes:minutes.valueAsNumber,audience:audience.value,diagrams:modules.tools.diagrams,references:modules.data.references
+        });
+        if(account===generation&&reading===current)message.textContent='Presentación generada.';
+      }catch{
+        if(account===generation&&reading===current)message.textContent='No se pudo generar el PowerPoint. Vuelve a intentarlo.';
+      }finally{submit.disabled=false;}
+    };
+  }
   function renderLesson({course,lesson}) {
     const key=lessonKey(course,lesson);
     const layout=node(shell,'div',undefined,'academy-reader');
@@ -279,7 +326,16 @@
     const main=node(layout,'article',undefined,'card academy-lesson');
     node(main,'p',course.title+' · '+modules.data.levels[course.level],'academy-kicker');
     node(main,'h2',lesson.title);
+    if(course.overview){
+      const overview=node(main,'details');
+      node(overview,'summary','Presentación y objetivos del curso');
+      node(overview,'p','Objetivos: '+course.overview.objectives);
+      node(overview,'p','Conocimientos previos: '+course.overview.prerequisites);
+      node(overview,'p','Glosario: '+course.overview.glossary);
+    }
     const actions=node(main,'div',undefined,'academy-tabs');
+    if(['placas','preprensa','distorsion'].includes(course.id))button(actions,'Abrir ficha y calculadora',()=>api.open('engineering'));
+    if(course.id==='calidad')button(actions,'Abrir plantilla Pareto en Excel',()=>window.liftsExcel.open('pareto'));
     const bookmark=button(actions,progress().favorites.includes(key)?'Quitar favorito':'Marcar favorito',async()=>{
       const list=progress().favorites;
       const was=list.includes(key);
@@ -326,6 +382,19 @@
       ],'lifts-constancia-'+course.id);
     });
     certificate.hidden=!course.lessons.every(item=>progress().done[lessonKey(course,item)]);
+    button(main,'Descargar curso completo en PDF',()=>{
+      const sections=[];
+      if(course.overview)sections.push(
+        {heading:'Objetivos y conocimientos previos',body:course.overview.objectives+'\n'+course.overview.prerequisites});
+      sections.push({heading:'Índice',body:course.lessons.map(item=>item.title).join('\n')});
+      for(const item of course.lessons){
+        sections.push({heading:item.title,body:item.theory+'\n\n'+item.practice+'\n\nEjercicio resuelto: '+item.exercise});
+      }
+      if(course.overview)sections.push({heading:'Glosario',body:course.overview.glossary});
+      sections.push({heading:'Referencias',body:course.sources.map(ref=>modules.data.references[ref].join(' — ')).join('\n')});
+      pdf(course.title,'Lifts · Academia de flexografía',sections,'lifts-curso-'+course.id);
+    });
+    studioPanel(main,course,lesson);
     tutorPanel(main,course,lesson);
     heading(main,'Referencias');
     for(const ref of course.sources)link(node(main,'p'),ref);
@@ -395,6 +464,7 @@
   }
   function defectAtlas(parent) {
     heading(parent,'Atlas de diagnóstico');
+    button(parent,'Registrar un caso y comparar fotos',()=>api.open('diagnostics'));
     const input=document.createElement('input');input.type='search';field('Buscar un defecto',input,parent);
     const records=node(parent,'div');
     const update=()=>{

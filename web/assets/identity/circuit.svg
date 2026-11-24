@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="248" height="76" viewBox="0 0 248 76" role="img" aria-labelledby="title">
+  <title id="title">Lifts · Circuito</title>
+  <defs><linearGradient id="edge"><stop stop-color="#e9fbff"/><stop offset=".58" stop-color="#20d9f5"/><stop offset="1" stop-color="#ba9aff"/></linearGradient></defs>
+  <path fill="none" stroke="#1a3662" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M18 18v45h32m18-29v29m0-45v2m22 43V29l11-11h16M90 39h21m24-16v27l13 13h14m-34-27h31m59 0h-31l-8 8 8 8h21l8 7-8 7h-31"/>
+  <path transform="translate(0,-3)" fill="none" stroke="url(#edge)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M18 18v45h32m18-29v29m0-45v2m22 43V29l11-11h16M90 39h21m24-16v27l13 13h14m-34-27h31m59 0h-31l-8 8 8 8h21l8 7-8 7h-31"/>
+  <path fill="#20d9f5" d="M13 8h10v5H13z M229 57h9v9h-9z"/>
+</svg>

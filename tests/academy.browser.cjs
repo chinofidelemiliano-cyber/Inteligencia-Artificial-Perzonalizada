@@ -37,7 +37,7 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     await page.getByRole('button',{name:'Academia',exact:true}).click();
     await page.getByRole('heading',{name:'Especialidades'}).waitFor();
-    assert.equal(await page.locator('#academy .academy-tile').count(),14);
+    assert.equal(await page.locator('#academy .academy-tile').count(),15);
     await page.getByLabel('Buscar en la Academia').fill('fingerprint');
     await page.getByRole('button',{name:'Fingerprint, caracterización y compensación tonal',exact:true}).click();
     await page.getByRole('heading',{name:'Fingerprint, caracterización y compensación tonal',exact:true}).waitFor();
@@ -47,7 +47,7 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByRole('button',{name:'Guardar nota',exact:true}).click();
     await page.getByText('Nota guardada.',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Marcar lección completada',exact:true}).click();
-    await page.getByText('1 de 32 lecciones completadas',{exact:true}).waitFor();
+    await page.getByText('1 de 35 lecciones completadas',{exact:true}).waitFor();
     await page.getByText('Práctica opcional',{exact:true}).click();
     await page.getByLabel('¿Qué valor nominal produce 60 % medido en el ejemplo? Da dos decimales.').fill('45.45');
     await page.getByRole('button',{name:'Comprobar respuesta',exact:true}).click();
@@ -102,7 +102,7 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
     await page.getByRole('button',{name:'Academia',exact:true}).click();
-    await page.getByText('0 de 32 lecciones completadas',{exact:true}).waitFor();
+    await page.getByText('0 de 35 lecciones completadas',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

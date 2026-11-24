@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="248" height="76" viewBox="0 0 248 76" role="img" aria-labelledby="title">
+  <title id="title">Lifts · Órbita</title>
+  <defs><linearGradient id="tone"><stop stop-color="#fff"/><stop offset=".54" stop-color="#dfedff"/><stop offset="1" stop-color="#b89aff"/></linearGradient></defs>
+  <path fill="#1a2864" transform="translate(2,4)" d="M10 11h14v43h28v13H10z M63 28h12v39H63zm0-17h12v10H63z M84 31q0-20 20-20h13v11h-10q-10 0-10 8v2h17v10H97v25H84V42h-5V32h5z M132 17h12v14h16v11h-16v10q0 4 6 4h11v11h-13q-16 0-16-13V42h-9V31h9z M174 31h37v11h-30q-4 0-4 2t4 2h15q17 0 17 10t-17 11h-34V56h31q4 0 4-2t-4-2h-15q-16 0-16-10t12-11z"/>
+  <path fill="url(#tone)" d="M10 11h14v43h28v13H10z M63 28h12v39H63zm0-17h12v10H63z M84 31q0-20 20-20h13v11h-10q-10 0-10 8v2h17v10H97v25H84V42h-5V32h5z M132 17h12v14h16v11h-16v10q0 4 6 4h11v11h-13q-16 0-16-13V42h-9V31h9z M174 31h37v11h-30q-4 0-4 2t4 2h15q17 0 17 10t-17 11h-34V56h31q4 0 4-2t-4-2h-15q-16 0-16-10t12-11z"/>
+  <ellipse cx="230" cy="58" rx="13" ry="7" transform="rotate(-31 230 58)" fill="none" stroke="#8055ff" stroke-width="2"/>
+  <circle cx="230" cy="58" r="4" fill="#20d9f5"/>
+</svg>

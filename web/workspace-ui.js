@@ -5,7 +5,7 @@
   const root=document.documentElement;
   const sections=[
     ['Chat','home'],['Agenda','tasks'],['Recordatorios','reminders'],['Academia de flexografía','academy'],
-    ['Trabajo y cursos breves','work'],['Crear imágenes','images'],['Mi perfil','profile'],['Hábitos y dinero','routines']
+    ['Trabajo y cursos breves','work'],['Crear imágenes','images'],['Ingeniería · Placas y distorsión','engineering'],['Lifts Excel · Inventario, desperdicio y Pareto','excel'],['Diagnóstico guiado · Comparar fotografías','diagnostics'],['Propuestas de logotipo','identity'],['Mi perfil','profile'],['Hábitos y dinero','routines']
   ];
   let searchVersion=0;
   function remember(name,value){try{localStorage.setItem(name,value);}catch{}}
@@ -50,6 +50,12 @@
     if(!term)return;
     for(const task of api.getState().tasks.filter(task=>!task.archived && normalize(String(task.title)).includes(term)).slice(0,5)){
       add(task.title+' · '+(task.kind==='reminder'?'Recordatorios':'Agenda'),()=>api.open(task.kind==='reminder'?'reminders':'tasks'));
+    }
+    for(const item of (api.getState().engineeringRecords||[]).filter(item=>normalize(item.data.name+' '+item.data.model).includes(term)).slice(0,4)){
+      add(item.data.name+' · Ficha de ingeniería',()=>api.open('engineering'));
+    }
+    for(const item of (api.getState().diagnosticCases||[]).filter(item=>normalize(item.data.name+' '+item.data.symptoms).includes(term)).slice(0,4)){
+      add(item.data.name+' · Caso de diagnóstico',()=>api.open('diagnostics'));
     }
     try {
       const lessons=await window.liftsAcademy.search(value);

@@ -1,0 +1,116 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const {createServer}=require('node:http');
+const {readFile}=require('node:fs/promises');
+const path=require('node:path');
+
+test('learn, calculate, download XLSX and PDF, and record a private diagnosis on mobile',async()=>{
+  const server=createServer(async(req,res)=>{
+    try{
+      const url=new URL(req.url,'http://localhost');
+      const file=url.pathname==='/'?'index.html':url.pathname.slice(1);
+      res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'})[path.extname(file)]||'text/html');
+      res.end(await readFile(path.join('web',file)));
+    }catch{res.writeHead(404);res.end();}
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+  try{
+    const page=await browser.newPage({viewport:{width:390,height:844}});
+    const errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.route('**/cdn.jsdelivr.net/**',route=>route.fulfill({status:503,body:''}));
+    await page.route('**/auth.js',route=>route.fulfill({contentType:'application/javascript',body:`
+      window.fixture={profile:{},messages:[],tasks:[],onboardingCompleted:true};window.saves=[];
+      window.nexoAccount={accessToken:async()=>'fixture',save:async data=>{window.saves.push(structuredClone(data));return true;}};
+      window.addEventListener('load',()=>{
+        document.querySelector('#workspace').hidden=false;
+        document.querySelector('#authPanel').hidden=true;
+        window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)}));
+      },{once:true});`}));
+    await page.goto('http://127.0.0.1:'+server.address().port+'/');
+    await page.getByRole('button',{name:'Academia',exact:true}).click();
+    await page.getByRole('button',{name:'Ingeniería · Placas y distorsión',exact:true}).click();
+    await page.getByRole('button',{name:'Usar ejemplo didáctico'}).click();
+    await page.getByText(/99\.602 mm/).first().waitFor();
+    await page.getByRole('button',{name:'Guardar ficha y cálculo'}).click();
+    await page.getByText('Ficha guardada en tu cuenta.',{exact:true}).waitFor();
+    const pdf=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar reporte PDF',exact:true}).click();
+    const report=await pdf;
+    assert.equal(report.suggestedFilename(),'lifts-reporte-distorsion.pdf');
+    assert.match((await readFile(await report.path())).subarray(0,8).toString(),/^%PDF/);
+    const cut=page.getByLabel('Altura del filo desde la referencia (µm)');
+    await cut.fill('140');
+    await page.getByText(/Penetración en el liner · penetración geométrica 90/).waitFor();
+    assert.equal(await page.locator('.cut-tip').evaluate(el=>el.style.height),'72%');
+    await page.getByRole('button',{name:'Estudiar distorsión'}).click();
+    await page.getByRole('heading',{name:'Compensar con una prueba medida'}).waitFor();
+    await page.getByText('Preparar presentación PowerPoint',{exact:true}).click();
+    const pptx=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar presentación editable'}).click();
+    const deck=await pptx;
+    assert.equal(deck.suggestedFilename(),'lifts-capacitacion-distorsion.pptx');
+    assert.equal((await readFile(await deck.path())).subarray(0,2).toString(),'PK');
+    if(process.env.LIFTS_VALIDATE_EXPORTS)await deck.saveAs('/tmp/lifts-stage-distortion.pptx');
+
+    await page.getByRole('button',{name:'Academia',exact:true}).click();
+    await page.getByRole('button',{name:'Lifts Excel',exact:true}).click();
+    await page.getByRole('button',{name:'Inventario de tintas',exact:true}).click();
+    await page.getByLabel('Celda D2',{exact:true}).fill('=SUMAR.SI(A2:A4;"AZ-01";B2:B4)');
+    await page.getByRole('button',{name:'Calcular hoja'}).click();
+    await page.getByText('Resultado D2: 4. Coincide con el ejercicio.',{exact:true}).waitFor();
+    const xlsx=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar plantilla XLSX'}).click();
+    const book=await xlsx;
+    assert.equal(book.suggestedFilename(),'lifts-inventory.xlsx');
+    assert.equal((await readFile(await book.path())).subarray(0,2).toString(),'PK');
+    await page.getByRole('button',{name:'Marcar lección completada'}).click();
+    await page.getByText('Progreso de Excel guardado.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Revisar CSV',exact:true}).click();
+    await page.getByLabel('Archivo CSV').setInputFiles({name:'prueba.csv',mimeType:'text/csv',buffer:Buffer.from('Código,Cantidad\nAZ,5\nAZ,5')});
+    await page.getByText(/2 registros · 1 duplicados exactos/).waitFor();
+    const csv=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar copia sin duplicados'}).click();
+    assert.equal((await csv).suggestedFilename(),'lifts-copia-sin-duplicados.csv');
+    await page.getByRole('button',{name:'Academia',exact:true}).click();
+    await page.getByRole('button',{name:'Diagnóstico guiado',exact:true}).click();
+    await page.getByLabel('Referencia fotográfica').setInputFiles('web/assets/favicon-32.png');
+    await page.getByAltText('Referencia seleccionada').waitFor();
+    await page.getByAltText('Referencia seleccionada').click();
+    await page.getByText(/Punto de inspección:/).waitFor();
+    await page.getByLabel('Ampliar referencia').fill('2');
+    assert.match(await page.getByAltText('Referencia seleccionada').evaluate(el=>el.style.transform),/scale\(2\)/);
+    await page.getByLabel('Nombre del caso').fill('Desfase de muestra');
+    await page.getByLabel('Síntomas y condiciones').fill('Crece el desfase entre primera y última marca.');
+    await page.getByLabel('Causa confirmada con esas pruebas (opcional)').fill('Desarrollo distinto');
+    await page.getByRole('button',{name:'Guardar caso'}).click();
+    await page.getByText('Registra la prueba antes de guardar una causa confirmada.',{exact:true}).waitFor();
+    await page.getByLabel('Mediciones y pruebas realizadas').fill('Medidos 320.0 y 319.9 mm durante la misma prueba.');
+    await page.getByRole('button',{name:'Guardar caso'}).click();
+    await page.getByText('Caso guardado.',{exact:true}).waitFor();
+    const docx=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar reporte Word'}).click();
+    const word=await docx;
+    assert.equal(word.suggestedFilename(),'lifts-diagnostico.docx');
+    assert.equal((await readFile(await word.path())).subarray(0,2).toString(),'PK');
+    if(process.env.LIFTS_VALIDATE_EXPORTS)await word.saveAs('/tmp/lifts-stage-diagnostico.docx');
+
+    const fixture=await page.evaluate(()=>window.saves.at(-1));
+    assert.equal(fixture.diagnosticCases[0].data.name,'Desfase de muestra');
+    assert.ok(fixture.excelProgress.inventory);
+    assert.equal(fixture.engineeringRecords[0].data.target,'100');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
+    await page.evaluate(()=>window.liftsWorkspace.open('diagnostics'));
+    await page.getByText('No hay casos que coincidan.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Mi perfil',exact:true}).click();
+    await page.getByRole('button',{name:'Comparar propuestas de logotipo',exact:true}).click();
+    await page.getByRole('button',{name:'Elegir Circuito',exact:true}).click();
+    await page.getByText('Preferencia guardada: Circuito.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).identityPreference),'circuit');
+    assert.ok(await page.getByAltText('Lifts · Circuito',{exact:true}).first().evaluate(img=>img.naturalWidth>0));
+    assert.deepEqual(errors,[]);
+  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+});

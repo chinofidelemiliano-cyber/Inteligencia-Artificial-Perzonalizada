@@ -1,11 +1,11 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 
-test('academy spans the four levels with complete, uniquely identified lessons and attributed sources',async()=>{
+test('academy spans the seven levels with complete, uniquely identified lessons and attributed sources',async()=>{
   const {courses,levels,references,defects}=await import('../web/academy-curriculum.js');
-  assert.equal(courses.length,14);
-  assert.equal(levels.length,4);
-  assert.equal(new Set(courses.map(course=>course.level)).size,4);
+  assert.equal(courses.length,15);
+  assert.equal(levels.length,7);
+  assert.equal(new Set(courses.map(course=>course.level)).size,7);
   assert.equal(defects.length,19);
   const keys=courses.flatMap(course=>course.lessons.map(lesson=>course.id+'/'+lesson.id));
   assert.equal(keys.length,new Set(keys).size);
