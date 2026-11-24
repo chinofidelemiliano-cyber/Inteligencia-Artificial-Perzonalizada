@@ -65,3 +65,19 @@ test('an explicitly retired model is replaced once using the same validated quot
  assert.deepEqual(s.runs.map(run=>run.model),['@cf/google/gemma-4-26b-a4b-it','@cf/qwen/qwen3.8-27b']);
  assert.equal(s.calls.filter(call=>call.url.includes('/rpc/')).length,1);
 });
+
+test('optional memory drops extra fields and entries and is absent from the fixed diagnostic',async()=>{
+  const messages=[{role:'user',content:'Explica la Comco'}];
+  const memoryContext=Array.from({length:4},(_,i)=>({title:'Memoria '+i,text:'x'.repeat(700),privateField:'never-forward'}));
+  const s=setup();
+  await s.send({body:{messages,memoryContext}});
+  const data=s.runs[0].input.messages.find(message=>message.content.startsWith('Recuerdos compartidos'));
+  assert.equal(data.role,'user');
+  const entries=JSON.parse(data.content.slice(data.content.indexOf('[')));
+  assert.equal(entries.length,3);
+  assert.equal(entries[0].text.length,600);
+  assert.equal(entries[0].privateField,undefined);
+  const diagnostic=setup();
+  await diagnostic.send({body:{diagnostic:true,messages,memoryContext}});
+  assert.doesNotMatch(JSON.stringify(diagnostic.runs),/Memoria 0/);
+});

@@ -12,14 +12,14 @@ const pendingConversations=new Set();
 const $ = id => document.getElementById(id);
 function assistantName(){const result=window.liftsAssistantName.validate(state.assistant?.name || 'Lifts');return result.valid?result.name:'Lifts';}
 function persist(){ window.nexoAccount.save(personal.snapshot(state)); return true; }
-window.addEventListener('nexo-state', e => {cancelChat();$('question').value='';$('shareProfile').checked=false;$('workShare').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';$('assistantSettingsStatus').textContent='';state=e.detail || initial();accountVersion++;activeConversation=null;savingConversation=false;pendingConversations.clear();
+window.addEventListener('nexo-state', e => {cancelChat();$('question').value='';$('shareProfile').checked=false;$('shareMemory').checked=false;$('workShare').checked=false;$('aiDiagnostic').textContent='';$('responseDetail').value='detailed';$('chatEngine').value='balanced';$('assistantSettingsStatus').textContent='';state=e.detail || initial();accountVersion++;activeConversation=null;savingConversation=false;pendingConversations.clear();
   state.savedConversations=Array.isArray(state.savedConversations)?state.savedConversations:[];
   if(state.messages.length){
     state.savedConversations.push({id:crypto.randomUUID(),title:'Historial anterior',messages:JSON.parse(JSON.stringify(state.messages)),savedAt:new Date().toISOString()});
     state.messages=[];persist();
   }
   state.messages=[];state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
-function page(id){if(!state.onboardingCompleted)id='welcome';for(const section of ['home','tasks','reminders','routines','work','academy','engineering','excel','diagnostics','identity','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
+function page(id){if(!state.onboardingCompleted)id='welcome';$('evolutionWelcome').hidden=id!=='home';for(const section of ['home','tasks','reminders','routines','work','academy','engineering','excel','diagnostics','identity','privacy','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function renderMessageText(element,message){
@@ -57,7 +57,7 @@ function render(){
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
-  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsRoutines?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();
+  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsRoutines?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();window.liftsEvolution?.render();
 }
 $('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
 $('assistantForm').onsubmit=async event=>{
@@ -75,7 +75,7 @@ function cancelChat(){window.liftsVoice?.stop();$('streamingAnswer').textContent
 $('chat').onsubmit=async e=>{
   e.preventDefault();const text=$('question').value.trim();if(!text || chatBusy)return;
   if(text.length>5000)return;
-  const action=window.liftsAssistantActions?.handle(text);
+  const action=window.liftsAssistantActions?.handle(text) || window.liftsEvolution?.handle(text);
   if(action){
     state.messages.push({role:'user',text,source:'local'},{role:'assistant',text:action.reply,source:'local'});
     $('question').value='';render();
@@ -91,6 +91,10 @@ $('chat').onsubmit=async e=>{
   const history=state.messages.filter(m=>(m.role==='user'&&m.source!=='local') || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
   window.dispatchEvent?.(new CustomEvent('lifts-chat-state',{detail:{phase:'thinking'}}));
   const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName(),assistantPresentation:state.assistant?.presentation || 'neutral',conversationMode:window.liftsConversationUI?.active() || false};
+  if($('shareMemory').checked && state.privateMemoryEnabled===true){
+    const memories=window.liftsEvolutionCore.relevant(text,state.privateMemories);
+    if(memories.length)payload.memoryContext=memories;
+  }
   if($('shareProfile').checked)payload.profile={...state.profile};
   const wellbeing=window.liftsWellbeingUI?.context();if(wellbeing)payload.wellbeingContext=wellbeing;
   if($('workShare').checked && window.liftsWorkUI)payload.workContext=window.liftsWorkUI.context();
@@ -181,7 +185,7 @@ $('testAI').onclick=async()=>{
   }catch(error){if(version===chatVersion)$('aiDiagnostic').textContent=error.name==='AbortError'?'La comprobación agotó el tiempo de espera.':error.message || 'No se pudo completar la comprobación.';}
   finally{clearTimeout(timer);if(version===chatVersion){chatBusy=false;chatController=null;$('testAI').disabled=false;$('sendChat').disabled=false;}}
 };
-$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();window.liftsReminders?.reset();window.liftsRoutines?.reset();window.liftsAcademy?.reset();window.liftsEngineering?.reset();window.liftsExcel?.reset();window.liftsDiagnostics?.reset();window.liftsIdentity?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
+$('erase').onclick=()=>{if(!confirm('¿Borrar tus datos de Lifts, incluidas tareas, conversaciones, revisiones personales, casos de mejora y progreso de cursos?'))return;cancelChat();state=initial();activeConversation=null;pendingConversations.clear();state.onboardingCompleted=true;persist();window.liftsCoachUI?.reset();window.liftsWellbeingUI?.reset();window.liftsLearningUI?.reset();window.liftsFlexoQuizUI?.reset();window.liftsGoogle?.reset();window.liftsReminders?.reset();window.liftsRoutines?.reset();window.liftsAcademy?.reset();window.liftsEngineering?.reset();window.liftsExcel?.reset();window.liftsDiagnostics?.reset();window.liftsIdentity?.reset();window.liftsEvolution?.reset();render();$('saved').textContent='Borrado preparado; revisa el estado de sincronización.';};
 const questions = [
   {field:'name',label:'¿Cómo te gustaría que te llame?',hint:'Puede ser tu nombre o un apodo. No necesitamos tu nombre legal.',limit:80},
   {field:'interests',label:'¿Qué cosas te gustan o te dan curiosidad?',hint:'Por ejemplo: música, cocina, tecnología, deportes. Separa tus intereses con comas.',limit:500},

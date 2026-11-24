@@ -57,6 +57,7 @@
   async function openSession(session) {
     if (!session?.user) { resetView(); message('Inicia sesión o crea tu cuenta.'); return; }
     if (ready && user?.id === session.user.id) return;
+    if (user && user.id !== session.user.id) resetView();
     const version = ++generation;
     ready = false;
     user = session.user;
@@ -228,7 +229,7 @@
   let recovery = false;
   client.auth.onAuthStateChange((event,session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      recovery = true; ready = false; generation++;
+      recovery = true; resetView();
       el('workspace').hidden = true; el('authPanel').hidden = false;
       el('authForm').hidden = true; el('resetForm').hidden = false;
       message('Elige una nueva contraseña.'); return;

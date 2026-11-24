@@ -2,7 +2,7 @@
 // Continuous original artwork with a single outline; no fragment articulation.
 // No image-generation, animation service, camera, or additional AI request.
 (() => {
-  const hosts=[document.getElementById('companionButton'),...document.querySelectorAll('.face-avatar')];
+  const hosts=[document.getElementById('companionButton'),document.getElementById('evolutionRobot'),...document.querySelectorAll('.face-avatar')];
   function artwork(id){
     const sheet='/assets/lifts-character-sheet.png';
     // Each pose is rendered as one continuous image: no transplanted head,

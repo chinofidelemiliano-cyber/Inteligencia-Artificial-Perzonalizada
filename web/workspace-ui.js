@@ -5,7 +5,7 @@
   const root=document.documentElement;
   const sections=[
     ['Chat','home'],['Agenda','tasks'],['Recordatorios','reminders'],['Academia de flexografía','academy'],
-    ['Trabajo y cursos breves','work'],['Crear imágenes','images'],['Ingeniería · Placas y distorsión','engineering'],['Lifts Excel · Inventario, desperdicio y Pareto','excel'],['Diagnóstico guiado · Comparar fotografías','diagnostics'],['Propuestas de logotipo','identity'],['Mi perfil','profile'],['Hábitos y dinero','routines']
+    ['Trabajo y cursos breves','work'],['Crear imágenes','images'],['Ingeniería · Placas y distorsión','engineering'],['Lifts Excel · Inventario, desperdicio y Pareto','excel'],['Diagnóstico guiado · Comparar fotografías','diagnostics'],['Propuestas de logotipo','identity'],['Privacidad y memoria','privacy'],['Mi perfil','profile'],['Hábitos y dinero','routines']
   ];
   let searchVersion=0;
   function remember(name,value){try{localStorage.setItem(name,value);}catch{}}
