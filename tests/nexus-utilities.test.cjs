@@ -76,3 +76,19 @@ test('fits an image inside both bounds without enlargement or zero edges',()=>{
   assert.deepEqual(tools.fitImage(1,200,10,80),{width:1,height:80});
   assert.throws(()=>tools.fitImage(80,40,4097,80),/límites/);
 });
+
+test('generates a QR matrix with the required finder patterns and bounds UTF-8 input bytes',async()=>{
+  const {qrMatrix}=await import('../web/nexus-utilities-qr.js');
+  const matrix=qrMatrix('Lifts');
+  assert.equal(matrix.length,21);
+  const pattern=[
+    '1111111','1000001','1011101','1011101','1011101','1000001','1111111'
+  ];
+  for(const [row,column] of [[0,0],[0,14],[14,0]]){
+    assert.deepEqual(matrix.slice(row,row+7).map(line=>line.slice(column,column+7).map(Number).join('')),pattern);
+  }
+  assert.notDeepEqual(qrMatrix('café 🧵'),qrMatrix('cafe'));
+  assert.throws(()=>qrMatrix('  '),/Introduce el texto/);
+  assert.throws(()=>qrMatrix('é'.repeat(251)),/500 bytes/);
+  assert.ok(qrMatrix('é'.repeat(250)).length>21);
+});

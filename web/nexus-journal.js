@@ -1,22 +1,30 @@
 'use strict';
 (function (root) {
   const kinds={
-    mission:{label:'Misiones',fields:{objective:'Objetivo',scope:'Alcance',deliverable:'Entregable esperado',available:'Información disponible',missing:'Información faltante',constraints:'Restricciones',stages:'Etapas (una por línea)',tools:'Herramientas',dependencies:'Dependencias',risks:'Riesgos y prevención',acceptance:'Criterios de aceptación',evidence:'Evidencia de entrega y verificación',next:'Próxima acción'}},
+    mission:{label:'Misiones',fields:{area:'Área de vida o trabajo',objective:'Objetivo',scope:'Alcance',deliverable:'Entregable esperado',available:'Información disponible',missing:'Información faltante',constraints:'Restricciones',stages:'Etapas (una por línea)',tools:'Herramientas',dependencies:'Dependencias',risks:'Riesgos y prevención',acceptance:'Criterios de aceptación',evidence:'Evidencia de entrega y verificación',next:'Próxima acción'}},
     decision:{label:'Decisiones',fields:{problem:'Problema',alternatives:'Alternativas',information:'Información disponible',criteria:'Criterios',argumentsFor:'A favor',argumentsAgainst:'En contra',choice:'Decisión',expected:'Resultado esperado',actual:'Resultado real',lesson:'Aprendizaje'}},
     knowledge:{label:'Conocimiento',fields:{summary:'Conocimiento',source:'Fuente',author:'Autor',date:'Fecha de la fuente',version:'Versión',evidence:'Evidencia',applicability:'Aplicabilidad',limitations:'Limitaciones',conflicts:'Fuentes contradictorias'}},
     lesson:{label:'Lecciones aprendidas',fields:{situation:'Situación',cause:'Causa y cómo se confirmó',action:'Acción',result:'Resultado',evidence:'Evidencia',lesson:'Aprendizaje',prevention:'Prevención'}},
     review:{label:'Revisión crítica',fields:{claim:'Idea a evaluar',facts:'Hechos y fuentes',hypotheses:'Hipótesis y opiniones',assumptions:'Suposiciones',contradictions:'Contradicciones o sesgos',counterarguments:'Argumentos y explicaciones alternativas',risks:'Riesgos y premortem',tests:'Evidencia pendiente y prueba de descarte'}},
-    experiment:{label:'Experimentos',fields:{question:'Pregunta',hypothesis:'Hipótesis',independent:'Variables independientes',dependent:'Variables dependientes',controls:'Variables controladas',conditions:'Condiciones iniciales',procedure:'Procedimiento',readings:'Mediciones numéricas en la misma unidad (separadas por espacios)',unit:'Unidad de las mediciones',repeats:'Repeticiones',uncertainty:'Incertidumbre',conclusion:'Conclusiones y limitaciones'}},
+    experiment:{label:'Experimentos',fields:{question:'Pregunta',hypothesis:'Hipótesis',independent:'Variables independientes',dependent:'Variables dependientes',controls:'Variables controladas',conditions:'Condiciones iniciales',procedure:'Procedimiento',readings:'Mediciones numéricas en la misma unidad (separadas por espacios)',unit:'Unidad de las mediciones',repeats:'Repeticiones',groups:'Grupos para ANOVA (una línea por grupo, ej. A: 1 2 3)',uncertainty:'Incertidumbre',conclusion:'Conclusiones y limitaciones'}},
     scenario:{label:'Escenarios de costos',fields:{unit:'Moneda o unidad de costo',base:'Costo base',favorable:'Costo favorable',adverse:'Costo desfavorable',assumptions:'Suposiciones',constraints:'Restricciones',risks:'Riesgos'}},
+    qualityCost:{label:'Costos de calidad',fields:{unit:'Moneda',rework:'Retrabajos',waste:'Desperdicios',downtime:'Tiempos muertos',returns:'Devoluciones',complaints:'Reclamaciones',reprints:'Reimpresiones',consumables:'Consumos adicionales',prevention:'Prevención',inspection:'Inspección',cause:'Causa registrada',action:'Acción correctiva'}},
     change:{label:'Control de cambios',fields:{before:'Estado anterior',proposal:'Cambio propuesto',reason:'Justificación',risks:'Riesgos',approval:'Autorización registrada',tests:'Pruebas',results:'Resultados',evidence:'Evidencia',rollback:'Plan de reversión'}},
     playbook:{label:'Procedimientos',fields:{objective:'Objetivo',preparation:'Preparación',stages:'Pasos (uno por línea)',tools:'Herramientas',warnings:'Advertencias',checks:'Verificaciones',expected:'Resultado esperado',actual:'Resultado registrado'}},
     meeting:{label:'Reuniones',fields:{agenda:'Agenda',agreements:'Acuerdos',decisions:'Decisiones',owner:'Responsable',due:'Fecha acordada',next:'Próxima acción para la agenda'}},
+    note:{label:'Notas',fields:{content:'Contenido'}},
+    reading:{label:'Lectura activa',fields:{document:'Documento o referencia',page:'Página (número entero)',excerpt:'Fragmento seleccionado',annotation:'Anotación',concept:'Concepto relacionado',question:'Duda para investigar'}},
+    lifeArea:{label:'Áreas de vida',fields:{purpose:'Qué importa en esta área',resources:'Recursos y apoyos',routine:'Cómo quiero revisarla'}},
+    goal:{label:'Objetivos a largo plazo',fields:{area:'Área de vida o trabajo',objective:'Objetivo personal',due:'Fecha objetivo (AAAA-MM-DD)',priority:'Prioridad actual y motivo',stages:'Etapas (una por línea)',skills:'Habilidades por desarrollar',next:'Próxima acción',evidence:'Resultado o evidencia'}},
+    household:{label:'Inventario del hogar',fields:{area:'Área de vida o trabajo',location:'Ubicación',model:'Modelo o identificación',purchase:'Compra y costo registrado',warranty:'Garantía y vencimiento',manual:'Referencia al manual',maintenance:'Reparaciones o mantenimiento',next:'Próximo mantenimiento',date:'Fecha del aviso (AAAA-MM-DD)'}},
+    travel:{label:'Viajes',fields:{area:'Área de vida o trabajo',destination:'Destino',dates:'Fechas e itinerario',budget:'Presupuesto y moneda',activities:'Actividades previstas',packing:'Equipaje',documents:'Documentos pendientes',references:'Fuentes o reservas anotadas'}},
     question:{label:'Preguntas abiertas',fields:{topic:'Tema',importance:'Importancia',question:'Pregunta',missing:'Información faltante',sources:'Posibles fuentes',next:'Próxima investigación',answer:'Respuesta sustentada'}}
   };
   const statuses={
     mission:{active:'Activa',paused:'Pausada',cancelled:'Cancelada',done:'Entregada y verificada'},
     knowledge:{pending:'Pendiente de comprobación',verified:'Verificada',documented:'Documentada',experience:'Experiencia personal',hypothesis:'Hipótesis',estimate:'Estimación',obsolete:'Obsoleta'},
     change:{draft:'Propuesto',testing:'En pruebas',validated:'Validado',reverted:'Revertido'},
+    goal:{active:'Activo',paused:'Pausado',done:'Alcanzado',abandoned:'Abandonado'},
     question:{open:'Abierta',researching:'En investigación',answered:'Respondida'}
   };
   const relationStates={recorded:'Registrada',suggested:'Sugerida',verified:'Verificada'};
@@ -36,6 +44,22 @@
       {label:'Favorable',value:low/100,difference:(low-baseline)/100},
       {label:'Desfavorable',value:high/100,difference:(high-baseline)/100}
     ]};
+  }
+  const failureCosts=['rework','waste','downtime','returns','complaints','reprints','consumables'];
+  function qualityCosts(data){
+    const unit=clean(data.unit,40);
+    if(!unit)throw new Error('Indica una moneda.');
+    const amounts={};
+    for(const key of [...failureCosts,'prevention','inspection']){
+      const value=clean(data[key],40);
+      if(!value)continue;
+      if(!/^\d{1,12}(?:[.,]\d{1,2})?$/.test(value))throw new Error('Captura '+kinds.qualityCost.fields[key]+' con hasta dos decimales y sin símbolos.');
+      amounts[key]=Math.round(Number(value.replace(',','.'))*100);
+    }
+    if(!Object.keys(amounts).length)throw new Error('Captura al menos un costo.');
+    const sum=keys=>keys.reduce((total,key)=>total+(amounts[key]||0),0)/100;
+    return {unit,failures:sum(failureCosts),preventionInspection:sum(['prevention','inspection']),
+      missing:[...failureCosts,'prevention','inspection'].filter(key=>!Object.hasOwn(amounts,key)).map(key=>kinds.qualityCost.fields[key])};
   }
   const historyLimit=12;
   function journalContent(record) {
@@ -61,12 +85,24 @@
     const data=Object.fromEntries(Object.keys(kinds[kind].fields).map(key=>[key,clean(raw[key])]));
     const choices=Object.keys(statuses[kind]||{});
     const status=choices.includes(raw.status)?raw.status:choices[0]||'';
-    const completed=['mission','playbook'].includes(kind)?steps(data.stages).filter(stage=>raw.completed?.includes(stage)):[];
-    if(status==='done'&&(!steps(data.stages).length||!data.objective||!data.deliverable||!data.acceptance||!data.evidence||completed.length!==steps(data.stages).length)){
+    const completed=['mission','playbook','goal'].includes(kind)?steps(data.stages).filter(stage=>raw.completed?.includes(stage)):[];
+    if(kind==='mission'&&status==='done'&&(!steps(data.stages).length||!data.objective||!data.deliverable||!data.acceptance||!data.evidence||completed.length!==steps(data.stages).length)){
       throw new Error('Para cerrar la misión, registra el objetivo, el entregable, los criterios y la evidencia. Marca todas las etapas realizadas.');
     }
+    if(kind==='goal'){
+      if(!data.objective)throw new Error('Describe el objetivo.');
+      if(data.due&&!dateKey(data.due))throw new Error('Indica una fecha objetivo válida en formato AAAA-MM-DD.');
+      if(status==='done'&&(!data.evidence||!steps(data.stages).length||completed.length!==steps(data.stages).length)){
+        throw new Error('Registra la evidencia y completa las etapas antes de marcar el objetivo como alcanzado.');
+      }
+    }
+    if(kind==='reading'&&(!data.document||data.page&&!/^[1-9]\d{0,5}$/.test(data.page))){
+      throw new Error('Indica el documento y, si se conoce, una página positiva.');
+    }
+    if(kind==='household'&&data.date&&!dateKey(data.date))throw new Error('Indica una fecha de aviso válida en formato AAAA-MM-DD.');
     if(status==='verified'&&(!data.source||!data.evidence))throw new Error('Agrega la fuente y la evidencia antes de marcar el conocimiento como verificado.');
     if(kind==='scenario')compareCosts(data);
+    if(kind==='qualityCost')qualityCosts(data);
     if(status==='validated'&&(!data.approval||!data.tests||!data.results||!data.evidence||!data.rollback)){
       throw new Error('Registra autorización, pruebas, resultados, evidencia y plan de reversión.');
     }
@@ -91,6 +127,34 @@
     if(status==='verified'&&!evidence)throw new Error('Agrega evidencia para verificar la relación.');
     return {id:crypto.randomUUID(),from,to,title,evidence,status};
   }
+  function dateKey(value){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+    const date=new Date(value+'T00:00:00Z');
+    return Number.isFinite(+date)&&date.toISOString().slice(0,10)===value;
+  }
+
+  function lifeMap(records){
+    const key=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/\s+/g,' ').trim();
+    const groups=new Map();
+    for(const item of records){
+      if(item.kind==='lifeArea'){
+        const id=key(item.title);
+        if(!groups.has(id))groups.set(id,{title:item.title,areas:[],items:[]});
+        groups.get(id).areas.push(item);
+      }
+    }
+    const unassigned=[];
+    for(const item of records){
+      if(!['goal','mission','household','travel'].includes(item.kind))continue;
+      const area=clean(item.data?.area);
+      if(!area){unassigned.push(item);continue;}
+      const id=key(area);
+      if(!groups.has(id))groups.set(id,{title:area,areas:[],items:[]});
+      groups.get(id).items.push(item);
+    }
+    return {groups:[...groups.values()].sort((a,b)=>a.title.localeCompare(b.title,'es')),unassigned};
+  }
+
   function graphNodes(space) {
     return [
       ...(space.nexusJournal||[]).map(item=>({id:item.id,title:item.title,category:kinds[item.kind]?.label,target:'journal-record'})),
@@ -150,7 +214,27 @@
     }
     return {count,mean,deviation:Math.sqrt(sumSquaredDeviations/(count-1))};
   }
-  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,graphNodes,graphView,linkedCases};
+  function oneWayAnova(raw){
+    const lines=clean(raw).split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+    if(lines.length<2||lines.length>20)throw new Error('Registra entre 2 y 20 grupos.');
+    const names=new Set();
+    const groups=lines.map(line=>{
+      const index=line.indexOf(':');
+      if(index<=0)throw new Error('Usa una línea por grupo con el formato Nombre: medición medición.');
+      const name=line.slice(0,index).trim();
+      if(names.has(name.toLowerCase()))throw new Error('Usa nombres distintos para los grupos.');
+      names.add(name.toLowerCase());
+      return {name,...measurementSummary(line.slice(index+1))};
+    });
+    const count=groups.reduce((sum,group)=>sum+group.count,0);
+    const mean=groups.reduce((sum,group)=>sum+group.count*group.mean,0)/count;
+    const between=groups.reduce((sum,group)=>sum+group.count*(group.mean-mean)**2,0);
+    const within=groups.reduce((sum,group)=>sum+(group.count-1)*group.deviation**2,0);
+    if(within===0)throw new Error('Hace falta variación dentro de al menos un grupo para calcular F.');
+    const dfBetween=groups.length-1,dfWithin=count-groups.length;
+    return {groups,dfBetween,dfWithin,between,within,f:(between/dfBetween)/(within/dfWithin)};
+  }
+  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,oneWayAnova,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);

@@ -54,6 +54,22 @@ test('Agenda inbox preserves captures through conversion drafts, retries, and ac
   assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().inbox[0].processed),false);
 
   await page.evaluate(()=>window.liftsInbox.open());
+  for(const [kind,label,field] of [
+    ['mission','Preparar misión','objective'],['knowledge','Preparar conocimiento','summary'],
+    ['experiment','Preparar experimento','question'],['note','Preparar nota','content']
+  ]){
+    const count=await page.evaluate(()=>window.savedInbox.length);
+    await inbox.getByText('Otros borradores',{exact:true}).click();
+    await inbox.getByRole('button',{name:label,exact:true}).click();
+    assert.equal(await page.locator('#journalKind').inputValue(),kind);
+    const editor=page.locator('#journalEditor');
+    assert.equal(await editor.locator('[name=title]').inputValue(),saved.inbox[0].title);
+    assert.equal(await editor.locator('[name='+field+']').inputValue(),saved.inbox[0].title);
+    assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().nexusJournal?.length||0),0);
+    assert.equal(await page.evaluate(()=>window.savedInbox.length),count);
+    await page.evaluate(()=>window.liftsInbox.open());
+    await inbox.getByText('Otros borradores',{exact:true}).click();
+  }
   await inbox.getByRole('button',{name:'Marcar como procesada',exact:true}).click();
   await inbox.getByText('Captura procesada.',{exact:true}).waitFor();
   await inbox.getByLabel('Mostrar capturas',{exact:true}).selectOption('processed');

@@ -116,3 +116,58 @@ test('downloads resized PNG and JPEG files generated entirely in the browser',as
     assert.deepEqual(requests,[]);
   }finally{await browser.close();}
 });
+
+test('downloads a QR PNG with a quiet zone and loads only same-site static modules',async()=>{
+  const {readFile}=require('node:fs/promises');
+  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+  try{
+    const page=await browser.newPage({viewport:{width:390,height:844}});
+    const files=['nexus-utilities-core.js','nexus-utilities-ui.js','nexus-utilities-qr.js','nexus-utilities-qr-lib.js'];
+    const requests=[];
+    await page.route('**/*',async route=>{
+      const url=new URL(route.request().url());
+      requests.push(url.href);
+      if(url.origin!=='http://lifts.test')return route.abort();
+      const file=url.pathname.slice(1);
+      if(!file)return route.fulfill({contentType:'text/html; charset=utf-8',body:'<main id="nexusUtilities"></main>'+files.slice(0,2).map(name=>'<script defer src="'+name+'"></script>').join('')});
+      if(!files.includes(file))return route.abort();
+      return route.fulfill({contentType:'text/javascript; charset=utf-8',body:await readFile(path.join('web',file))});
+    });
+    await page.goto('http://lifts.test/');
+    await page.getByLabel('Herramienta',{exact:true}).selectOption('qr');
+    const payload='Prensa 7 · revisión 🧵';
+    await page.getByLabel('Texto o enlace del código QR',{exact:true}).fill(payload);
+    await page.getByRole('button',{name:'Generar código QR',exact:true}).click();
+    await page.getByRole('img',{name:'Vista previa del código QR',exact:true}).waitFor();
+    const event=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar código QR',exact:true}).click();
+    const download=await event;
+    assert.equal(download.suggestedFilename(),'lifts-codigo-qr.png');
+    const bytes=await readFile(await download.path());
+    assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
+    const result=await page.evaluate(async({data,decode})=>{
+      const image=await createImageBitmap(new Blob([Uint8Array.from(data)],{type:'image/png'}));
+      const canvas=document.createElement('canvas');
+      canvas.width=image.width;canvas.height=image.height;
+      const context=canvas.getContext('2d');context.drawImage(image,0,0);
+      return {
+        width:image.width,height:image.height,
+        margin:[...context.getImageData(31,31,1,1).data],
+        topLeftFinder:[...context.getImageData(32,32,1,1).data],
+        ...(decode?{pixels:[...context.getImageData(0,0,image.width,image.height).data]}:{})
+      };
+    },{data:[...bytes],decode:Boolean(process.env.QR_DECODER_MODULE)});
+    assert.equal(result.width,result.height);
+    assert.ok(result.width<=390);
+    assert.deepEqual(result.margin,[255,255,255,255]);
+    assert.deepEqual(result.topLeftFinder,[0,0,0,255]);
+    if(process.env.QR_DECODER_MODULE){
+      const decode=require(process.env.QR_DECODER_MODULE);
+      const decoded=decode(Uint8ClampedArray.from(result.pixels),result.width,result.height);
+      assert.equal(decoded?.data,payload);
+    }
+    assert.deepEqual(requests.sort(),['http://lifts.test/',...files.map(file=>'http://lifts.test/'+file)].sort());
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:null})));
+    assert.equal(await page.getByRole('img',{name:'Vista previa del código QR'}).count(),0);
+  }finally{await browser.close();}
+});

@@ -132,3 +132,23 @@ Base `56c8226` con respaldo en `backup/antes-cierre-nexus`. La integración exte
 | 50 | Evaluación manual de respuestas con corrección privada y recuperación por el buscador. El usuario puede eliminarla con confirmación. | El registro no se envía al modelo y no cambia su entrenamiento. |
 
 Archivos: `web/inbox.js`, `web/nexus-feedback.js`, `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/nexus-operations-ui.js`, `web/nexus-utilities-core.js`, `web/nexus-utilities-ui.js` e integración en `web/index.html`, `web/app.js`, `web/nexus-core.js` y `web/workspace-ui.js`. Se amplían las pruebas de navegador y de lógica para los cinco bloques. Permanecen pendientes los requisitos de las tablas anteriores que exceden esta cobertura.
+
+## Continuación sin órdenes. Vida, experimentos, capacitación y captura
+
+Base `e8b3fa6`, preservada en `backup/antes-continuacion-nexus`. El panel de órdenes y su sincronización externa no forman parte de esta entrega.
+
+| Requisitos | Cobertura | Límites |
+| --- | --- | --- |
+| 12 | Lifts Teach reutiliza la Academia para preparar guiones de capacitación por lección, público y duración, guardarlos en la cuenta y exportarlos en PDF. | Alcance por lección. La evaluación se prepara como parte del guion. |
+| 17 | ANOVA de una vía con tamaños, medias, sumas de cuadrados, F y grados de libertad calculados de datos introducidos. | La vista muestra F y los grados de libertad. No calcula p-valores ni verifica supuestos estadísticos. |
+| 21 | La bandeja prepara también borradores de misión, conocimiento, experimento y nota. | El registro se crea solo tras guardarlo en su formulario. |
+| 27 | Las reuniones guardadas generan minutas PDF desde el diario. | Las minutas contienen los campos capturados de la reunión. |
+| 34 | Registro de costos de calidad con subtotales de fallas y de prevención/inspección, rubros sin datos y causa/acción correctiva. | Los importes dependen de la captura. No se integran automáticamente con contabilidad ni con órdenes. |
+| 38–40, 42 | Mapa con áreas, objetivos con etapas y evidencia, viajes e inventario del hogar. Acceso desde el mapa y borrador de aviso de mantenimiento desde el inventario. | Se asignan áreas por nombre. Viajes registra datos aportados por el usuario. El inventario del hogar no descuenta gastos. |
+| 43 | Lectura activa guarda referencia del documento, página, fragmento, anotación, conceptos y dudas. Sus registros se pueden relacionar en el mapa de conocimiento. | La captura se hace manualmente. La lectura sobre archivos privados y el subrayado visual quedan pendientes. |
+
+Archivos de diario: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/index.html`, `tests/nexus-journal.test.cjs` y `tests/evolution.browser.cjs`. Academia: `web/academy-teach.js`, `web/academy-ui.js` y sus pruebas. Bandeja: `web/inbox.js`, `tests/inbox.test.cjs` y `tests/inbox.browser.cjs`. Se reutilizaron almacenamiento y exportación existentes. Los requisitos anteriores que exceden estas coberturas siguen vigentes.
+
+La herramienta de QR acepta hasta 500 bytes UTF-8 de texto o enlace y genera un PNG. La prueba en Chromium decodifica el PNG y comprueba que el contenido coincida exactamente. El generador local `qrcode-generator` se carga bajo demanda y conserva su licencia MIT en `web/nexus-utilities-qr-license.txt`. El panel de PDF combina archivos en orden editable y extrae páginas elegidas. Se carga bajo demanda y procesa en un trabajador local. Genera un archivo nuevo a partir de páginas. Las anotaciones, campos de formulario y firmas no se trasladan. Los archivos protegidos quedan fuera del alcance.
+
+Pendientes fuera de órdenes incluyen el subrayado directo sobre documentos privados, la simulación conversacional de negociación, la recuperación probada de respaldos de usuarios y las integraciones de permisos para futuras acciones. Las utilidades locales requieren que la aplicación y sus componentes estén disponibles en el navegador.

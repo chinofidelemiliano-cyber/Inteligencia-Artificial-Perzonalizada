@@ -35,8 +35,8 @@
 
   async function load() {
     if(modules)return modules;
-    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js'),import('./academy-paths.js'),import('./academy-competencies.js')])
-      .then(([data,tools,paths,competencies])=>modules={data,tools,paths,competencies}).catch(error=>{loading=null;throw error;});
+    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js'),import('./academy-paths.js'),import('./academy-competencies.js'),import('./academy-teach.js')])
+      .then(([data,tools,paths,competencies,teach])=>modules={data,tools,paths,competencies,teach}).catch(error=>{loading=null;throw error;});
     return loading;
   }
   let navigation=0;
@@ -57,7 +57,7 @@
       view=next;current=key;
       status.textContent='';
       render();
-      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',competencies:'competencies',lesson:'lesson'};
+      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',competencies:'competencies',teach:'teach',lesson:'lesson'};
       window.liftsNexus?.checkpoint(ids[next],next==='lesson'?key:'',next==='lesson'?find(key).lesson.title:'');
     } catch {
       if(version!==generation||request!==navigation)return;
@@ -117,6 +117,7 @@
     else if(view==='library')renderLibrary();
     else if(view==='paths')renderPaths();
     else if(view==='competencies')renderCompetencies();
+    else if(view==='teach')renderTeach();
     else renderCatalog();
   }
   function renderCompetencies(){
@@ -270,6 +271,85 @@
       }
     }
   }
+  function renderTeach(){
+    const card=node(shell,'article',undefined,'card');
+    const engine=modules.teach;
+    heading(card,'Lifts Teach');
+    node(card,'p','Prepara una capacitación a partir de una lección. Los borradores guardados pertenecen a tu cuenta. El PDF incluye los campos que captures aquí y la solución para el instructor.');
+    const lessons=document.createElement('select');
+    lessons.setAttribute('aria-label','Lección para la capacitación');
+    const keys=catalogKeys();
+    for(const key of keys){
+      const {course,lesson}=find(key);
+      node(lessons,'option',course.title+' · '+lesson.title).value=key;
+    }
+    let selected=[current,progress().teachLast,progress().last,keys[0]].find(key=>key&&find(key));
+    lessons.value=selected;
+    field('Lección para la capacitación',lessons,card);
+    const editor=node(card,'section');
+    let readDraft,original;
+    function draw(){
+      editor.replaceChildren();
+      const {course,lesson}=find(selected);
+      const source=progress().teachPlans?.[selected]||engine.lessonPlan(lesson);
+      heading(editor,'Guion del instructor');
+      button(editor,'Abrir lección de referencia',()=>open('lesson',selected));
+      const title=document.createElement('input');title.maxLength=120;title.value=source.title;
+      field('Título de la capacitación',title,editor);
+      const audience=document.createElement('select');audience.setAttribute('aria-label','Público de la capacitación');
+      for(const [key,preset] of Object.entries(engine.audiences))node(audience,'option',preset.label).value=key;
+      audience.value=source.audience;
+      field('Público de la capacitación',audience,editor);
+      const minutes=document.createElement('input');minutes.type='number';minutes.min=20;minutes.max=180;minutes.step=1;minutes.value=source.minutes;
+      field('Duración en minutos',minutes,editor);
+      const help=node(editor,'p');
+      const agenda=node(editor,'ol');
+      const redraw=()=>{
+        help.textContent=engine.audiences[audience.value]?.instruction||'';
+        agenda.replaceChildren();
+        const value=minutes.valueAsNumber;
+        if(Number.isInteger(value)&&value>=20&&value<=180){
+          for(const [name,duration] of engine.trainingAgenda(value))node(agenda,'li',name+' · '+duration+' min');
+        }
+      };
+      audience.onchange=redraw;minutes.oninput=redraw;redraw();
+      const fields=engine.activityFields.map(([key,label])=>{
+        const input=document.createElement('textarea');input.maxLength=1200;input.value=source[key];
+        field(label,input,editor);
+        return [key,input];
+      });
+      readDraft=()=>({title:title.value,audience:audience.value,minutes:minutes.value,
+        ...Object.fromEntries(fields.map(([key,input])=>[key,input.value]))});
+      original=JSON.stringify(readDraft());
+      const area=node(editor,'div',undefined,'academy-tabs');
+      button(area,'Guardar plan de capacitación',async()=>{
+        try{
+          const key=selected,plan=engine.validatePlan(readDraft());
+          const snapshot=JSON.stringify(readDraft());
+          if(await save({teachPlans:{...progress().teachPlans,[key]:plan},teachLast:key},'Plan de capacitación guardado.')&&selected===key){
+            original=snapshot;
+          }
+        }catch(error){status.textContent=error.message;}
+      });
+      button(area,'Descargar guía del instructor en PDF',()=>{
+        try{
+          const plan=engine.validatePlan(readDraft());
+          const references=course.sources.map(key=>modules.data.references[key]).filter(Boolean);
+          pdf(plan.title,lesson.title+' · '+engine.audiences[plan.audience].label+' · '+plan.minutes+' min',
+            engine.trainingSections(plan,lesson,references),'lifts-guia-instructor');
+          status.textContent='Guía del instructor generada.';
+        }catch(error){status.textContent=error.message;}
+      });
+    }
+    lessons.onchange=()=>{
+      if(JSON.stringify(readDraft())!==original&&!confirm('¿Cambiar de lección y descartar las ediciones que aún no guardaste?')){
+        lessons.value=selected;
+        return;
+      }
+      selected=lessons.value;status.textContent='';draw();
+    };
+    draw();
+  }
   function renderCatalog() {
     const card=node(shell,'article',undefined,'card');
     heading(card,'Especialidades');
@@ -277,6 +357,7 @@
     button(connections,'Ingeniería · Placas y distorsión',()=>api.open('engineering'));
     button(connections,'Lifts Excel',()=>api.open('excel'));
     button(connections,'Diagnóstico guiado',()=>api.open('diagnostics'));
+    button(connections,'Lifts Teach',()=>open('teach'));
     const bar=node(card,'div',undefined,'academy-search');
     const input=document.createElement('input');
     input.type='search';input.placeholder='Ej. anilox o metamerismo';input.value=filter;
@@ -509,6 +590,7 @@
       }
     }
     const actions=node(main,'div',undefined,'academy-tabs');
+    button(actions,'Preparar capacitación',()=>open('teach',key));
     if(['placas','preprensa','distorsion'].includes(course.id))button(actions,'Abrir ficha y calculadora',()=>api.open('engineering'));
     if(course.id==='calidad')button(actions,'Abrir plantilla Pareto en Excel',()=>window.liftsExcel.open('pareto'));
     const bookmark=button(actions,progress().favorites.includes(key)?'Quitar favorito':'Marcar favorito',async()=>{

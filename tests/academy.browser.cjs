@@ -58,6 +58,27 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByText('Hecho: el TVI mide diferencia en puntos porcentuales.',{exact:true}).waitFor();
     assert.match(tutorRequest.messages[0].content,/Explica la interpolación/);
     assert.doesNotMatch(tutorRequest.messages[0].content,/Nota privada de prueba/);
+    await page.getByRole('button',{name:'Preparar capacitación',exact:true}).click();
+    await page.getByRole('heading',{name:'Lifts Teach',exact:true}).waitFor();
+    assert.equal(await page.getByRole('combobox',{name:'Lección para la capacitación',exact:true}).inputValue(),'preprensa/fingerprint');
+    await page.getByRole('combobox',{name:'Público de la capacitación',exact:true}).selectOption('quality');
+    await page.getByLabel('Duración en minutos').fill('60');
+    await page.getByText('Demostración · 18 min',{exact:true}).waitFor();
+    await page.getByLabel('Título de la capacitación').fill('Validar una curva');
+    await page.getByLabel('Notas del instructor').fill('Usar únicamente los datos de prueba aprobados.');
+    await page.getByRole('button',{name:'Guardar plan de capacitación',exact:true}).click();
+    await page.getByText('Plan de capacitación guardado.',{exact:true}).waitFor();
+    const teachDownload=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar guía del instructor en PDF',exact:true}).click();
+    const instructorGuide=await teachDownload;
+    assert.equal(instructorGuide.suggestedFilename(),'lifts-guia-instructor.pdf');
+    const pdfContent=(await readFile(await instructorGuide.path())).toString('latin1');
+    assert.match(pdfContent,/^%PDF/);
+    assert.match(pdfContent,/Validar una curva/);
+    assert.match(pdfContent,/datos de prueba aprobados/);
+    assert.doesNotMatch(pdfContent,/Nota privada de prueba/);
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).academyProgress.teachPlans['preprensa/fingerprint'].minutes),60);
+
     await page.getByRole('button',{name:'Simuladores',exact:true}).click();
     await page.getByLabel('Tono medido (%)').fill('70');
     await page.getByText('TVI = medido − nominal = 20.0 puntos porcentuales',{exact:true}).waitFor();
@@ -143,6 +164,11 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByRole('button',{name:'Competencias y evidencias',exact:true}).click();
     await page.getByRole('button',{name:'Validar un fingerprint',exact:true}).click();
     await page.getByText('Todavía no hay evidencias para esta competencia.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Explorar cursos',exact:true}).click();
+    await page.getByRole('button',{name:'Lifts Teach',exact:true}).click();
+    await page.getByRole('combobox',{name:'Lección para la capacitación',exact:true}).selectOption('preprensa/fingerprint');
+    assert.equal(await page.getByLabel('Notas del instructor').inputValue(),'');
+
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
 
 

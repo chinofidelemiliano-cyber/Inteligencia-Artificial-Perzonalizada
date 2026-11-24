@@ -8,8 +8,19 @@
   function setProcessed(items,id,processed){
     return items.map(item=>item.id===id?{...item,processed:processed===true}:item);
   }
+  const journalDestinations={
+    mission:{label:'Preparar misión',field:'objective'},
+    knowledge:{label:'Preparar conocimiento',field:'summary'},
+    experiment:{label:'Preparar experimento',field:'question'},
+    note:{label:'Preparar nota',field:'content'}
+  };
+  function journalDraft(kind,text){
+    if(!Object.hasOwn(journalDestinations,kind))throw new TypeError('Elige un destino válido para la captura.');
+    const title=text.slice(0,100).replace(/[\uD800-\uDBFF]$/,'').trimEnd();
+    return {title,[journalDestinations[kind].field]:text};
+  }
   if(typeof module!=='undefined'&&module.exports){
-    module.exports={capture,setProcessed};
+    module.exports={capture,setProcessed,journalDraft};
     return;
   }
 
@@ -33,7 +44,7 @@
     return button;
   }
   append(panel,'summary','Bandeja de entrada');
-  append(panel,'p','Captura ideas y pendientes para ordenarlos después. Preparar una tarea o un aviso abre su formulario. Marca la captura como procesada cuando termines.');
+  append(panel,'p','Captura ideas y pendientes para ordenarlos después. Las opciones de preparación abren un borrador. Marca la captura como procesada cuando termines.');
   const form=append(panel,'form');
   const label=append(form,'label','Captura rápida');
   const input=append(form,'textarea');
@@ -74,6 +85,18 @@
       if(!item.processed){
         action(actions,'Preparar tarea',()=>root.liftsWorkUI.prepareTask(item.title));
         action(actions,'Preparar aviso',()=>root.liftsReminders.open(item.title));
+        const drafts=append(row,'details');
+        append(drafts,'summary','Otros borradores');
+        const draftsActions=append(drafts,'div');
+        draftsActions.className='companion-actions';
+        for(const [kind,destination] of Object.entries(journalDestinations)){
+          action(draftsActions,destination.label,()=>{
+            if(!root.liftsJournal.prepareDraft(kind,journalDraft(kind,item.title))){
+              status.textContent='No se pudo abrir el borrador. Tu captura se conserva.';
+            }
+          });
+        }
+
       }
       action(actions,item.processed?'Reabrir captura':'Marcar como procesada',()=>{
         if(writing||dirty)return;

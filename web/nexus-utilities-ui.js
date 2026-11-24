@@ -4,7 +4,7 @@
   const root=document.getElementById('nexusUtilities');
   const core=window.liftsUtilitiesCore;
   if(!root||!core)return;
-  const modeNames={compare:'Comparar textos',dates:'Calcular fechas',radix:'Convertir bases',base64:'Texto y Base64',image:'Redimensionar imágenes'};
+  const modeNames={compare:'Comparar textos',dates:'Calcular fechas',radix:'Convertir bases',base64:'Texto y Base64',image:'Redimensionar imágenes',qr:'Generar código QR'};
 
   function node(parent,tag,text,attributes={}){
     const child=document.createElement(tag);
@@ -105,9 +105,9 @@
     }
   }
 
-  function downloadImage(blob,extension){
+  function downloadFile(blob,filename){
     const url=URL.createObjectURL(blob);
-    const link=node(document.body,'a',undefined,{href:url,download:'lifts-imagen.'+extension});
+    const link=node(document.body,'a',undefined,{href:url,download:filename});
     link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
@@ -155,12 +155,46 @@
         node(results,'p','Original: '+originalWidth+' × '+originalHeight+' px · '+formatSize(source.size)+'.');
         node(results,'p','Resultado: '+output.width+' × '+output.height+' px · '+formatSize(blob.size)+'.');
         const jpeg=type==='image/jpeg';
-        node(results,'button',jpeg?'Descargar JPEG':'Descargar PNG',{type:'button'}).onclick=()=>downloadImage(blob,jpeg?'jpg':'png');
+        node(results,'button',jpeg?'Descargar JPEG':'Descargar PNG',{type:'button'}).onclick=()=>downloadFile(blob,jpeg?'lifts-imagen.jpg':'lifts-imagen.png');
       }finally{image.close?.();}
     };
   }
 
-  const drawers={compare:drawComparison,dates:drawDates,radix:drawRadix,base64:drawBase64,image:drawImage};
+  function drawQr(form,results){
+    const payload=field(form,'Texto o enlace del código QR','qr-payload','textarea',{rows:'4',maxlength:'500',required:''});
+    node(form,'p','Hasta 500 bytes de texto UTF-8. Cualquiera que escanee el código podrá leer su contenido.',{class:'notice'});
+    return async isCurrent=>{
+      const value=payload.value;
+      const {qrMatrix}=await import('./nexus-utilities-qr.js');
+      if(!isCurrent())return;
+      const matrix=qrMatrix(value);
+      const moduleSize=8,quietZone=4;
+      const canvas=document.createElement('canvas');
+      canvas.width=canvas.height=(matrix.length+quietZone*2)*moduleSize;
+      canvas.style.maxWidth='100%';
+      canvas.style.height='auto';
+      canvas.setAttribute('role','img');
+      canvas.setAttribute('aria-label','Vista previa del código QR');
+      const context=canvas.getContext('2d');
+      if(!context)throw new Error('El navegador no admite la generación de imágenes.');
+      context.fillStyle='#fff';
+      context.fillRect(0,0,canvas.width,canvas.height);
+      context.fillStyle='#000';
+      for(const [row,modules] of matrix.entries()){
+        for(const [column,dark] of modules.entries()){
+          if(dark)context.fillRect((column+quietZone)*moduleSize,(row+quietZone)*moduleSize,moduleSize,moduleSize);
+        }
+      }
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      if(!isCurrent())return;
+      if(!blob)throw new Error('El navegador no pudo generar el PNG.');
+      results.append(canvas);
+      const actions=node(results,'p');
+      node(actions,'button','Descargar código QR',{type:'button'}).onclick=()=>downloadFile(blob,'lifts-codigo-qr.png');
+    };
+  }
+
+  const drawers={compare:drawComparison,dates:drawDates,radix:drawRadix,base64:drawBase64,image:drawImage,qr:drawQr};
   function mount(){
     root.replaceChildren();
     const card=node(root,'article',undefined,{class:'card'});
@@ -175,7 +209,8 @@
       const results=document.createElement('div');
       const run=drawers[mode.value](form,results);
       const imageMode=mode.value==='image';
-      const submit=node(form,'button',imageMode?'Procesar imagen':'Calcular',{type:'submit'});
+      const qrMode=mode.value==='qr';
+      const submit=node(form,'button',imageMode?'Procesar imagen':qrMode?'Generar código QR':'Calcular',{type:'submit'});
       const status=node(panel,'p','',{role:'status'});
       panel.append(results);
       let revision=0;
@@ -188,10 +223,10 @@
         const isCurrent=()=>form.isConnected&&revision===current;
         results.replaceChildren();
         submit.disabled=true;
-        if(imageMode)status.textContent='Procesando imagen…';
+        if(imageMode||qrMode)status.textContent=imageMode?'Procesando imagen…':'Generando código QR…';
         try{
           await run(isCurrent);
-          if(isCurrent())status.textContent=imageMode?'Imagen lista.':'Resultado calculado.';
+          if(isCurrent())status.textContent=imageMode?'Imagen lista.':qrMode?'Código QR listo.':'Resultado calculado.';
         }catch(error){if(isCurrent())status.textContent=error.message;}
         finally{if(isCurrent())submit.disabled=false;}
       };

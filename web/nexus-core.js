@@ -64,6 +64,7 @@
     },
     academy:academyView('Academia de flexografía','catalog'),
     library:academyView('Biblioteca técnica','library'),
+    teach:academyView('Lifts Teach · Preparar capacitación','teach'),
     competencies:academyView('Competencias y evidencias','competencies'),
     'study-paths':academyView('Rutas y repasos','paths'),
     simulators:academyView('Simuladores de flexografía','tools'),

@@ -97,3 +97,48 @@ test('journal skips duplicate edits, bounds history and revalidates older conten
   const bad={...entry.history[0],status:'verified',data:{source:'Manual'}};
   assert.throws(()=>restoreRecord({...entry,history:[bad]},bad.id),/evidencia/);
 });
+
+test('life map groups explicit area labels and long-term goals preserve evidence and milestones',()=>{
+  const {record,lifeMap}=require('../web/nexus-journal.js');
+  const settings={title:'Mejorar medición',area:'Capacitacion',objective:'Aplicar un protocolo',stages:'Practicar\nRevisar',due:'2028-02-29'};
+  assert.throws(()=>record('goal',{...settings,due:'2028-02-30'}),/fecha/);
+  assert.throws(()=>record('goal',{...settings,status:'done',completed:['Practicar']}),/evidencia/);
+  const goal=record('goal',{...settings,status:'done',completed:['Practicar','Revisar'],evidence:'Prueba repetida'});
+  const area=record('lifeArea',{title:'Capacitación'});
+  const orphan=record('travel',{title:'Visita técnica'});
+  const mapped=lifeMap([goal,area,orphan]);
+  assert.equal(mapped.groups[0].title,'Capacitación');
+  assert.deepEqual(mapped.groups[0].items,[goal]);
+  assert.deepEqual(mapped.unassigned,[orphan]);
+});
+
+test('quality cost subtotals exclude unrecorded values and use cents',()=>{
+  const {qualityCosts}=require('../web/nexus-journal.js');
+  const result=qualityCosts({unit:'MXN',rework:'100.25',waste:'0,25',prevention:'5',inspection:'0'});
+  assert.equal(result.failures,100.5);
+  assert.equal(result.preventionInspection,5);
+  assert.ok(result.missing.includes('Tiempos muertos'));
+  assert.ok(!result.missing.includes('Inspección'));
+  assert.throws(()=>qualityCosts({unit:'MXN',rework:'$500'}),/sin símbolos/);
+});
+
+test('one-way ANOVA matches known sums of squares and rejects degenerate groups',()=>{
+  const {oneWayAnova}=require('../web/nexus-journal.js');
+  const result=oneWayAnova('A: 1 2 3\nB: 4 5 6\nC: 7 8 9');
+  assert.equal(result.between,54);
+  assert.equal(result.within,6);
+  assert.equal(result.dfBetween,2);
+  assert.equal(result.dfWithin,6);
+  assert.equal(result.f,27);
+  assert.throws(()=>oneWayAnova('A: 1 1\nB: 2 2'),/variación/);
+  assert.throws(()=>oneWayAnova('A: 1 2\na: 2 3'),/distintos/);
+});
+
+test('active reading records the exact fragment and validates a page reference',()=>{
+  const {record}=require('../web/nexus-journal.js');
+  assert.throws(()=>record('reading',{title:'Apuntes',document:'Manual',page:'-2'}),/página positiva/);
+  const item=record('reading',{title:'Apuntes',document:'Manual de proceso',page:'8',excerpt:'Medir y repetir',question:'¿Cuántas muestras?'});
+  assert.equal(item.data.page,'8');
+  assert.equal(item.data.excerpt,'Medir y repetir');
+  assert.equal(item.data.question,'¿Cuántas muestras?');
+});

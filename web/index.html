@@ -127,7 +127,14 @@
 </div><div class="academy-progress"><label for="academyProgress">Progreso general</label><progress id="academyProgress" value="0" max="1"></progress><p id="academyProgressText"></p><button type="button" class="secondary" id="academyContinue" hidden>Continuar estudiando</button></div></div>
 <p id="academyStatus" role="status"></p><div id="academyContent"></div>
 </section>
-<section id="utilities" hidden aria-label="Utilidades locales"><div id="nexusUtilities"></div></section>
+<section id="utilities" hidden aria-label="Utilidades locales">
+  <div id="nexusUtilities"></div>
+  <details id="nexusPdfTools" class="card">
+    <summary>Combinar o extraer páginas de PDF</summary>
+    <p id="nexusPdfLoading" role="status"></p>
+    <div id="nexusPdfPanel"></div>
+  </details>
+</section>
 <section id="operations" hidden aria-labelledby="nexusOperationsTitle">
   <article class="card">
     <h2 id="nexusOperationsTitle">Estado y permisos de Nexus</h2>
@@ -191,6 +198,11 @@
       <label>Filtrar acontecimientos <input id="journalTimelineQuery" type="search" maxlength="100"></label>
       <p class="notice">Incluye registros de Nexus, fichas de Ingeniería, diagnósticos y tareas completadas con fecha registrada.</p>
       <ul id="journalTimelineItems"></ul>
+    </details>
+    <details id="journalLifeMap">
+      <summary>Mapa de vida y objetivos</summary>
+      <p>Crea Áreas de vida y escribe su nombre en tus objetivos, misiones, viajes o inventario para consultar lo que has relacionado.</p>
+      <div id="journalLifeItems"></div>
     </details>
     <details id="journalLinks"><summary>Relaciones de conocimiento</summary><div id="journalGraph"></div></details>
   </article>
@@ -331,6 +343,7 @@
 <script src="nexus-feedback.js" defer></script>
 <script src="nexus-utilities-core.js" defer></script>
 <script src="nexus-utilities-ui.js" defer></script>
+<script src="nexus-pdf-entry.js" defer></script>
 <script src="industrial-core.js" defer></script>
 <script src="industrial-ui.js" defer></script>
 <script src="google-ui.js" defer></script>

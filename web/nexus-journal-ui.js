@@ -101,7 +101,7 @@
   function commitRecord(item,old,message) {
     state().nexusJournal=old?records().map(record=>record.id===old.id?item:record):[item,...records()];
     window.liftsNexus?.checkpoint('journal-record',item.id,item.title,false);
-    renderList();renderGraph();renderEditor(item);renderTimeline();
+    renderList();renderGraph();renderEditor(item);renderTimeline();renderLifeMap();
     void save(message);
   }
   function renderEditor(item=null) {
@@ -111,9 +111,9 @@
     input(form,'Título del registro','title',item?.title||'','input').required=true;
     for(const [key,label] of Object.entries(core.kinds[kind].fields))input(form,label,key,item?.data[key]||'');
     if(core.statuses[kind])select(form,'Estado','status',core.statuses[kind],item?.status);
-    if(['mission','playbook'].includes(kind)) {
+    if(['mission','playbook','goal'].includes(kind)) {
       const checklist=node(form,'fieldset');
-      node(checklist,'legend',kind==='mission'?'Etapas realizadas':'Pasos realizados');
+      node(checklist,'legend',kind==='playbook'?'Pasos realizados':'Etapas realizadas');
       const refresh=()=>{
         const old=new Set([...checklist.querySelectorAll(':checked')].map(box=>box.value));
         checklist.querySelectorAll('label').forEach(label=>label.remove());
@@ -168,10 +168,52 @@
         }catch(error){result.textContent=error.message;}
       });
     }
+    if(kind==='experiment'){
+      const result=node(form,'div');
+      result.setAttribute('role','status');
+      button(form,'Calcular ANOVA de una vía',()=>{
+        result.replaceChildren();
+        try{
+          const data=core.oneWayAnova(form.elements.namedItem('groups').value);
+          const format=new Intl.NumberFormat('es-MX',{maximumSignificantDigits:7});
+          node(result,'p','F = '+format.format(data.f)+' · grados de libertad '+data.dfBetween+' y '+data.dfWithin+'.');
+          node(result,'p','La prueba supone observaciones independientes, residuos aproximadamente normales y varianzas similares. Este cálculo muestra F y sus grados de libertad; la conclusión requiere contrastarlos con el criterio de prueba.');
+          const list=node(result,'ul');
+          for(const group of data.groups)node(list,'li',group.name+' · n = '+group.count+' · media '+format.format(group.mean));
+        }catch(error){node(result,'p',error.message);}
+      });
+    }
+    if(kind==='qualityCost'){
+      const result=node(form,'div');
+      result.setAttribute('role','status');
+      button(form,'Sumar costos registrados',()=>{
+        result.replaceChildren();
+        try{
+          const data=core.qualityCosts(Object.fromEntries(new FormData(form)));
+          const format=new Intl.NumberFormat('es-MX',{maximumFractionDigits:2});
+          node(result,'p','Fallas registradas: '+format.format(data.failures)+' '+data.unit+'.');
+          node(result,'p','Prevención e inspección registradas: '+format.format(data.preventionInspection)+' '+data.unit+'.');
+          if(data.missing.length)node(result,'p','Sin importe registrado: '+data.missing.join(', ')+'.');
+        }catch(error){node(result,'p',error.message);}
+      });
+    }
     if(item?.kind==='meeting'&&item.data.next)button(form,'Preparar acuerdo como tarea',()=>{
       window.liftsWorkUI.prepareTask(item.data.next);
       const due=item.data.due;
       if(/^\d{4}-\d{2}-\d{2}$/.test(due))$('taskDate').value=due;
+    });
+    if(item?.kind==='meeting')button(form,'Descargar minuta PDF',()=>{
+      const sections=Object.entries(core.kinds.meeting.fields).filter(([key])=>item.data[key])
+        .map(([key,heading])=>({heading,body:item.data[key]}));
+      if(!sections.length){notice.textContent='Registra y guarda los detalles de la reunión primero.';return;}
+      const pdf=window.liftsPdf.make({title:'Minuta de reunión',subtitle:item.title,sections});
+      const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
+      const link=document.createElement('a');link.href=url;link.download='lifts-minuta.pdf';link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+    });
+    if(item?.kind==='household'&&item.data.next)button(form,'Preparar aviso de mantenimiento',()=>{
+      const date=item.data.date?new Date(item.data.date+'T09:00:00'):undefined;
+      window.liftsReminders.open(item.data.next,date);
     });
     if(item){
       button(form,'Dejar de editar',()=>renderEditor());
@@ -199,7 +241,7 @@
       node(row,'h3',item.title);
       if(item.status)node(row,'p',core.statuses[item.kind][item.status]);
       if(['mission','playbook'].includes(item.kind)){
-        node(row,'p',item.completed.length+' de '+core.steps(item.data.stages).length+(item.kind==='mission'?' etapas realizadas':' pasos realizados'));
+        node(row,'p',item.completed.length+' de '+core.steps(item.data.stages).length+(item.kind==='playbook'?' pasos realizados':' etapas realizadas'));
       }
       button(row,'Abrir '+item.title,()=>{openRecord(item.id);form.elements.namedItem('title').focus();});
     }
@@ -310,6 +352,40 @@
     window.liftsNexus?.checkpoint('journal-record',id,item.title);
     return true;
   }
+  function prepareDraft(next,values={}){
+    if(!Object.hasOwn(core.kinds,next))return false;
+    if(!$('journal').hidden&&form.elements.namedItem('title')?.value.trim()&&
+      !confirm('¿Abrir otro borrador? Las ediciones sin guardar del registro actual se reemplazarán.'))return false;
+    api.open('journal');
+    if($('journal').hidden)return false;
+    kind=next;picker.value=kind;$('journalQuery').value='';
+    renderList();renderEditor();
+    for(const key of ['title',...Object.keys(core.kinds[kind].fields)]){
+      const control=form.elements.namedItem(key);
+      if(typeof values[key]==='string')control.value=values[key].slice(0,control.maxLength);
+    }
+    form.elements.namedItem('title').focus();
+    return true;
+  }
+
+  function renderLifeMap(){
+    const result=core.lifeMap(records()), region=$('journalLifeItems');
+    region.replaceChildren();
+    const draw=(title,items)=>{
+      const section=node(region,'article',undefined);
+      node(section,'h4',title);
+      const list=node(section,'ul');
+      for(const item of items){
+        const row=node(list,'li');
+        button(row,item.title,()=>openRecord(item.id));
+        if(item.status)node(row,'span',' · '+core.statuses[item.kind][item.status]);
+      }
+    };
+    for(const group of result.groups)draw(group.title,[...group.areas,...group.items]);
+    if(result.unassigned.length)draw('Sin área asignada',result.unassigned);
+    if(!result.groups.length&&!result.unassigned.length)node(region,'p','Crea un área u objetivo para empezar a construir tu mapa.');
+  }
+  $('journalLifeMap').addEventListener('toggle',()=>{if($('journalLifeMap').open)renderLifeMap();});
   function renderTimeline() {
     const view=$('journalTimelineItems');
     view.replaceChildren();
@@ -346,12 +422,13 @@
     epoch++;pending=false;retry=null;kind='mission';graphFocus='';
     $('journalRetry').hidden=true;
     $('journalLinks').open=false;
+    $('journalLifeMap').open=false;
     $('journalTimeline').open=false;
     $('journalTimelineQuery').value='';$('journalPeriod').value='day';
     picker.value=kind;$('journalQuery').value='';notice.textContent='';
-    renderList();renderEditor();renderGraph();renderTimeline();
+    renderList();renderEditor();renderGraph();renderTimeline();renderLifeMap();
   }
   window.addEventListener('nexo-state',reset);
-  window.liftsJournal={openRecord,reset};
+  window.liftsJournal={openRecord,prepareDraft,reset};
   reset();
 })();
