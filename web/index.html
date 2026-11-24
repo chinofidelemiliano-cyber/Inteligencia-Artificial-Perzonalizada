@@ -295,7 +295,7 @@
     <form id="guardianInstruction">
       <label for="guardianInstructionText">Instrucciones recibidas</label>
       <textarea id="guardianInstructionText" rows="5" maxlength="2000" required aria-describedby="guardianInstructionHint"></textarea>
-      <p id="guardianInstructionHint">Escribe un dato por línea. Usa etiquetas como «Entregable:», «Solicitante:», «Fecha:», «Materiales:», «Primer paso:» y «Verificación:».</p>
+      <p id="guardianInstructionHint">Puedes escribir «Ana me pidió entregar el informe para el 2026-12-09 a las 09:30» y añadir pasos numerados. Para precisar datos, usa etiquetas como «Entregable:», «Solicitante:», «Fecha:», «Materiales:», «Primer paso:» y «Verificación:».</p>
       <button>No sé por dónde comenzar</button>
     </form>
     <div id="guardianInstructionResult" aria-live="polite"></div>
@@ -333,6 +333,7 @@
       </select>
       <label for="guardianPromise">Compromiso o información por confirmar</label><textarea id="guardianPromise" name="promise" rows="2" maxlength="400"></textarea>
       <label for="guardianNext">Próxima fecha de seguimiento</label><input id="guardianNext" name="next" type="date" required>
+      <label for="guardianFollowTime">Hora sugerida para el aviso (opcional)</label><input id="guardianFollowTime" name="time" type="time">
       <label for="guardianPriority">Prioridad del seguimiento</label><select id="guardianPriority" name="priority"><option value="normal">Normal</option><option value="high">Alta</option></select>
       <button>Guardar seguimiento</button><button id="guardianCancel" type="button" class="secondary" hidden>Cancelar edición</button>
     </form>

@@ -238,7 +238,12 @@
     $('taskFormStatus').textContent='Describe el imprevisto, estima cuánto tomará y guarda. Después vuelve a planificar.';
   },prepareReminder(title,date){
     this.prepareTask(title);$('taskDate').value=work.localDate(date);$('taskReminder').value=work.localInput(date);
-  },prepareTask:title=>{cancelEdit();api.open('tasks');$('taskTitle').value=String(title).slice(0,240);$('taskTitle').focus();}};render();
+  },prepareTask:(title,draft={})=>{
+    cancelEdit();api.open('tasks');$('taskTitle').value=String(title).slice(0,240);
+    $('taskDate').value=draft.date||'';
+    if(draft.steps)$('taskSteps').value=draft.steps.map(step=>step.slice(0,240)).join('\n');
+    $('taskTitle').focus();
+  }};render();
   const view=new URL(location.href).searchParams.get('view');if(view==='tasks'||view==='reminders')api.open(view);
   window.addEventListener('nexo-state',()=>{const view=new URL(location.href).searchParams.get('view');if(view==='tasks'||view==='reminders')api.open(view);});
 })();

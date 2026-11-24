@@ -45,3 +45,15 @@ test('an instruction draft uses supplied labels and notices contradictory dates'
   assert.deepEqual(review.extra,['Nota adicional']);
   assert.equal(instruction('No entiendo').action,'Confirmar qué se debe entregar.');
 });
+
+test('unlabelled requests extract explicit dates and steps while preserving ambiguity',()=>{
+  const {instruction}=require('../web/guardian.js');
+  const clear=instruction('Ana me pidió entregar el informe para el 2026-12-09 a las 09:30.\n1. Medir\n2. Revisar');
+  assert.deepEqual(clear.draft,{title:'entregar el informe',person:'Ana',date:'2026-12-09',time:'09:30',steps:['Medir','Revisar'],promise:''});
+  assert.equal(instruction('Debo medir el lunes').draft.date,'');
+  assert.equal(instruction('Debo medir para el 2026-02-30').draft.date,'');
+  const conflict=instruction('Debo medir para el 2026-12-09\nFecha: 2026-12-10');
+  assert.deepEqual(conflict.ambiguous,['fecha']);
+  assert.equal(conflict.draft.date,'');
+  assert.throws(()=>followup({subject:'Medir',person:'Ana',kind:'verify',next:'2026-12-09',time:'24:00',priority:'normal'},null,'2026-11-24','id'),/hora/);
+});

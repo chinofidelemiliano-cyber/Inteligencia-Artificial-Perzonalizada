@@ -2,11 +2,14 @@
 (function(root){
   const kinds=['reply','receive','answer','information','help','deliver','verify','lend','tool','date'];
   const dates=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
+  const validTime=value=>typeof value==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
   function followup(input,previous,day,id){
     const subject=input.subject?.trim(),person=input.person?.trim(),promise=input.promise?.trim()||'';
     if(!subject||subject.length>120||!person||person.length>80||promise.length>400)throw new Error('Revisa el asunto, la persona y el compromiso.');
     if(!dates(input.next)||!kinds.includes(input.kind)||!['normal','high'].includes(input.priority))throw new Error('Revisa la fecha, el tipo y la prioridad.');
-    return {id:previous?.id||id,subject,person,promise,next:input.next,kind:input.kind,priority:input.priority,created:previous?.created||day,closed:previous?.closed||false};
+    const time=input.time||'';
+    if(time&&!validTime(time))throw new Error('Revisa la hora del seguimiento.');
+    return {id:previous?.id||id,time,subject,person,promise,next:input.next,kind:input.kind,priority:input.priority,created:previous?.created||day,closed:previous?.closed||false};
   }
   function summarize(state,{day,tomorrow,start,end,endTomorrow,now}){
     const tasks=(state.tasks||[]).filter(task=>!task.archived&&task.kind!=='reminder');
@@ -39,20 +42,47 @@
     'primer paso':'Primer paso',verificacion:'Verificación'
   };
   function instruction(text){
-    const fields=new Map(),extra=[];
+    const fields=new Map(),extra=[],steps=[];
+    const add=(key,value)=>fields.set(key,[...(fields.get(key)||[]),value.trim()]);
     for(const line of text.split(/\r?\n/).map(value=>value.trim()).filter(Boolean)){
       const [,label,value]=line.match(/^([^:]+):\s*(.+)$/)||[];
       const key=label?.trim().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
       if(key&&Object.hasOwn(instructionLabels,key)&&value.trim()){
-        fields.set(key,[...(fields.get(key)||[]),value.trim()]);
+        add(key,value);
+        continue;
+      }
+      const step=line.match(/^(?:[-•]|\d{1,2}[.)])\s+(.+)$/);
+      if(step){steps.push(step[1]);continue;}
+      const request=line.match(/^(?:([\p{L}][\p{L} .'-]{0,59}?)\s+(?:me pidió|me solicita)\s+(?:que\s+)?|(?:necesito|debo|hay que)\s+)(.+)$/iu);
+      if(request){
+        const [,person,body]=request;
+        const due=body.match(/\s+(?:para(?: el)?|a más tardar el)\s+(\d{4}-\d{2}-\d{2})(?:\s+a las\s+(\d{2}:\d{2}))?[.!]?$/iu);
+        if(person)add('solicitante',person);
+        if(due&&dates(due[1])&&(!due[2]||validTime(due[2]))){
+          add('entregable',body.slice(0,due.index));
+          add('fecha',due[1]+(due[2]?' '+due[2]:''));
+        }else{
+          add('entregable',body);
+        }
       }else extra.push(line);
     }
+    if(steps.length&&!fields.has('primer paso'))add('primer paso',steps[0]);
+    const unique=key=>{
+      const values=[...new Set(fields.get(key)||[])];
+      return values.length===1?values[0]:'';
+    };
+    const stamped=unique('fecha').match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?$/);
+    const date=stamped&&dates(stamped[1])?stamped[1]:'';
+    const time=date&&validTime(stamped[2])?stamped[2]:'';
+    const draft={title:unique('entregable'),person:unique('solicitante'),date,time,
+      steps:[...new Set([unique('primer paso'),...steps].filter(Boolean))].slice(0,20),
+      promise:[unique('materiales')&&'Materiales: '+unique('materiales'),unique('verificacion')&&'Verificación: '+unique('verificacion')].filter(Boolean).join(' · ')};
     const missing=Object.keys(instructionLabels).filter(key=>!fields.has(key));
     const ambiguous=[...fields].filter(([,values])=>new Set(values).size>1).map(([key])=>key);
     const first=fields.get('primer paso')?.[0];
     const action=ambiguous.length?'Confirmar '+instructionLabels[ambiguous[0]].toLowerCase()+' con quien solicitó el trabajo.':
       first||(!fields.has('entregable')?'Confirmar qué se debe entregar.':'Definir una acción concreta para empezar el entregable.');
-    return {fields,extra,missing,ambiguous,action};
+    return {fields,extra,missing,ambiguous,action,draft};
   }
   if(typeof module==='object'){module.exports={summarize,followup,instruction};return;}
   const $=id=>document.getElementById(id),app=root.liftsWorkspace;
@@ -173,13 +203,16 @@
       button(actions,'Editar seguimiento',()=>{
         if(busy)return;
         editing=record.id;
-        for(const key of ['subject','person','promise','kind','next','priority'])form.elements[key].value=record[key];
+        for(const key of ['subject','person','promise','kind','next','time','priority'])form.elements[key].value=record[key]||'';
         $('guardianCancel').hidden=false;form.elements.subject.focus();
       });
       button(actions,record.closed?'Reabrir':'Cerrar seguimiento',()=>save('guardianFollowups',
         records().map(item=>item.id===record.id?{...item,closed:!item.closed}:item),record.closed?'Seguimiento reabierto.':'Seguimiento cerrado.'));
       if(!record.closed)button(actions,'Preparar recordatorio',()=>{
-        root.liftsReminders.open('Seguimiento: '+record.subject);
+        const local=dates(record.next)&&validTime(record.time)?record.next+'T'+record.time:'';
+        const when=local?new Date(local):null;
+        const usable=when&&when.getTime()>Date.now()&&root.liftsWork.localInput(when)===local;
+        root.liftsReminders.open('Seguimiento: '+record.subject,usable?when:undefined);
         $('reminderDate').focus();
       });
       button(actions,'Preparar mensaje',()=>{
@@ -292,6 +325,26 @@
     if(review.extra.length)element(instructionResult,'p','Lee las líneas sin etiqueta en la solicitud original.');
     element(instructionResult,'p','Primera acción: '+review.action);
     button(instructionResult,'Preparar en Agenda',()=>root.liftsWorkUI.prepareTask(review.action));
+    if(review.draft.title&&!review.ambiguous.length){
+      button(instructionResult,'Preparar entregable en Agenda',()=>{
+        const {title,date,steps}=review.draft;
+        root.liftsWorkUI.prepareTask(title,{date,steps});
+      });
+      button(instructionResult,'Preparar seguimiento de la solicitud',()=>{
+        if(busy)return;
+        if((editing||form.elements.subject.value)&&!confirm('¿Reemplazar el borrador de seguimiento abierto?'))return;
+        resetForm();
+        const {title,person,date,time,promise}=review.draft;
+        form.elements.subject.value=title.slice(0,120);
+        form.elements.person.value=person.slice(0,80);
+        form.elements.next.value=date;
+        form.elements.time.value=time;
+        form.elements.promise.value=promise.slice(0,400);
+        form.elements.kind.value='deliver';
+        form.elements.subject.focus();
+        status.textContent='Revisa y guarda el borrador de seguimiento.';
+      });
+    }
   };
   $('guardianCancel').onclick=resetForm;
   $('guardianFocus').onclick=()=>{

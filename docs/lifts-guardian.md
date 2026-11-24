@@ -7,9 +7,9 @@ Lifts ya tiene Agenda y enfoque, recordatorios configurables, hábitos, Radar, m
 | Bloque | Estado | Alcance y pendiente |
 | --- | --- | --- |
 | 1 · Guardian | Parcial | Preparación, jornada, cierre, prioridades y límites. Faltan avisos propios, preparación de materiales integrada y descanso configurable. |
-| 2 · Executive | Parcial | Interpreta etiquetas explícitas, propone primera acción y prepara un borrador en Agenda. Faltan texto libre, dependencias y delegación. |
+| 2 · Executive | Parcial | Interpreta etiquetas, listas numeradas y solicitudes breves con construcciones reconocidas. Propone primera acción y prepara borradores de entregable en Agenda y de seguimiento. Faltan interpretación irrestricta, dependencias y delegación. |
 | 3 · Routine | Parcial | Doce plantillas, pasos editables, material previo, temporizador web, lectura compatible y últimos veinte resultados. Faltan reglas condicionales ampliadas e integración con avisos. |
-| 4 · Follow-up | Implementado | Diez categorías, compromiso, fecha, prioridad, cierre, reapertura y borradores de mensaje y recordatorio. |
+| 4 · Follow-up | Implementado | Diez categorías, compromiso, fecha, hora opcional, prioridad, cierre, reapertura y borradores de mensaje y recordatorio. |
 | 5 · Memory Assistant | Parcial | Categoría, contexto, fecha de alta, búsqueda local, archivo y recuperación. Consulta local mediante «Busca en mis recuerdos sobre…», por texto o dictado del chat. Falta captura dedicada por voz. |
 | 6 · Calculator Hub | Parcial | Centro que enlaza Ingeniería, Builder, utilidades y presupuesto. Convierte longitudes, masas, duraciones y presión, muestra la sustitución y recibe valores de Captura rápida. Falta el catálogo completo de fórmulas. |
 | 7 · Time Intelligence | Parcial | Agenda, cruces y planificación existentes. Falta ampliar el análisis temporal solicitado. |
@@ -67,3 +67,10 @@ Modo de campo reutiliza los registros de experimento y diagnóstico. El cronóme
 El perfil de respuesta se guarda en `guardianAssistantMode`. El envío al chat identifica el modo seleccionado, sin adjuntar otros campos privados para activarlo. `functions/api/chat.js` solo admite perfiles predefinidos y conserva el control de cuota, permisos y selección de modelo. La búsqueda explícita de recuerdos funciona en el navegador y omite los archivados. La selección de modos no cambia los cálculos deterministas.
 
 `web/guardian-calculator.js` usa factores SI y exactos para pulgada, pie y libra de masa. Admite cantidades decimales y rechaza conversiones entre magnitudes distintas. Las pruebas incluyen recorrido móvil, entrada decimal, reinicio de cronómetro, borrador de medición, conversiones e instrucciones permitidas de los perfiles del chat.
+
+
+## De una solicitud a Agenda y Recordatorios
+
+En Guardian, pega una instrucción como «Ana me pidió entregar el informe para el 2026-12-09 a las 09:30» y agrega los pasos. Guardian reconoce construcciones breves y fechas explícitas en formato AAAA-MM-DD. Las fechas relativas quedan pendientes de confirmar. Si dos líneas indican fechas distintas, Guardian pide resolver la contradicción antes de preparar el entregable. Agenda recibe título, fecha y pasos. Seguimiento recibe los datos reconocidos y permite editarlos antes de guardar. Con fecha y hora vigentes, el seguimiento puede rellenar un borrador de Recordatorios con esa hora local. Programar el aviso requiere confirmar en el editor existente.
+
+El flujo se ejecuta localmente. Las pruebas incluyen fechas contradictorias, fechas inválidas, pasos, borradores sin guardado automático y el recorrido móvil completo hasta la hora del aviso.
