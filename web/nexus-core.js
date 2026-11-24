@@ -34,6 +34,16 @@
         if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
       }
     },
+    models:plainPage('Modelos mentales','Consultar ejercicios y preparar una revisión crítica','La biblioteca funciona con contenidos locales.'),
+    radar:plainPage('Lifts Radar','Revisar alertas y pendientes de tus registros','Las comprobaciones se realizan al abrir esta vista.'),
+    'builder-record':{
+      label:'Herramienta personal guardada',purpose:'Abrir una calculadora o un formulario propio',
+      input:'Identificador de herramienta',output:'Configuración y capturas privadas',permission:'Sesión del propietario',
+      dependency:'Lifts Builder',limitations:'Las definiciones y registros son privados.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsBuilder.openSaved(key)
+    },
+    builder:plainPage('Lifts Builder','Crear calculadoras, formularios y registros privados','Las fórmulas se ejecutan mediante un intérprete limitado en este navegador.'),
     utilities:plainPage('Utilidades locales','Comparar textos y hacer conversiones','Los datos introducidos permanecen en esta sesión.'),
     operations:plainPage('Estado y permisos','Consultar sincronización y controlar acciones de Nexus','La comprobación de IA se ejecuta por solicitud.'),
     inbox:{

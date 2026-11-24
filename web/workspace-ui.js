@@ -69,6 +69,9 @@
     for(const item of (window.liftsFeedback?.search(value)||[]).slice(0,5)){
       add(item.topic+' · Evaluación privada',()=>window.liftsNexus.open({id:'feedback-record',key:item.id}));
     }
+    for(const item of (api.getState().builderTools||[]).filter(item=>!item.archived&&normalize(item.spec.name).includes(term)).slice(0,5)){
+      add(item.spec.name+' · Builder',()=>window.liftsNexus.open({id:'builder-record',key:item.id}));
+    }
     try {
       const lessons=await window.liftsAcademy.search(value);
       if(version!==searchVersion||!dialog.open)return;

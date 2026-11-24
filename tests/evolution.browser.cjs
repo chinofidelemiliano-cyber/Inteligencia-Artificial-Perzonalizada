@@ -178,7 +178,7 @@ test('learn, calculate, download XLSX and PDF, and record a private diagnosis on
     await page.getByRole('button',{name:'Ocultar Agenda',exact:true}).click();
     assert.equal(await page.locator('#evolutionPanels').getByRole('heading',{name:'Agenda'}).count(),0);
     await page.getByRole('button',{name:'Subir Aprendizaje',exact:true}).click();
-    assert.deepEqual(await page.evaluate(()=>window.saves.at(-1).evolutionHome),{order:['agenda','academy','reminders'],hidden:['agenda']});
+    assert.deepEqual(await page.evaluate(()=>window.saves.at(-1).evolutionHome),{order:['agenda','academy','reminders','journal','finance','builder','radar'],hidden:['agenda']});
     await page.getByRole('button',{name:'Privacidad y memoria',exact:true}).click();
     await page.getByLabel('Título',{exact:true}).fill('Comco Cadet');
     await page.getByLabel('Recuerdo',{exact:true}).fill('Esta es una nota de prueba privada.');

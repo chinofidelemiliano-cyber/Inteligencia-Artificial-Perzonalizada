@@ -17,7 +17,38 @@
 <link rel="stylesheet" href="learning.css">
 <link rel="stylesheet" href="academy.css">
 <link rel="stylesheet" href="evolution.css">
-<div id="authPanel" class="card" style="max-width:520px;margin:50px auto"><img class="login-banner" src="/assets/lifts-banner.png" alt="Lifts Asistente Virtual" width="1536" height="1024" fetchpriority="high"><h1>Tu asistente virtual.</h1><p>Tu espacio personal empieza aquí.</p><p id="expenseShortcutAuthNotice" class="notice" hidden>Inicia sesión para revisar el gasto que llegó desde tu atajo.</p><button id="installLiftsLogin" type="button" class="secondary">Instalar Lifts IA</button><form id="authForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required><button id="login" type="submit">Iniciar sesión</button><button id="signup" type="button" class="secondary">Crear cuenta</button><button id="forgot" type="button" class="secondary">Recuperar contraseña</button></form><form id="resetForm" hidden><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button>Guardar nueva contraseña</button></form><p id="voiceLinkAuthNotice" class="notice" hidden>Tienes un dictado pendiente del atajo. Inicia sesión para revisarlo; no se ha enviado ni guardado.</p><p id="authStatus" role="status" aria-live="polite">Conectando con el servicio de cuentas…</p></div>
+<link rel="stylesheet" href="personal-os.css">
+<div id="authPanel" class="os-auth">
+  <section class="os-welcome" aria-labelledby="osWelcomeTitle">
+    <div class="os-welcome-copy">
+      <img src="/assets/identity/circuit.svg" width="248" height="76" alt="Lifts" class="os-mark">
+      <h1 id="osWelcomeTitle">El conocimiento transforma.</h1>
+      <p>Aprende, crea, organiza y evoluciona con tu sistema de inteligencia personal y profesional.</p>
+      <div class="evolution-controls">
+        <a href="#email" class="os-primary">Entrar a Lifts</a>
+        <a href="#osExplore" class="os-secondary">Explorar herramientas</a>
+      </div>
+    </div>
+    <div class="os-scene" aria-hidden="true">
+      <div class="os-sun"></div>
+      <div id="osWelcomeRobot"></div>
+      <svg class="os-welcome-pet" viewBox="22 767 111 165" aria-hidden="true"><image href="/assets/lifts-pet-sheet.png" width="1536" height="1024"/></svg>
+    </div>
+  </section>
+  <div class="os-access">
+    <section class="os-explore card" id="osExplore" aria-labelledby="osExploreTitle">
+      <h2 id="osExploreTitle">Herramientas de Lifts</h2>
+      <dl>
+        <dt>Planifica tu día</dt><dd>Revisa pendientes, recordatorios y la capacidad real de tu jornada.</dd>
+        <dt>Aprende y aplica</dt><dd>Estudia flexografía y Excel, practica con simuladores y registra competencias.</dd>
+        <dt>Construye tus herramientas</dt><dd>Configura formularios, fórmulas y registros para tu propio trabajo.</dd>
+      </dl>
+      <a href="#email">Acceder a mi espacio</a>
+    </section>
+    <section class="card os-auth-card" aria-labelledby="osAuthTitle"><h2 id="osAuthTitle">Acceso a tu cuenta</h2>
+<p id="expenseShortcutAuthNotice" class="notice" hidden>Inicia sesión para revisar el gasto que llegó desde tu atajo.</p><button id="installLiftsLogin" type="button" class="secondary">Instalar Lifts IA</button><form id="authForm"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required><button id="login" type="submit">Iniciar sesión</button><button id="signup" type="button" class="secondary">Crear cuenta</button><button id="forgot" type="button" class="secondary">Recuperar contraseña</button></form><form id="resetForm" hidden><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button>Guardar nueva contraseña</button></form><p id="voiceLinkAuthNotice" class="notice" hidden>Tienes un dictado pendiente del atajo. Inicia sesión para revisarlo; no se ha enviado ni guardado.</p><p id="authStatus" role="status" aria-live="polite">Conectando con el servicio de cuentas…</p></section>
+  </div>
+</div>
 <div id="workspace" hidden><aside id="workspaceNavigation"><div class="sidebar-brand"><img src="/assets/icon-192.png" alt="" width="64" height="64"><h1 class="brand-wordmark">Lifts<span>.</span></h1></div><p>Asistente Virtual · A tu medida</p><nav aria-label="Secciones"><button data-page="home" aria-current="true" aria-label="Mi espacio"><span class="nav-icon">◈</span><span class="nav-label">Chat</span></button><button data-page="tasks" aria-label="Mi organización"><span class="nav-icon">✓</span><span class="nav-label">Agenda</span></button><button data-page="reminders" aria-label="Recordatorios"><span class="nav-icon" aria-hidden="true">♢</span><span class="nav-label">Recordatorios</span></button><button data-page="academy" aria-label="Academia"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">Academia</span></button><button data-page="work" aria-label="Mi trabajo"><span class="nav-icon">▦</span><span class="nav-label">Trabajo</span></button><button data-page="images" aria-label="Crear imágenes"><span class="nav-icon">✧</span><span class="nav-label">Crear</span></button><button data-page="profile" aria-label="Mi perfil"><span class="nav-icon">◎</span><span class="nav-label">Perfil</span></button></nav><p id="accountEmail"></p><button id="logout" class="secondary">Cerrar sesión</button><p id="syncStatus" role="status" aria-live="polite"></p></aside>
 <main><p id="shortcutError" role="status" class="notice" hidden></p><section id="voiceLinkBanner" class="voice-link-banner" hidden aria-label="Petición recibida del atajo"><h3>Tu dictado llegó a Lifts</h3><p id="voiceLinkStatus" role="status"></p><div class="companion-actions"><button id="useVoiceChat" type="button">Usar en el chat</button><button id="useVoiceTask" type="button" class="secondary">Preparar tarea</button><button id="dismissVoiceLink" type="button" class="secondary">Descartar dictado</button></div></section><section id="evolutionWelcome" class="evolution-home" hidden aria-labelledby="evolutionGreeting">
   <div class="evolution-hero">
@@ -59,7 +90,12 @@
     <p class="notice">Nexus compara el objetivo y la próxima acción con tus recuerdos en el navegador. El contexto del panel permanece en tu espacio privado.</p>
     <ul id="nexusSources"></ul>
   </details>
-  <div id="evolutionPanels" class="evolution-panels"></div>
+  <section class="os-today" aria-labelledby="osTodayTitle">
+    <div><h2 id="osTodayTitle">Hoy</h2><p id="osTodayDate"></p></div>
+    <ul id="osTodayTasks"></ul>
+  </section>
+  <section aria-labelledby="osCommandTitle"><h2 id="osCommandTitle">Centro de mando</h2>
+  <div id="evolutionPanels" class="evolution-panels"></div></section>
   <details><summary>Personalizar inicio</summary><div id="evolutionPanelSettings"></div></details>
 </section><div class="intro"><div class="intro-copy"><small class="eyebrow">TRABAJO Y VIDA, EN UN MISMO LUGAR</small><h2>Lifts: tu asistente para la vida y el trabajo.</h2><p>Lifts te ayuda a conversar, organizar pendientes personales y laborales, preparar horarios, revisar cómo vas y aprender a mejorar tus procesos. Tú eliges qué compartir y qué guardar.</p><p>Nació con el objetivo de ofrecer acompañamiento práctico y personal: convertir lo que tienes en mente en pasos claros, con tiempo para aprender y descansar.</p><p class="notice">Primera versión registrada: <time datetime="2026-11-05">5 de noviembre de 2026</time>, según el historial del proyecto. La plataforma sigue en desarrollo.</p><div class="companion-actions"><button class="secondary" id="plan">Organizar mis pendientes</button><button class="secondary" id="openMethods" type="button">Resolver un problema laboral</button><button class="secondary" id="openCourses" type="button">Explorar cursos breves</button></div></div><img class="brand-banner" src="/assets/lifts-banner.png" alt="Logo Lifts con cerebro de circuitos y acentos cian y violeta" width="1536" height="1024"></div><div class="grid"><article class="card"><h3 class="assistant-heading"><span class="assistant-orb" aria-hidden="true"></span><span id="assistantTitle">Lifts · Tu asistente</span></h3><p class="muted">Elige un tema sugerido o escribe lo que tengas en mente.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="saveConversation" type="button">Guardar conversación</button><button id="newConversation" type="button" class="secondary">Nueva conversación</button></div><p id="conversationStatus" role="status" aria-live="polite"></p><p class="muted">Solo las conversaciones guardadas se conservan al recargar.</p><details><summary>Mis conversaciones guardadas</summary><div id="savedConversations"></div></details><div class="voice-toolbar"><button id="readLatest" type="button" class="secondary">▷ Escuchar respuesta</button><button id="stopVoice" type="button" class="secondary">◼ Detener voz</button><span id="voiceStatus" role="status" aria-live="polite"></span></div><div id="messages" aria-live="polite"></div><div id="streamingAnswer" class="message" hidden aria-live="polite"></div><form id="chat"><label id="memoryShareLabel" hidden><input id="shareMemory" type="checkbox"> Compartir recuerdos relacionados con Cloudflare Workers AI al consultar</label><label for="question">¿En qué necesitas ayuda?</label><textarea id="question" required maxlength="5000" placeholder="¿Qué te gustaría organizar, aprender o explorar hoy?"></textarea><label for="chatEngine">Modelo de respuesta</label><select id="chatEngine"><option value="balanced" selected>Equilibrado · Gemma 4 26B</option><option value="fast">Ligero · Llama 3.2 3B</option><option value="deep">Mayor capacidad · Qwen3.8 27B</option></select><p class="notice">La IA remota solo se habilita tras confirmar un plan gratuito. Al agotarse la cuota, se pausa; no hay cambio automático a una API de pago.</p><label for="responseDetail">Nivel de detalle</label><select id="responseDetail"><option value="brief">Breve · puntos esenciales</option><option value="detailed" selected>Detallada · explicación y ejemplos</option><option value="deep">Profunda · desarrollo paso a paso</option></select><button id="sendChat">Enviar a Lifts</button><p id="chatStatus" role="status" aria-live="polite"></p><button id="testAI" type="button" class="secondary">Comprobar conexión de IA</button><p class="notice">La comprobación usa una consulta de tu cuota y envía solo una pregunta fija; no incluye perfil ni historial.</p><p id="aiDiagnostic" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></p></form><p class="notice">Las respuestas son generadas por IA y pueden contener errores. La búsqueda web de pago fue retirada. Lifts no crea tareas automáticamente. Verifica las recomendaciones técnicas con documentación del fabricante.</p></article><div><article class="card"><h3>Tu espacio, a tu manera</h3><p id="focus"></p><div id="topics" class="areas" aria-label="Temas sugeridos"></div><p id="personalizationNote" class="muted"></p><button id="personalize" class="secondary">Personalizar mi experiencia</button></article><article class="card"><h3>Hoy, paso a paso</h3><p id="count"></p><progress id="taskProgress" max="1" value="0" aria-label="Progreso de tareas"></progress><button class="secondary" id="openTasks">Ver mis tareas</button> <button type="button" class="secondary" data-page="routines">Hábitos y dinero</button></article></div></div></section>
 <section id="images" hidden><article class="card"><small>ESTUDIO CREATIVO</small><h2>De una idea a una imagen.</h2><p>Describe la escena, los colores, el estilo y los detalles que quieres ver.</p><form id="imageForm"><label for="imagePrompt">¿Qué quieres crear?</label><textarea id="imagePrompt" required maxlength="2048" placeholder="Ej.: una ilustración de un taller de impresión, con colores azul y violeta, estilo editorial y luz cálida."></textarea><p class="notice">Al generar, el proveedor de IA procesa únicamente esta descripción; no se adjuntan tu perfil ni tus conversaciones. Cada intento que llega al modelo usa una consulta de la cuota compartida con el chat y puede consumir recursos del servicio.</p><button id="generateImage">Generar imagen</button><p id="imageStatus" role="status" aria-live="polite"></p></form><figure id="imageResult" hidden style="margin:24px 0"><img id="generatedImage" alt="Imagen generada por IA" style="display:block;max-width:100%;max-height:700px;border-radius:14px"><figcaption id="imageCaption" class="muted" style="margin:12px 0;white-space:pre-wrap"></figcaption><a id="downloadImage" download="lifts-imagen.jpg">Descargar imagen</a><button id="discardImage" class="secondary" type="button" style="margin-left:16px">Descartar imagen</button></figure><p class="notice">Las imágenes y sus descripciones no se guardan en tu cuenta. Descarga el resultado antes de recargar o cerrar sesión. Los textos y los detalles técnicos dentro de las imágenes pueden tener errores; revisa el resultado antes de usarlo.</p></article></section>
@@ -143,6 +179,48 @@
 </section>
 <section id="negotiation" hidden aria-labelledby="negotiationTitle">
   <article class="card"><h2 id="negotiationTitle">Simulador de negociación</h2><div id="negotiationContent"></div></article>
+</section>
+<section id="models" hidden aria-labelledby="personalModelsTitle">
+  <article class="card"><h2 id="personalModelsTitle">Modelos mentales</h2>
+    <label for="personalModelsSearch">Buscar un modelo mental</label><input id="personalModelsSearch" type="search" maxlength="120">
+  </article><div id="personalModelsList"></div>
+</section>
+<section id="radar" hidden aria-labelledby="radarTitle"><article class="card">
+  <h2 id="radarTitle">Lifts Radar</h2>
+  <p>Comprueba tus registros al abrir esta vista. Incluye tareas vencidas, objetivos, mantenimientos, renovaciones, calibraciones, repasos y gastos sobre tu tope.</p>
+  <label for="radarFilter">Vista de alertas</label>
+  <select id="radarFilter"><option value="active">Activas</option><option value="all">Todas las alertas detectadas</option></select>
+  <p id="radarStatus" role="status"></p>
+</article><div id="radarSignals"></div></section>
+<section id="builder" hidden aria-labelledby="builderTitle">
+  <header class="card"><h2 id="builderTitle">Lifts Builder</h2><p>Crea formularios y calculadoras privadas que funcionan en el navegador.</p>
+    <label for="builderSample">Partir de una plantilla</label>
+    <select id="builderSample"><option value="">Selecciona una plantilla</option><option value="anilox">Pérdida de volumen de anilox</option><option value="yield">Rendimiento de producción</option><option value="inventory">Registro de materiales</option></select>
+    <button id="builderNew" type="button" class="secondary">Nueva herramienta</button>
+    <label for="builderImport">Importar definición JSON</label><input id="builderImport" type="file" accept=".json,application/json">
+    <h3>Mis herramientas</h3><div id="builderLibrary"></div>
+  </header>
+  <div class="os-builder-layout">
+    <article class="card"><h3>Configuración</h3>
+      <form id="builderEditor">
+        <label>Nombre de la herramienta <input name="name" required maxlength="80"></label>
+        <div id="builderFields"></div>
+        <button id="builderAddField" type="button" class="secondary">Agregar campo</button>
+        <label>Fórmula opcional <input name="formula" maxlength="300" placeholder="pct(conformes,total)"></label>
+        <label>Unidad del resultado <input name="unit" maxlength="30"></label>
+        <label>Advertir si el resultado supera <input name="limit" maxlength="40" inputmode="decimal"></label>
+        <details><summary>Sintaxis de fórmulas</summary><p>Usa códigos de campos en minúsculas y punto decimal. Operadores + − * / ^ y comparaciones. Funciones sqrt, abs, sum, avg, min, max, pct(parte,total) e if(condición,si,si_no).</p></details>
+        <div class="evolution-controls">
+          <button>Guardar herramienta</button><button id="builderPreview" type="button" class="secondary">Vista previa</button>
+          <button id="builderDuplicate" type="button" class="secondary">Duplicar definición</button>
+          <button id="builderRestore" type="button" class="secondary">Abrir versión anterior</button>
+          <button id="builderExport" type="button" class="secondary">Exportar definición</button>
+        </div>
+      </form>
+      <p id="builderStatus" role="status"></p><button id="builderRetry" type="button" class="secondary" hidden>Reintentar guardado de Builder</button>
+    </article>
+    <article class="card" id="builderRun" aria-label="Calculadora y capturas"></article>
+  </div>
 </section>
 <section id="operations" hidden aria-labelledby="nexusOperationsTitle">
   <article class="card">
@@ -346,6 +424,10 @@
 <script src="evolution-core.js" defer></script>
 <script src="evolution-ui.js" defer></script>
 <script src="nexus-core.js" defer></script>
+<script src="personal-builder-core.js" defer></script>
+<script src="personal-builder-ui.js" defer></script>
+<script src="personal-radar.js" defer></script>
+<script src="personal-models.js" defer></script>
 <script src="nexus-ui.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>

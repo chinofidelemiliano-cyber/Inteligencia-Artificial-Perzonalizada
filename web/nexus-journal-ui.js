@@ -184,6 +184,16 @@
         }catch(error){node(result,'p',error.message);}
       });
     }
+    if(kind==='risk'){
+      const result=node(form,'div');result.setAttribute('role','status');
+      button(form,'Calcular índice de riesgo',()=>{
+        try{
+          const scores=core.riskScore(Object.fromEntries(new FormData(form)));
+          result.textContent='Puntuación subjetiva: '+scores.score+' de '+scores.maximum+
+            (scores.priorityNumber===null?'.':' · Número de prioridad con detección: '+scores.priorityNumber+'.');
+        }catch(error){result.textContent=error.message;}
+      });
+    }
     if(kind==='qualityCost'){
       const result=node(form,'div');
       result.setAttribute('role','status');
@@ -212,6 +222,12 @@
       const link=document.createElement('a');link.href=url;link.download='lifts-minuta.pdf';link.click();
       setTimeout(()=>URL.revokeObjectURL(url),30000);
     });
+    if(item&&['vehicle','subscription','calibration'].includes(item.kind)&&item.data.date){
+      const actions={vehicle:'Servicio de ',subscription:'Renovación de ',calibration:'Calibración de '};
+      button(form,'Preparar aviso con esta fecha',()=>{
+        window.liftsReminders.open(actions[item.kind]+item.title,new Date(item.data.date+'T09:00:00'));
+      });
+    }
     if(item?.kind==='household'&&item.data.next)button(form,'Preparar aviso de mantenimiento',()=>{
       const date=item.data.date?new Date(item.data.date+'T09:00:00'):undefined;
       window.liftsReminders.open(item.data.next,date);

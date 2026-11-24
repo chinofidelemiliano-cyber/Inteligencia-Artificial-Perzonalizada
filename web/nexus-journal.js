@@ -8,6 +8,7 @@
     review:{label:'Revisión crítica',fields:{claim:'Idea a evaluar',facts:'Hechos y fuentes',hypotheses:'Hipótesis y opiniones',assumptions:'Suposiciones',contradictions:'Contradicciones o sesgos',counterarguments:'Argumentos y explicaciones alternativas',risks:'Riesgos y premortem',tests:'Evidencia pendiente y prueba de descarte'}},
     experiment:{label:'Experimentos',fields:{question:'Pregunta',hypothesis:'Hipótesis',independent:'Variables independientes',dependent:'Variables dependientes',controls:'Variables controladas',conditions:'Condiciones iniciales',procedure:'Procedimiento',readings:'Mediciones numéricas en la misma unidad (separadas por espacios)',unit:'Unidad de las mediciones',repeats:'Repeticiones',groups:'Grupos para ANOVA (una línea por grupo, ej. A: 1 2 3)',uncertainty:'Incertidumbre',conclusion:'Conclusiones y limitaciones'}},
     scenario:{label:'Escenarios de costos',fields:{unit:'Moneda o unidad de costo',base:'Costo base',favorable:'Costo favorable',adverse:'Costo desfavorable',assumptions:'Suposiciones',constraints:'Restricciones',risks:'Riesgos'}},
+    risk:{label:'Riesgos',fields:{area:'Categoría del riesgo',description:'Situación',cause:'Causa',impactDetail:'Consecuencia',scale:'Máximo de la escala (2 a 10)',likelihood:'Probabilidad estimada en tu escala',impact:'Impacto en tu escala',detection:'Dificultad de detección (opcional)',prevent:'Prevención',contingency:'Plan de contingencia',owner:'Responsable',reviewDate:'Fecha de revisión (AAAA-MM-DD)'}},
     qualityCost:{label:'Costos de calidad',fields:{unit:'Moneda',rework:'Retrabajos',waste:'Desperdicios',downtime:'Tiempos muertos',returns:'Devoluciones',complaints:'Reclamaciones',reprints:'Reimpresiones',consumables:'Consumos adicionales',prevention:'Prevención',inspection:'Inspección',cause:'Causa registrada',action:'Acción correctiva'}},
     change:{label:'Control de cambios',fields:{before:'Estado anterior',proposal:'Cambio propuesto',reason:'Justificación',risks:'Riesgos',approval:'Autorización registrada',tests:'Pruebas',results:'Resultados',evidence:'Evidencia',rollback:'Plan de reversión'}},
     playbook:{label:'Procedimientos',fields:{objective:'Objetivo',preparation:'Preparación',stages:'Pasos (uno por línea)',tools:'Herramientas',warnings:'Advertencias',checks:'Verificaciones',expected:'Resultado esperado',actual:'Resultado registrado'}},
@@ -17,12 +18,18 @@
     lifeArea:{label:'Áreas de vida',fields:{purpose:'Qué importa en esta área',resources:'Recursos y apoyos',routine:'Cómo quiero revisarla'}},
     goal:{label:'Objetivos a largo plazo',fields:{area:'Área de vida o trabajo',objective:'Objetivo personal',due:'Fecha objetivo (AAAA-MM-DD)',priority:'Prioridad actual y motivo',stages:'Etapas (una por línea)',skills:'Habilidades por desarrollar',next:'Próxima acción',evidence:'Resultado o evidencia'}},
     household:{label:'Inventario del hogar',fields:{area:'Área de vida o trabajo',location:'Ubicación',model:'Modelo o identificación',purchase:'Compra y costo registrado',warranty:'Garantía y vencimiento',manual:'Referencia al manual',maintenance:'Reparaciones o mantenimiento',next:'Próximo mantenimiento',date:'Fecha del aviso (AAAA-MM-DD)'}},
+    vehicle:{label:'Vehículos',fields:{model:'Modelo o identificación',odometer:'Kilometraje y unidad',service:'Servicio previsto',date:'Próximo servicio (AAAA-MM-DD)',insurance:'Seguro o documentación',notes:'Historial y observaciones'}},
+    subscription:{label:'Suscripciones',fields:{provider:'Proveedor',amount:'Costo y moneda',frequency:'Frecuencia',date:'Próxima renovación (AAAA-MM-DD)',review:'Decisión sobre renovación',notes:'Notas'}},
+    calibration:{label:'Calibraciones',fields:{identifier:'Identificador del instrumento',range:'Rango y unidad',reference:'Patrón o certificado',result:'Resultado registrado',uncertainty:'Incertidumbre documentada',date:'Fecha de próxima calibración (AAAA-MM-DD)',owner:'Responsable'}},
     travel:{label:'Viajes',fields:{area:'Área de vida o trabajo',destination:'Destino',dates:'Fechas e itinerario',budget:'Presupuesto y moneda',activities:'Actividades previstas',packing:'Equipaje',documents:'Documentos pendientes',references:'Fuentes o reservas anotadas'}},
     question:{label:'Preguntas abiertas',fields:{topic:'Tema',importance:'Importancia',question:'Pregunta',missing:'Información faltante',sources:'Posibles fuentes',next:'Próxima investigación',answer:'Respuesta sustentada'}}
   };
   const statuses={
     mission:{active:'Activa',paused:'Pausada',cancelled:'Cancelada',done:'Entregada y verificada'},
     knowledge:{pending:'Pendiente de comprobación',verified:'Verificada',documented:'Documentada',experience:'Experiencia personal',hypothesis:'Hipótesis',estimate:'Estimación',obsolete:'Obsoleta'},
+    subscription:{active:'Activa',cancelled:'Cancelada'},
+    calibration:{active:'En servicio',retired:'Fuera de servicio'},
+    risk:{open:'Registrado',monitor:'En seguimiento',closed:'Cerrado'},
     change:{draft:'Propuesto',testing:'En pruebas',validated:'Validado',reverted:'Revertido'},
     goal:{active:'Activo',paused:'Pausado',done:'Alcanzado',abandoned:'Abandonado'},
     question:{open:'Abierta',researching:'En investigación',answered:'Respondida'}
@@ -60,6 +67,15 @@
     const sum=keys=>keys.reduce((total,key)=>total+(amounts[key]||0),0)/100;
     return {unit,failures:sum(failureCosts),preventionInspection:sum(['prevention','inspection']),
       missing:[...failureCosts,'prevention','inspection'].filter(key=>!Object.hasOwn(amounts,key)).map(key=>kinds.qualityCost.fields[key])};
+  }
+  function riskScore(raw){
+    const scale=Number(raw.scale),p=Number(raw.likelihood),i=Number(raw.impact);
+    const detection=raw.detection===''||raw.detection===undefined?null:Number(raw.detection);
+    if(!Number.isInteger(scale)||scale<2||scale>10||
+      [p,i,...(detection===null?[]:[detection])].some(value=>!Number.isInteger(value)||value<1||value>scale)){
+      throw new Error('Configura una escala entera de 2 a 10 y puntúa de 1 hasta ese máximo.');
+    }
+    return {score:p*i,maximum:scale**2,priorityNumber:detection===null?null:p*i*detection};
   }
   const historyLimit=12;
   function journalContent(record) {
@@ -99,9 +115,13 @@
     if(kind==='reading'&&(!data.document||data.page&&!/^[1-9]\d{0,5}$/.test(data.page))){
       throw new Error('Indica el documento y, si se conoce, una página positiva.');
     }
-    if(kind==='household'&&data.date&&!dateKey(data.date))throw new Error('Indica una fecha de aviso válida en formato AAAA-MM-DD.');
+    if(['household','vehicle','subscription','calibration'].includes(kind)&&data.date&&!dateKey(data.date))throw new Error('Indica una fecha de aviso válida en formato AAAA-MM-DD.');
     if(status==='verified'&&(!data.source||!data.evidence))throw new Error('Agrega la fuente y la evidencia antes de marcar el conocimiento como verificado.');
     if(kind==='scenario')compareCosts(data);
+    if(kind==='risk'){
+      riskScore(data);
+      if(data.reviewDate&&!dateKey(data.reviewDate))throw new Error('Escribe una fecha de revisión válida.');
+    }
     if(kind==='qualityCost')qualityCosts(data);
     if(status==='validated'&&(!data.approval||!data.tests||!data.results||!data.evidence||!data.rollback)){
       throw new Error('Registra autorización, pruebas, resultados, evidencia y plan de reversión.');
@@ -234,7 +254,7 @@
     const dfBetween=groups.length-1,dfWithin=count-groups.length;
     return {groups,dfBetween,dfWithin,between,within,f:(between/dfBetween)/(within/dfWithin)};
   }
-  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,oneWayAnova,graphNodes,graphView,linkedCases};
+  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,riskScore,oneWayAnova,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);

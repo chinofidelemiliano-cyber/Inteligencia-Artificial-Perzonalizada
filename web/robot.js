@@ -18,6 +18,8 @@
       <g class="robot-sparkles" stroke="url(#${id}-light)" stroke-width="2" fill="none"><path d="M478 95V109M471 102H485M624 80V94M617 87H631"/></g>
     </svg>`;
   }
+  const welcome=document.getElementById('osWelcomeRobot');
+  if(welcome)welcome.innerHTML=artwork('lifts-welcome-robot').replace('class="lifts-robot"','class="os-robot-art"');
   hosts.forEach((host,i)=>{host.classList.add('robot-surface');host.innerHTML=artwork('lifts-bot-'+i);});
   let currentPage='home',voice='idle',celebration=null;
   function refresh(){hosts.forEach(host=>{host.dataset.phase=voice;host.dataset.scene=currentPage;});}

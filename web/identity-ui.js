@@ -1,9 +1,9 @@
 const api=window.liftsWorkspace;
 const choices=document.getElementById('identityChoices'),status=document.getElementById('identityStatus');
 const options=[
-  ['metal','Lifts Professional','Trazos inclinados con acabado metálico sobrio y remate cian.'],
-  ['circuit','Lifts Signature','Líneas geométricas de grosor constante y un punto distintivo en cian.'],
-  ['orbit','Lifts Future','Trazos rectos con terminal orbital y fondo de profundidad violeta.']
+  ['metal','Lifts Professional','Blanco hielo y remate cian para informes y presentaciones.'],
+  ['circuit','Lifts Signature','Trazos inclinados, plata y un punto distintivo en cian.'],
+  ['orbit','Lifts Future','Degradado cian, violeta y magenta con profundidad discreta.']
 ];
 let saving=false,generation=0;
 function node(parent,tag,text){

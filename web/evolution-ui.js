@@ -2,7 +2,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   let editing = null;
-  const panelNames = {agenda:'Agenda',reminders:'Recordatorios',academy:'Aprendizaje'};
+  const panelNames = {agenda:'Agenda',reminders:'Recordatorios',academy:'Aprendizaje',journal:'Misiones y objetivos',finance:'Finanzas y hábitos',builder:'Lifts Builder',radar:'Alertas de Radar'};
   const panelKeys = Object.keys(panelNames);
   const button = (label, action) => {
     const el = document.createElement('button');
@@ -72,10 +72,32 @@
     const now = new Date();
     const today = new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
     const due = pending.filter(task=>task.kind!=='reminder'&&task.date&&task.date<=today).length;
+    const currentEvents=pending.filter(task=>task.date===today || task.startAt&&window.liftsWork.localDate(new Date(task.startAt))===today);
+    $('osTodayDate').textContent=new Intl.DateTimeFormat('es-MX',{dateStyle:'full'}).format(now);
+    const todayList=$('osTodayTasks');
+    todayList.replaceChildren();
+    for(const task of currentEvents.slice(0,5))todayList.append(text('li',task.title+(task.startAt&&Number.isFinite(Date.parse(task.startAt))?
+      ' · '+new Intl.DateTimeFormat('es-MX',{timeStyle:'short'}).format(new Date(task.startAt)):'')));
+    if(!currentEvents.length)todayList.append(text('li','Sin actividades registradas para hoy.'));
+    if(currentEvents.length>5)todayList.append(text('li',(currentEvents.length-5)+' más en Agenda.'));
+    const journal=state.nexusJournal||[];
+    const goals=journal.filter(item=>item.kind==='goal'&&item.status==='active').length;
+    const missions=journal.filter(item=>item.kind==='mission'&&item.status==='active').length;
+    const month=today.slice(0,7);
+    const expenses=(state.finance?.entries||[]).filter(item=>item.type==='expense'&&item.date?.startsWith(month)&&Number.isSafeInteger(item.cents));
+    const habits=state.tasks.filter(item=>item.habitId&&!item.done&&!item.archived).length;
+    const radar=(window.liftsRadar?.signals(state,today)||[]).filter(item=>{
+      const status=state.personalRadar?.[item.id];
+      return status?.status!=='resolved'&&(status?.status!=='snoozed'||status.until<=today);
+    }).length;
     const sections = {
       agenda:[due+' tareas para hoy o vencidas',()=>api().open('tasks')],
       reminders:[pending.filter(task=>task.kind==='reminder').length+' recordatorios sin completar',()=>api().open('reminders')],
-      academy:['Abrir el catálogo y retomar tus lecciones',()=>window.liftsAcademy.open()]
+      academy:[Object.keys(state.academyProgress?.done||{}).length+' lecturas registradas como completadas',()=>window.liftsAcademy.open()],
+      journal:[missions+' misiones activas · '+goals+' objetivos activos',()=>api().open('journal')],
+      finance:[expenses.length+' gastos registrados este mes · '+habits+' hábitos activos',()=>api().open('routines')],
+      builder:[(state.builderTools||[]).filter(tool=>!tool.archived).length+' herramientas personalizadas activas',()=>api().open('builder')],
+      radar:[radar+' alertas detectadas',()=>api().open('radar')]
     };
     $('evolutionPanels').replaceChildren();
     $('evolutionPanelSettings').replaceChildren();
