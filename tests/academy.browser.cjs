@@ -90,6 +90,23 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     assert.equal((await cert).suggestedFilename(),'lifts-constancia-fundamentos.pdf');
     await page.getByRole('button',{name:'Tema claro',exact:true}).click();
     assert.equal(await page.locator('html').getAttribute('data-lifts-theme'),'light');
+    await page.getByRole('button',{name:'Rutas y repasos',exact:true}).click();
+    await page.locator('#academyContent select').selectOption('fingerprint');
+    await page.getByRole('button',{name:'Guardar objetivo',exact:true}).click();
+    await page.getByText('Objetivo guardado.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Continuar ruta',exact:true}).click();
+    await page.getByRole('button',{name:'Añadir al repaso',exact:true}).click();
+    await page.getByText('Lección añadida al repaso.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Ver repaso programado',exact:true}).click();
+    await page.locator('#academyContent summary').filter({hasText:'Disponible'}).click();
+    await page.getByRole('button',{name:'Mostrar referencia de la lección',exact:true}).click();
+    await page.getByText(/Escribe primero tu explicación/).waitFor();
+    await page.locator('#academyContent textarea').fill('Mediría la resolución de la imagen al tamaño final.');
+    await page.getByRole('button',{name:'Mostrar referencia de la lección',exact:true}).click();
+    await page.getByRole('button',{name:'Pude explicarla',exact:true}).click();
+    await page.locator('#academyContent summary').filter({hasText:'Programado para'}).waitFor();
+    assert.equal(await page.locator('#academyContent select').inputValue(),'fingerprint');
+
     await page.getByRole('button',{name:'Plegar menú',exact:true}).click();
     assert.ok(await page.locator('html').evaluate(root=>root.classList.contains('sidebar-folded')));
     await page.getByRole('button',{name:'Notificaciones',exact:true}).click();
@@ -103,6 +120,10 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:structuredClone(window.fixture)})));
     await page.getByRole('button',{name:'Academia',exact:true}).click();
     await page.getByText('0 de 35 lecciones completadas',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Rutas y repasos',exact:true}).click();
+    await page.getByText('Puedes añadir una lección al repaso desde el lector.',{exact:true}).waitFor();
+    assert.equal(await page.locator('#academyContent select').inputValue(),'');
+
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

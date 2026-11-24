@@ -10,6 +10,7 @@
   let filter='',level='',showFavorites=false;
   let saving=false;
   const lessonKey=(course,lesson)=>course.id+'/'+lesson.id;
+  const catalogKeys=()=>modules.data.courses.flatMap(course=>course.lessons.map(lesson=>lessonKey(course,lesson)));
   const normalize=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
   function node(parent,tag,text,style) {
@@ -34,8 +35,8 @@
 
   async function load() {
     if(modules)return modules;
-    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js')])
-      .then(([data,tools])=>modules={data,tools}).catch(error=>{loading=null;throw error;});
+    if(!loading)loading=Promise.all([import('./academy-curriculum.js'),import('./academy-tools.js'),import('./academy-paths.js')])
+      .then(([data,tools,paths])=>modules={data,tools,paths}).catch(error=>{loading=null;throw error;});
     return loading;
   }
   let navigation=0;
@@ -56,7 +57,7 @@
       view=next;current=key;
       status.textContent='';
       render();
-      const ids={catalog:'academy',tools:'simulators',library:'library',lesson:'lesson'};
+      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',lesson:'lesson'};
       window.liftsNexus?.checkpoint(ids[next],next==='lesson'?key:'',next==='lesson'?find(key).lesson.title:'');
     } catch {
       if(version!==generation||request!==navigation)return;
@@ -98,7 +99,7 @@
   }
   function updateProgress() {
     const data=progress();
-    const all=modules.data.courses.flatMap(course=>course.lessons.map(lesson=>lessonKey(course,lesson)));
+    const all=catalogKeys();
     const completed=all.filter(key=>data.done[key]).length;
     $('academyProgress').max=all.length;
     $('academyProgress').value=completed;
@@ -108,13 +109,76 @@
   function render() {
     updateProgress();
     shell.replaceChildren();
-    for(const [id,name] of [['academyCatalogButton','catalog'],['academyToolsButton','tools'],['academyLibraryButton','library']]) {
+    for(const [id,name] of [['academyCatalogButton','catalog'],['academyToolsButton','tools'],['academyLibraryButton','library'],['academyPathsButton','paths']]) {
       $(id).setAttribute('aria-pressed',String(view===name));
     }
     if(view==='lesson'&&find(current))renderLesson(find(current));
     else if(view==='tools')renderTools();
     else if(view==='library')renderLibrary();
+    else if(view==='paths')renderPaths();
     else renderCatalog();
+  }
+  function renderPaths(){
+    const card=node(shell,'article',undefined,'card');
+    const data=progress(),{goals,routeTo,todayKey,schedule}=modules.paths;
+    const valid=new Set(catalogKeys());
+    heading(card,'Ruta por objetivo');
+    node(card,'p','El orden sugiere qué estudiar primero. Puedes abrir cualquier lección y comprobar lo aprendido durante el repaso.');
+    const select=document.createElement('select');
+    node(select,'option','Elige un objetivo').value='';
+    for(const [key,goal] of Object.entries(goals))node(select,'option',goal.label).value=key;
+    select.value=Object.hasOwn(goals,data.goal)?data.goal:'';
+    field('Objetivo de estudio',select,card);
+    button(card,'Guardar objetivo',async()=>{
+      if(!Object.hasOwn(goals,select.value)){status.textContent='Elige un objetivo de estudio.';return;}
+      if(await save({goal:select.value},'Objetivo guardado.')&&view==='paths')render();
+    });
+    const guide=node(card,'div');
+    const draw=()=>{
+      guide.replaceChildren();
+      if(!Object.hasOwn(goals,select.value))return;
+      const keys=routeTo(goals[select.value].target,valid);
+      const next=keys.find(key=>!progress().done[key]);
+      node(guide,'p',keys.filter(key=>progress().done[key]).length+' de '+keys.length+' lecturas completadas en esta ruta.');
+      if(next)button(guide,'Continuar ruta',()=>open('lesson',next));
+      else node(guide,'p','Completaste las lecturas de esta ruta. Usa el repaso para comprobar qué recuerdas.');
+      const outline=node(guide,'ol');
+      for(const key of keys){
+        const row=node(outline,'li');
+        const lesson=find(key).lesson;
+        button(row,lesson.title,()=>open('lesson',key));
+        node(row,'span',progress().done[key]?' · Lectura completada':' · Pendiente de lectura');
+      }
+    };
+    select.onchange=draw;draw();
+    heading(card,'Repasos programados');
+    const queue=Object.entries(data.reviews||{}).filter(([key])=>valid.has(key)).sort((a,b)=>a[1].due.localeCompare(b[1].due));
+    if(!queue.length)node(card,'p','Puedes añadir una lección al repaso desde el lector.');
+    const day=todayKey();
+    for(const [key,review] of queue){
+      const {lesson}=find(key);
+      const entry=node(card,'details');
+      node(entry,'summary',lesson.title+' · '+(review.due<=day?'Disponible':'Programado para '+review.due));
+      if(review.due>day)continue;
+      const response=document.createElement('textarea');response.maxLength=3000;
+      field('Explica cómo aplicarías «'+lesson.title+'» sin consultar apuntes',response,entry);
+      const reference=node(entry,'div');reference.hidden=true;
+      button(entry,'Mostrar referencia de la lección',()=>{
+        if(!response.value.trim()){status.textContent='Escribe primero tu explicación para practicar la recuperación activa.';return;}
+        reference.hidden=false;status.textContent='';
+      });
+      node(reference,'p',lesson.theory);
+      node(reference,'p',lesson.exercise);
+      node(reference,'p','Compara si tu explicación incluye la variable que medirías y cómo interpretarías el resultado.');
+      for(const [rating,label] of [['again','Necesito repasarla'],['remembered','Pude explicarla']]){
+        button(reference,label,async()=>{
+          try{
+            const next=schedule(progress().reviews?.[key],rating,todayKey());
+            if(await save({reviews:{...progress().reviews,[key]:next}},'Próximo repaso: '+next.due+'.')&&view==='paths')render();
+          }catch(error){status.textContent=error.message;}
+        });
+      }
+    }
   }
   function renderCatalog() {
     const card=node(shell,'article',undefined,'card');
@@ -341,6 +405,18 @@
       node(overview,'p','Conocimientos previos: '+course.overview.prerequisites);
       node(overview,'p','Glosario: '+course.overview.glossary);
     }
+    const prerequisites=modules.paths.routeTo(key,new Set(catalogKeys())).slice(0,-1);
+    if(prerequisites.length){
+      const details=node(main,'details');
+      node(details,'summary','Prerrequisitos sugeridos');
+      const outline=node(details,'ol');
+      for(const prerequisite of prerequisites){
+        const row=node(outline,'li');
+        const label=find(prerequisite).lesson.title;
+        button(row,label,()=>open('lesson',prerequisite));
+        if(progress().done[prerequisite])node(row,'span',' · Lectura completada');
+      }
+    }
     const actions=node(main,'div',undefined,'academy-tabs');
     if(['placas','preprensa','distorsion'].includes(course.id))button(actions,'Abrir ficha y calculadora',()=>api.open('engineering'));
     if(course.id==='calidad')button(actions,'Abrir plantilla Pareto en Excel',()=>window.liftsExcel.open('pareto'));
@@ -352,6 +428,12 @@
       }
     });
     button(actions,'Guardar para continuar',()=>save({last:key},'Punto de lectura guardado.'));
+    const review=button(actions,progress().reviews?.[key]?'Ver repaso programado':'Añadir al repaso',async()=>{
+      if(progress().reviews?.[key]){open('paths');return;}
+      if(await save({reviews:{...progress().reviews,[key]:{due:modules.paths.todayKey(),step:0}}},'Lección añadida al repaso.')){
+        review.textContent='Ver repaso programado';
+      }
+    });
     const finish=button(actions,progress().done[key]?'Lección completada':'Marcar lección completada',async()=>{
       if(progress().done[key])return;
       const data=progress();
@@ -525,6 +607,7 @@
   $('academyCatalogButton').onclick=()=>open();
   $('academyToolsButton').onclick=()=>open('tools');
   $('academyLibraryButton').onclick=()=>open('library');
+  $('academyPathsButton').onclick=()=>open('paths');
   $('academyContinue').onclick=()=>open('lesson',progress().last);
   window.addEventListener('nexo-state',reset);
   window.addEventListener('lifts-page',event=>{

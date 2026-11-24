@@ -49,6 +49,7 @@
     },
     academy:academyView('Academia de flexografía','catalog'),
     library:academyView('Biblioteca técnica','library'),
+    'study-paths':academyView('Rutas y repasos','paths'),
     simulators:academyView('Simuladores de flexografía','tools'),
     lesson:academyView('Lección de flexografía','lesson',true),
     excel:{

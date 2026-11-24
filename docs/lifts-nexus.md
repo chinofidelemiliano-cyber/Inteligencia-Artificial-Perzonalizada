@@ -90,3 +90,15 @@ Base `dbbd699`. Los casos conservan sus campos históricos. Ahora Ingeniería ti
 | 7, 33 | Una orden se puede buscar y reabrir. Diagnóstico permite copiar sus datos y guarda una referencia por identificador. La orden muestra los casos vinculados. | La copia del caso conserva la captura histórica. Para copiar una actualización se requiere otra acción explícita. |
 
 Archivos principales: `web/industrial-core.js`, `web/industrial-ui.js`, `web/index.html`, `web/diagnostics-ui.js`, `web/nexus-core.js`, `web/workspace-ui.js`, `web/evolution.css` y `web/app.js`. Validación en `tests/industrial.test.cjs` y `tests/evolution.browser.cjs`. El aislamiento reutiliza el espacio privado existente y no se añade una migración SQL.
+
+## Academia. Rutas y repaso activo
+
+Se difiere la sincronización externa de órdenes e inventario. Se mantienen disponibles las órdenes internas, con su trazabilidad y reglas. Se creó la rama de respaldo `backup/antes-rutas` desde `82a1a30`.
+
+| Requisito | Estado | Alcance |
+| --- | --- | --- |
+| 11 | Parcial | Cinco rutas por objetivo con prerrequisitos sugeridos, navegación por lecciones reales y continuación desde la primera lectura pendiente. Los prerrequisitos aparecen también en el lector. |
+| 11, 13 | Parcial | Recuperación activa con explicación en palabras propias, referencia de la lección y decisión de repaso por el usuario. Intervalos de 1 día tras dificultad y de 3, 7, 14 y 30 días tras aciertos sucesivos. Se guarda el resultado y la fecha, sin guardar el texto del ejercicio. |
+| 7 | Implementado para esta vista | Rutas y repasos usa el registro común de herramientas y el progreso por cuenta existente. |
+
+Cambios en `web/academy-paths.js`, `web/academy-ui.js`, `web/nexus-core.js` y `web/index.html`. Pruebas en `tests/academy-paths.test.cjs` y `tests/academy.browser.cjs`. La autoevaluación programa el repaso, mientras que la matriz de competencias, los proyectos de práctica y la evaluación de evidencias quedan pendientes. El repaso se consulta dentro de la aplicación y no programa avisos externos.
