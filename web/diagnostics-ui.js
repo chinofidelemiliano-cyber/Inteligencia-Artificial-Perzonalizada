@@ -63,6 +63,7 @@ function load(record){
   id=record.id;
   for(const [key,value] of Object.entries(record.data))if(form.elements.namedItem(key))form.elements.namedItem(key).value=value;
   $('diagnosticTrace').open=traceLines(record.data).length>0;
+  updateOrderLink();
   update();status.textContent='Caso cargado. Al guardar se actualizará este registro.';
   window.liftsNexus?.checkpoint('diagnostic-record',record.id,record.data.name);
   form.scrollIntoView({block:'start'});
@@ -75,6 +76,28 @@ function openSaved(key){
   load(record);
   return true;
 }
+function updateOrderLink(){
+  const id=form.elements.namedItem('orderLink').value;
+  $('diagnosticOpenOrder').hidden=!id;
+  $('diagnosticOrderPick').value=id;
+}
+function applyOrder(source){
+  const current=values();
+  if(Object.keys(source).some(key=>key!=='orderLink'&&current[key]&&current[key]!==source[key])&&
+    !confirm('¿Reemplazar los datos de trazabilidad del caso con los de esta orden?'))return;
+  for(const [key,value] of Object.entries(source))form.elements.namedItem(key).value=value;
+  updateOrderLink();
+  status.textContent='Datos copiados al borrador. Guarda el caso para registrar el vínculo.';
+}
+form.elements.namedItem('order').addEventListener('input',()=>{
+  form.elements.namedItem('orderLink').value='';
+  updateOrderLink();
+});
+$('diagnosticOpenOrder').onclick=()=>{
+  const id=form.elements.namedItem('orderLink').value;
+  if(!api.getState().industrial?.orders.some(item=>item.id===id)){status.textContent='La orden vinculada ya no está disponible.';return;}
+  window.liftsNexus.open({id:'industrial-order-record',key:id});
+};
 function renderHistory(){
   history.replaceChildren();
   const matching=search($('diagnosticSearch').value);
@@ -184,11 +207,11 @@ function clearPhotos(){
   }
   $('diagnosticPhotoStatus').textContent='';
 }
-form.onreset=()=>{id='';status.textContent='';$('diagnosticTrace').open=false;clearPhotos();queueMicrotask(update);};
+form.onreset=()=>{id='';status.textContent='';$('diagnosticTrace').open=false;$('diagnosticOpenOrder').hidden=true;$('diagnosticOrderPick').value='';clearPhotos();queueMicrotask(update);};
 function reset(){
   version++;busy=false;form.reset();$('diagnosticSearch').value='';
   renderHistory();
 }
 window.addEventListener('lifts-page',event=>{if(event.detail?.page==='diagnostics'){update();renderHistory();}});
 window.addEventListener('nexo-state',reset);
-window.liftsDiagnostics={reset,openSaved,search};
+window.liftsDiagnostics={reset,openSaved,search,applyOrder,casesForOrder:id=>records().filter(item=>item.data.orderLink===id)};

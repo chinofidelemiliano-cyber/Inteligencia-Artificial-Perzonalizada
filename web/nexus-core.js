@@ -32,6 +32,13 @@
       validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
       open:(_workspace,_id,key)=>root.liftsEngineering.openSaved(key)
     },
+    'industrial-order-record':{
+      label:'Orden industrial guardada',purpose:'Abrir la orden, comprobar reglas y revisar casos vinculados',
+      input:'Identificador de orden',output:'Orden interna guardada',permission:'Sesión del propietario',
+      dependency:'Ingeniería',limitations:'La evaluación usa los datos y reglas vigentes en Lifts.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsIndustrial.openOrder(key)
+    },
     diagnostics:plainPage('Diagnóstico guiado','Comparar fotografías y registrar casos','Las fotografías temporales y sus recortes requieren volver a cargarse.'),
     'diagnostic-record':{
       label:'Caso de diagnóstico guardado',purpose:'Abrir evidencia y observaciones guardadas',
@@ -67,7 +74,7 @@
   function commands(query='') {
     const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
     const term=normalize(query.trim());
-    const results=Object.entries(tools).filter(([id,tool])=>!['lesson','engineering-record','journal-record','diagnostic-record'].includes(id)&&normalize(tool.label+' '+tool.purpose).includes(term))
+    const results=Object.entries(tools).filter(([id,tool])=>id!=='lesson'&&!id.endsWith('-record')&&normalize(tool.label+' '+tool.purpose).includes(term))
       .map(([id,tool])=>({label:tool.label,target:location(id,id==='excel'?'basics':'')}));
     const excelViews=[['Inventario de tintas · Excel','inventory'],['Desperdicio · Excel','waste'],['Pareto · Excel','pareto'],['Revisar CSV · Excel','csv']];
     if(term)for(const [label,key] of excelViews){

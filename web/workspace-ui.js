@@ -60,6 +60,9 @@
     for(const item of window.liftsDiagnostics.search(value).slice(0,4)){
       add(item.data.name+' · Caso de diagnóstico',()=>window.liftsNexus.open({id:'diagnostic-record',key:item.id}));
     }
+    for(const item of (api.getState().industrial?.orders||[]).filter(item=>normalize(item.name+' '+item.note).includes(term)).slice(0,5)){
+      add(item.name+' · Orden interna',()=>window.liftsNexus.open({id:'industrial-order-record',key:item.id}));
+    }
     for(const item of (api.getState().nexusJournal||[]).filter(item=>normalize(item.title).includes(term)).slice(0,5)){
       add(item.title+' · Nexus',()=>window.liftsNexus.open({id:'journal-record',key:item.id}));
     }

@@ -77,3 +77,16 @@ Base `88ddbca`, preservada en `backup/antes-trazabilidad`. Antes, las relaciones
 Archivos modificados: `web/nexus-journal.js`, `web/nexus-journal-ui.js`, `web/nexus-core.js`, `web/nexus-ui.js`, `web/diagnostics-ui.js`, `web/workspace-ui.js`, `web/evolution.css`, `web/index.html`, `tests/nexus-journal.test.cjs` y `tests/evolution.browser.cjs`.
 
 Las coincidencias se limitan al espacio abierto y a relaciones registradas por el usuario. Quedan pendientes los componentes de máquina y sus dimensiones, la representación de recorridos, las reglas de compatibilidad, la vinculación con inventarios y órdenes externas, la aprobación por roles y los historiales de cambios.
+
+## Ingeniería. Recorridos, inventario, órdenes y reglas
+
+Base `dbbd699`. Los casos conservan sus campos históricos. Ahora Ingeniería tiene un panel compartido con cuatro tipos de registro privados y editables.
+
+| Requisito | Cobertura | Límite |
+| --- | --- | --- |
+| 30 | Representación SVG desde componentes ordenados, con selección accesible de pasos y referencia opcional. | Esquema de secuencia. La geometría, los sensores y el comportamiento físico quedan pendientes. |
+| 31, 33 | Reglas configurables de incompatibilidad por pares con motivo y estado activo. La orden muestra coincidencias y categorías pendientes. | Solo evalúa pares registrados y activados. No certifica compatibilidad ni interviene en maquinaria. |
+| 33 | Inventario por categoría con lote, cantidad y unidad opcionales. Órdenes asociadas a una máquina y a artículos del inventario. | No hace movimientos de existencias ni sincroniza un ERP externo. |
+| 7, 33 | Una orden se puede buscar y reabrir. Diagnóstico permite copiar sus datos y guarda una referencia por identificador. La orden muestra los casos vinculados. | La copia del caso conserva la captura histórica. Para copiar una actualización se requiere otra acción explícita. |
+
+Archivos principales: `web/industrial-core.js`, `web/industrial-ui.js`, `web/index.html`, `web/diagnostics-ui.js`, `web/nexus-core.js`, `web/workspace-ui.js`, `web/evolution.css` y `web/app.js`. Validación en `tests/industrial.test.cjs` y `tests/evolution.browser.cjs`. El aislamiento reutiliza el espacio privado existente y no se añade una migración SQL.
