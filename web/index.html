@@ -53,7 +53,7 @@
 <main><p id="shortcutError" role="status" class="notice" hidden></p><section id="voiceLinkBanner" class="voice-link-banner" hidden aria-label="Petición recibida del atajo"><h3>Tu dictado llegó a Lifts</h3><p id="voiceLinkStatus" role="status"></p><div class="companion-actions"><button id="useVoiceChat" type="button">Usar en el chat</button><button id="useVoiceTask" type="button" class="secondary">Preparar tarea</button><button id="dismissVoiceLink" type="button" class="secondary">Descartar dictado</button></div></section><section id="evolutionWelcome" class="evolution-home" hidden aria-labelledby="evolutionGreeting">
   <div class="evolution-hero">
     <div><p class="evolution-brand">Lifts<span>.</span></p><h2 id="evolutionGreeting">Tu espacio de trabajo</h2>
-      <div class="evolution-controls"><button id="evolutionAsk" type="button">Consultar al asistente</button><button id="evolutionSearch" class="secondary" type="button">Buscar herramientas</button><button data-page="privacy" class="secondary" type="button">Privacidad y memoria</button></div>
+      <div class="evolution-controls"><button id="evolutionAsk" type="button">Consultar al asistente</button><button data-page="guardian" class="secondary" type="button">Abrir Guardian</button><button id="evolutionSearch" class="secondary" type="button">Buscar herramientas</button><button data-page="privacy" class="secondary" type="button">Privacidad y memoria</button></div>
     </div><div id="evolutionRobot" aria-hidden="true"></div>
   </div>
 </section><section class="companion-card" aria-label="Acompañamiento de tu asistente"><button id="companionButton" type="button" class="companion-character" aria-label="Ver mi siguiente pendiente"><span class="character-antenna"></span><span class="character-face"><span class="character-eye"></span><span class="character-eye"></span><span class="character-smile"></span></span><span class="character-body"></span></button><div><small>TU COMPAÑÍA DE TRABAJO</small><h2 id="companionName">Lifts te acompaña</h2><p id="companionMessage">Vamos a elegir lo importante para hoy.</p><div class="companion-actions"><button id="goAgenda" class="secondary">Ver mi jornada</button><button id="goWork" class="secondary">Contarte mi trabajo</button><button id="checkIn" class="secondary">Hacer una pausa</button></div></div></section><header><div><small>TU ESPACIO PERSONAL</small><h2 id="greeting">Todo empieza con un buen plan.</h2></div><div class="workspace-actions">
@@ -243,6 +243,67 @@
   <article class="card"><h2 id="personalModelsTitle">Modelos mentales</h2>
     <label for="personalModelsSearch">Buscar un modelo mental</label><input id="personalModelsSearch" type="search" maxlength="120">
   </article><div id="personalModelsList"></div>
+</section>
+<section id="guardian" hidden aria-labelledby="guardianTitle">
+  <article class="card">
+    <h2 id="guardianTitle">Lifts Guardian</h2>
+    <p>Consulta tu jornada y tus seguimientos. Guardian revisa tus registros al abrir esta vista.</p>
+    <div class="evolution-controls">
+      <button type="button" data-guardian-phase="start">Preparar jornada</button>
+      <button type="button" data-guardian-phase="during" class="secondary">Durante la jornada</button>
+      <button type="button" data-guardian-phase="close" class="secondary">Cerrar jornada</button>
+    </div>
+    <div id="guardianBrief" aria-live="polite"></div>
+    <div class="evolution-controls">
+      <button type="button" id="guardianFocus" class="secondary" aria-pressed="false">Una cosa a la vez</button>
+      <button type="button" id="guardianAgenda" class="secondary">Abrir Agenda desde Guardian</button>
+    </div>
+  </article>
+  <p id="guardianStatus" role="status"></p>
+  <article class="card" data-guardian-detail>
+    <h3>Preparar una solicitud</h3>
+    <form id="guardianInstruction">
+      <label for="guardianInstructionText">Instrucciones recibidas</label>
+      <textarea id="guardianInstructionText" rows="5" maxlength="2000" required aria-describedby="guardianInstructionHint"></textarea>
+      <p id="guardianInstructionHint">Escribe un dato por línea. Usa etiquetas como «Entregable:», «Solicitante:», «Fecha:», «Materiales:», «Primer paso:» y «Verificación:».</p>
+      <button>No sé por dónde comenzar</button>
+    </form>
+    <div id="guardianInstructionResult" aria-live="polite"></div>
+  </article>
+  <article class="card" data-guardian-detail>
+    <h3>Preferencias de acompañamiento</h3>
+    <form id="guardianPreferences">
+      <label for="guardianLimit">Nivel de acompañamiento en el resumen</label>
+      <select id="guardianLimit" name="limit">
+        <option value="1">Discreto</option><option value="3">Equilibrado</option>
+        <option value="5">Activo</option><option value="8">Intensivo</option><option value="custom">Personalizado</option>
+      </select>
+      <div id="guardianCustomLimit" hidden><label for="guardianCustom">Sugerencias por categoría</label><input id="guardianCustom" name="custom" type="number" min="1" max="12" value="4"></div>
+      <label><input type="checkbox" id="guardianShowAlerts" name="alerts" checked> Incluir sugerencias de Radar</label>
+      <label><input type="checkbox" id="guardianShowFollow" name="follow" checked> Incluir seguimientos pendientes</label>
+      <button>Guardar preferencias de Guardian</button>
+    </form>
+  </article>
+  <article class="card" data-guardian-detail>
+    <h3>Seguimiento de compromisos</h3>
+    <form id="guardianFollowForm">
+      <label for="guardianSubject">Asunto del seguimiento</label><input id="guardianSubject" name="subject" maxlength="120" required>
+      <label for="guardianPerson">Persona</label><input id="guardianPerson" name="person" maxlength="80" required>
+      <label for="guardianKind">Tipo de seguimiento</label><select id="guardianKind" name="kind">
+        <option value="reply">Espero respuesta</option><option value="receive">Me deben entregar algo</option>
+        <option value="answer">Debo responder</option><option value="information">Solicité información</option>
+        <option value="help">Solicité asistencia</option><option value="deliver">Me comprometí a entregar</option>
+        <option value="verify">Debo comprobar un resultado</option><option value="lend">Presté un objeto</option>
+        <option value="tool">Debo recuperar una herramienta</option><option value="date">Necesito confirmar una fecha</option>
+      </select>
+      <label for="guardianPromise">Compromiso o información por confirmar</label><textarea id="guardianPromise" name="promise" rows="2" maxlength="400"></textarea>
+      <label for="guardianNext">Próxima fecha de seguimiento</label><input id="guardianNext" name="next" type="date" required>
+      <label for="guardianPriority">Prioridad del seguimiento</label><select id="guardianPriority" name="priority"><option value="normal">Normal</option><option value="high">Alta</option></select>
+      <button>Guardar seguimiento</button><button id="guardianCancel" type="button" class="secondary" hidden>Cancelar edición</button>
+    </form>
+    <div id="guardianRecords"></div>
+    <div id="guardianDraftPanel" hidden><label for="guardianDraft">Borrador del mensaje de seguimiento</label><textarea id="guardianDraft" rows="5"></textarea></div>
+  </article>
 </section>
 <section id="radar" hidden aria-labelledby="radarTitle"><article class="card">
   <h2 id="radarTitle">Lifts Radar</h2>
@@ -486,6 +547,7 @@
 <script src="personal-builder-core.js" defer></script>
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
+<script src="guardian.js" defer></script>
 <script src="personal-models.js" defer></script>
 <script src="personal-characters.js" defer></script>
 <script src="personal-systems.js" defer></script>

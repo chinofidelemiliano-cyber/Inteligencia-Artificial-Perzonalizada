@@ -38,6 +38,7 @@
     systems:plainPage('Lifts Systems','Dibujar dependencias y ciclos entre variables','Las relaciones se interpretan a partir de los registros del usuario.'),
     characters:plainPage('Personajes 3D','Explorar expresiones del robot y su mascota','Los modelos se cargan cuando la vista está visible.'),
     models:plainPage('Modelos mentales','Consultar ejercicios y preparar una revisión crítica','La biblioteca funciona con contenidos locales.'),
+    guardian:plainPage('Lifts Guardian','Preparar la jornada y dar seguimiento a compromisos','El resumen se calcula al abrir la vista con tus registros guardados.'),
     radar:plainPage('Lifts Radar','Revisar alertas y pendientes de tus registros','Las comprobaciones se realizan al abrir esta vista.'),
     'builder-record':{
       label:'Herramienta personal guardada',purpose:'Abrir una calculadora o un formulario propio',
