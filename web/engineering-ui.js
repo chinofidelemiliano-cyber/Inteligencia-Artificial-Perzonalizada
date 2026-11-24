@@ -143,6 +143,16 @@ function fill(data) {
   for(const [key,value] of Object.entries(data))if(form.elements.namedItem(key))form.elements.namedItem(key).value=value;
   if(form.checkValidity())calculate();else invalidate();
 }
+function openSaved(id) {
+  const item=(api.getState().engineeringRecords||[]).find(record=>record.id===id);
+  if(!item)return false;
+  if($('engineering').hidden)api.open('engineering');
+  if($('engineering').hidden)return false;
+  fill(item.data);
+  window.liftsNexus?.checkpoint('engineering-record',item.id,item.data.name);
+  $('engineeringForm').scrollIntoView({block:'start'});
+  return true;
+}
 function renderHistory(){
   history.replaceChildren();
   const records=api.getState().engineeringRecords||[];
@@ -151,7 +161,7 @@ function renderHistory(){
     const card=element(history,'article');card.className='reminder-card';
     element(card,'h4',item.data.name);
     element(card,'p',[item.data.model,new Date(item.at).toLocaleString('es-MX')].filter(Boolean).join(' · '));
-    action(card,'Cargar ficha',()=>{fill(item.data);$('engineeringForm').scrollIntoView({block:'start'});});
+    action(card,'Cargar ficha',()=>openSaved(item.id));
     action(card,'Eliminar ficha',async()=>{
       if(!confirm('¿Eliminar esta ficha de tu historial?'))return;
       if(await persist((api.getState().engineeringRecords||[]).filter(record=>record.id!==item.id))){
@@ -196,4 +206,4 @@ renderCut();
 function reset(){version++;busy=false;form.reset();invalidate();renderHistory();}
 window.addEventListener('nexo-state',reset);
 window.addEventListener('lifts-page',e=>{if(e.detail?.page==='engineering')renderHistory();});
-window.liftsEngineering={reset};
+window.liftsEngineering={reset,openSaved};

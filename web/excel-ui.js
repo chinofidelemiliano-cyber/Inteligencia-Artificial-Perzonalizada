@@ -182,10 +182,22 @@ function choose(key) {
   version++;current=key;grid=null;
   if(key==='csv'){active=true;renderCsv();}else render();
   for(const [name,id] of Object.entries(ids))$(id).setAttribute('aria-pressed',String(name===key));
+  window.liftsNexus?.checkpoint('excel',key,$(ids[key]).textContent.trim());
 }
 for(const [key,id] of Object.entries(ids))$(id).onclick=()=>choose(key);
-function open(key){api.open('excel');if(!$('excel').hidden)choose(key);}
+let opening=false;
+function open(key){
+  opening=true;
+  try{
+    api.open('excel');
+    if($('excel').hidden||!Object.hasOwn(ids,key))return;
+    if(!active||current!==key)choose(key);
+    else window.liftsNexus?.checkpoint('excel',current,$(ids[current]).textContent.trim());
+  }finally{opening=false;}
+}
 function reset(){version++;grid=null;active=false;root.replaceChildren();status.textContent='';}
 window.addEventListener('nexo-state',reset);
-window.addEventListener('lifts-page',event=>{if(event.detail?.page==='excel'&&!active)choose('basics');});
+window.addEventListener('lifts-page',event=>{if(event.detail?.page!=='excel'||opening)return;
+  if(!active)choose('basics');
+  else window.liftsNexus?.checkpoint('excel',current,$(ids[current]).textContent.trim());});
 window.liftsExcel={open,reset};

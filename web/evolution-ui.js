@@ -149,13 +149,8 @@
   window.liftsEvolution = {render,reset,handle(text) {
     const route = window.liftsEvolutionCore.route(text);
     if(!route)return null;
-    const actions = {
-      engineering:()=>api().open('engineering'),
-      library:()=>window.liftsAcademy.open('library'),
-      excel:()=>window.liftsExcel.open(route.template),
-      diagnostics:()=>api().open('diagnostics')
-    };
-    return {reply:route.reply,open:actions[route.target]};
+    const target=window.liftsNexusCore?.location(route.target,route.template||'');
+    return {reply:route.reply,open:target?()=>window.liftsNexus.open(target):undefined};
   }};
   render();
 })();

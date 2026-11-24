@@ -38,20 +38,28 @@
       .then(([data,tools])=>modules={data,tools}).catch(error=>{loading=null;throw error;});
     return loading;
   }
+  let navigation=0;
   async function open(next='catalog',key='') {
+    const request=++navigation;
     api.open('academy');
     if($('academy').hidden)return;
     const version=generation;
     status.textContent=modules?'':'Cargando la Academia…';
     try {
       await load();
-      if(version!==generation||$('academy').hidden)return;
+      if(version!==generation||request!==navigation||$('academy').hidden)return;
+      if(next==='lesson'&&!find(key)){
+        status.textContent='No se encontró la lección guardada.';
+        return;
+      }
       tutor?.abort();
       view=next;current=key;
       status.textContent='';
       render();
+      const ids={catalog:'academy',tools:'simulators',library:'library',lesson:'lesson'};
+      window.liftsNexus?.checkpoint(ids[next],next==='lesson'?key:'',next==='lesson'?find(key).lesson.title:'');
     } catch {
-      if(version!==generation)return;
+      if(version!==generation||request!==navigation)return;
       status.textContent='No se pudo cargar el contenido. Vuelve a pulsar Explorar cursos.';
     }
   }
