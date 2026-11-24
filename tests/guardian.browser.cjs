@@ -14,7 +14,7 @@ test('Guardian focuses, saves follow-ups, restores its data and clears drafts be
     }catch{res.writeHead(404);res.end();}
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844}});
     const errors=[];
@@ -139,6 +139,18 @@ test('Guardian focuses, saves follow-ups, restores its data and clears drafts be
     await page.getByText('Modo de respuesta guardado.',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>window.saved.guardianAssistantMode),'scientist');
     await page.getByRole('button',{name:'Modo de campo',exact:true}).click();
+    await page.getByRole('button',{name:'Grabar observación'}).click();
+    await page.getByText('Grabando…',{exact:true}).waitFor();
+    await page.locator('#fieldStopAudio').click();
+    const audioLink=page.getByRole('link',{name:'Descargar observación de voz'});
+    await audioLink.waitFor();
+    const [audioDownload]=await Promise.all([page.waitForEvent('download'),audioLink.click()]);
+    const audioBytes=await readFile(await audioDownload.path());
+    assert.equal(audioDownload.suggestedFilename(),'lifts-observacion.webm');
+    assert.equal(audioBytes.subarray(0,4).toString('hex'),'1a45dfa3');
+    await page.evaluate(()=>{window.liftsWorkspace.open('guardian');window.liftsWorkspace.open('field');});
+    assert.equal(await page.locator('#fieldAudio').getAttribute('src'),null);
+    assert.equal(await audioLink.isVisible(),false);
     await page.getByRole('button',{name:'Iniciar cronómetro'}).click();
     await page.getByRole('button',{name:'Pausar cronómetro'}).click();
     await page.getByRole('button',{name:'Restablecer cronómetro'}).click();

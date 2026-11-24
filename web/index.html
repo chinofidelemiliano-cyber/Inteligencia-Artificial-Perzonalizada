@@ -381,6 +381,18 @@
     <button id="fieldReset" type="button" class="secondary">Restablecer cronómetro</button>
   </article>
   <article class="card">
+    <h3>Observación de voz</h3>
+    <p>Graba hasta un minuto y descarga el audio para conservarlo. La grabación queda en este dispositivo y se limpia al salir de Modo de campo.</p>
+    <div class="evolution-controls">
+      <button id="fieldRecord" type="button">Grabar observación</button>
+      <button id="fieldStopAudio" type="button" class="secondary" disabled>Detener grabación</button>
+      <button id="fieldDiscardAudio" type="button" class="secondary" hidden>Descartar audio</button>
+    </div>
+    <audio id="fieldAudio" controls hidden aria-label="Escuchar observación de voz"></audio>
+    <p><a id="fieldDownloadAudio" hidden>Descargar observación de voz</a></p>
+    <p id="fieldAudioStatus" role="status"></p>
+  </article>
+  <article class="card">
     <h3>Capturar una medición</h3>
     <form id="fieldMeasure">
       <label for="fieldMeasureTitle">Equipo o característica medida</label><input id="fieldMeasureTitle" maxlength="80" required>
@@ -641,6 +653,7 @@
 <script src="guardian-calculator.js" defer></script>
 <script src="guardian.js" defer></script>
 <script src="guardian-field.js" defer></script>
+<script src="guardian-field-audio.js" defer></script>
 <script src="guided-routines.js" defer></script>
 <script src="personal-models.js" defer></script>
 <script src="personal-characters.js" defer></script>

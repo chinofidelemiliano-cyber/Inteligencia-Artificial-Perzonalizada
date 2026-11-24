@@ -13,7 +13,7 @@ Lifts ya tiene Agenda y enfoque, recordatorios configurables, hábitos, Radar, m
 | 5 · Memory Assistant | Parcial | Categoría, contexto, fecha de alta, búsqueda local, archivo y recuperación. Consulta local mediante «Busca en mis recuerdos sobre…», por texto o dictado del chat. Falta captura dedicada por voz. |
 | 6 · Calculator Hub | Parcial | Centro que enlaza Ingeniería, Builder, utilidades y presupuesto. Convierte longitudes, masas, duraciones y presión, muestra la sustitución y recibe valores de Captura rápida. Falta el catálogo completo de fórmulas. |
 | 7 · Time Intelligence | Parcial | Agenda, cruces y planificación existentes. Falta ampliar el análisis temporal solicitado. |
-| 8 · Field Mode | Parcial | Cronómetro local, mediciones con unidad como borrador de experimento y accesos a equipos, procedimientos y fotos de diagnóstico. Faltan audio, fichas mediante QR y captura de parámetros especializada. |
+| 8 · Field Mode | Parcial | Cronómetro local, mediciones con unidad como borrador de experimento y accesos a equipos, procedimientos y fotos de diagnóstico. Incluye grabación local, reproducción y descarga de audio. Faltan fichas mediante QR y captura de parámetros especializada. |
 | 9 · Document Intelligence | Parcial | Utilidades PDF locales y biblioteca existentes. Falta ampliar extracción y análisis. |
 | 10 · Visual Tools | Parcial | Diagnóstico y utilidades visuales existentes. Falta la cobertura de la especificación. |
 | 11 · Control Panel | Parcial | Panel de operaciones, permisos y Radar existentes. Falta unificar los controles de Guardian. |
@@ -74,3 +74,6 @@ El perfil de respuesta se guarda en `guardianAssistantMode`. El envío al chat i
 En Guardian, pega una instrucción como «Ana me pidió entregar el informe para el 2026-12-09 a las 09:30» y agrega los pasos. Guardian reconoce construcciones breves y fechas explícitas en formato AAAA-MM-DD. Las fechas relativas quedan pendientes de confirmar. Si dos líneas indican fechas distintas, Guardian pide resolver la contradicción antes de preparar el entregable. Agenda recibe título, fecha y pasos. Seguimiento recibe los datos reconocidos y permite editarlos antes de guardar. Con fecha y hora vigentes, el seguimiento puede rellenar un borrador de Recordatorios con esa hora local. Programar el aviso requiere confirmar en el editor existente.
 
 El flujo se ejecuta localmente. Las pruebas incluyen fechas contradictorias, fechas inválidas, pasos, borradores sin guardado automático y el recorrido móvil completo hasta la hora del aviso.
+
+
+Modo de campo permite grabar observaciones de hasta un minuto con el micrófono en navegadores compatibles. Solicita permiso al pulsar Grabar, permite escuchar y descargar en el formato nativo del navegador y libera el micrófono al detener o salir. El clip temporal se elimina al cambiar de vista o de cuenta. El archivo descargado permanece en el dispositivo. El recorrido de Chromium usa un micrófono simulado y descarga un WebM real.
