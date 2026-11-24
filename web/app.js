@@ -19,7 +19,7 @@ window.addEventListener('nexo-state', e => {cancelChat();$('question').value='';
     state.messages=[];persist();
   }
   state.messages=[];state.profile={...personal.emptyProfile(),...state.profile};welcomeStep=0;welcomeDraft={...state.profile};$('welcomeConsent').checked=state.profileConsent===true;render();renderWelcome();page(state.onboardingCompleted?'home':'welcome');});
-function page(id){if(!state.onboardingCompleted)id='welcome';$('evolutionWelcome').hidden=id!=='home';for(const section of ['home','tasks','reminders','routines','work','academy','engineering','excel','diagnostics','identity','privacy','journal','utilities','operations','negotiation','builder','radar','guardian','models','characters','systems','preflight','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
+function page(id){if(!state.onboardingCompleted)id='welcome';$('evolutionWelcome').hidden=id!=='home';for(const section of ['home','tasks','reminders','routines','work','academy','engineering','excel','diagnostics','identity','privacy','journal','utilities','operations','negotiation','builder','radar','guardian','field','calculatorHub','models','characters','systems','preflight','profile','welcome','images']) $(section).hidden=section!==id;document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.page===id)));window.scrollTo?.({top:0,behavior:'auto'});window.dispatchEvent?.(new CustomEvent('lifts-page',{detail:{page:id}}));}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
 $('plan').onclick=$('openTasks').onclick=()=>page('tasks');
 function renderMessageText(element,message){
@@ -90,7 +90,7 @@ $('chat').onsubmit=async e=>{
   $('sendChat').disabled=true;$('testAI').disabled=true;$('sendChat').textContent='Respondiendo…';$('chatStatus').textContent='Consultando a '+assistantName()+'…';
   const history=state.messages.filter(m=>(m.role==='user'&&m.source!=='local') || (m.role==='assistant' && m.source==='ai')).slice(-8).map(m=>({role:m.role,content:m.text.slice(0,5000)}));
   window.dispatchEvent?.(new CustomEvent('lifts-chat-state',{detail:{phase:'thinking'}}));
-  const payload={messages:[...history,{role:'user',content:text}],detail:$('responseDetail').value || 'detailed',engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName(),assistantPresentation:state.assistant?.presentation || 'neutral',conversationMode:window.liftsConversationUI?.active() || false};
+  const payload={messages:[...history,{role:'user',content:text}],detail:state.guardianAssistantMode==='focus'?'brief':$('responseDetail').value || 'detailed',guardianMode:state.guardianAssistantMode,engine:$('chatEngine').value || 'balanced',stream:true,assistantName:assistantName(),assistantPresentation:state.assistant?.presentation || 'neutral',conversationMode:window.liftsConversationUI?.active() || false};
   if($('shareMemory').checked && state.privateMemoryEnabled===true){
     const memories=window.liftsEvolutionCore.relevant(text,state.privateMemories);
     if(memories.length)payload.memoryContext=memories;

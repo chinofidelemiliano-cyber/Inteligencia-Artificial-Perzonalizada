@@ -81,3 +81,13 @@ test('optional memory drops extra fields and entries and is absent from the fixe
   await diagnostic.send({body:{diagnostic:true,messages,memoryContext}});
   assert.doesNotMatch(JSON.stringify(diagnostic.runs),/Memoria 0/);
 });
+
+test('Guardian modes only add fixed instructions and keep the same model',async()=>{
+ const s=setup();
+ const messages=[{role:'user',content:'Revisa la medición'}];
+ await s.send({body:{messages,guardianMode:'scientist'}});
+ assert.match(s.runs[0].input.messages[0].content,/Distingue observación e hipótesis/);
+ await s.send({body:{messages,guardianMode:'constructor'}});
+ assert.doesNotMatch(s.runs[1].input.messages[0].content,/Modo Guardian seleccionado/);
+ assert.equal(s.runs[0].model,s.runs[1].model);
+});

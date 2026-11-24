@@ -192,12 +192,19 @@
   }
   function loadPreferences(){
     const prefs=app.getState().guardianPreferences||{};
+    $('guardianAssistantMode').value=app.getState().guardianAssistantMode||'companion';
     $('guardianLimit').value=prefs.mode||'3';
     $('guardianCustom').value=prefs.mode==='custom'?prefs.limit:4;
     $('guardianShowAlerts').checked=prefs.alerts!==false;
     $('guardianShowFollow').checked=prefs.follow!==false;
     $('guardianCustomLimit').hidden=$('guardianLimit').value!=='custom';
   }
+  $('guardianAssistantForm').onsubmit=async event=>{
+    event.preventDefault();
+    if(!await save('guardianAssistantMode',$('guardianAssistantMode').value,'Modo de respuesta guardado.')){
+      $('guardianAssistantMode').value=app.getState().guardianAssistantMode||'companion';
+    }
+  };
   prefsForm.onsubmit=event=>{
     event.preventDefault();
     const mode=$('guardianLimit').value,limit=Number(mode==='custom'?$('guardianCustom').value:mode);
@@ -234,6 +241,10 @@
         }catch(error){message=error.message;}
         element(captureResult,'p',message);
       });
+    }
+    const measurement=value.match(/^([+-]?\d+(?:[.,]\d+)?)\s+([A-Za-z]+)$/);
+    if(measurement&&root.liftsGuardianCalculator.supports(measurement[2])){
+      button(captureResult,'Abrir conversión de unidades',()=>root.liftsGuardianCalculator.open(measurement[1],measurement[2]));
     }
     if(dates(value)){
       button(captureResult,'Preparar aviso para '+value,()=>{

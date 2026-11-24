@@ -193,7 +193,7 @@
   }
   window.addEventListener('nexo-state',reset);
   window.liftsEvolution = {render,reset,handle(text) {
-    const route = window.liftsEvolutionCore.route(text);
+    const route = window.liftsEvolutionCore.lookup(text,memories(current())) || window.liftsEvolutionCore.route(text);
     if(!route)return null;
     const target=window.liftsNexusCore?.location(route.target,route.template||'');
     return {reply:route.reply,open:target?()=>window.liftsNexus.open(target):undefined};

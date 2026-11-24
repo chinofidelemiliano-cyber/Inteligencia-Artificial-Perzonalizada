@@ -13,6 +13,19 @@
       .map(({memory})=>({title:memory.title,text:memory.text}));
   }
 
+  function lookup(text,memories){
+    const query=normalize(text).match(/^(?:busca|recupera|muestrame)\s+(?:en\s+)?mis recuerdos\b(?:\s+(?:sobre|de|para))?\s*(.*)$/);
+    if(!query)return null;
+    const keys=words(query[1]);
+    if(!keys.length)return {reply:'Indica un término concreto después de «busca en mis recuerdos», como catálogo.'};
+    const result=(Array.isArray(memories)?memories:[]).filter(item=>{
+      const content=words([item.title,item.text,item.context,item.category].join(' '));
+      return !item.archived&&keys.some(key=>content.includes(key));
+    }).slice(0,3);
+    return {reply:result.length?'Coincidencias en tus recuerdos guardados:\n'+result.map(item=>item.title+' · '+item.text).join('\n'):
+      'No encontré recuerdos activos que coincidan. Puedes revisar tu búsqueda en Privacidad y memoria.',target:'privacy'};
+  }
+
   function route(text) {
     const query = normalize(text);
     if (/\b(?:circunferencia|perimetro)\b/.test(query) && /\bdiametro\b/.test(query)) {
@@ -25,6 +38,8 @@
       return {reply:'Para un círculo, C = π × d = π × '+diameter[1]+' '+diameter[2]+' ≈ '+format.format(circumference)+' '+diameter[2]+'.'};
     }
     if (!/\b(?:abre|abrir|muestra|busca|ir|calcula|calcular|usar|descargar|necesito)\b/.test(query)) return null;
+    if (/\bmodo de campo\b/.test(query))return {target:'field',reply:'Puedes capturar mediciones, iniciar el cronómetro o abrir Diagnóstico desde Modo de campo.'};
+    if (/\bguardian\b/.test(query))return {target:'guardian',reply:'En Guardian puedes revisar tu jornada y los compromisos pendientes.'};
     if (/\bdistorsion(?:es)?\b/.test(query)) return {target:'engineering',reply:'En Ingeniería puedes introducir las medidas del cilindro y calcular la compensación.'};
     if (/\bbiblioteca\b/.test(query)) return {target:'library',reply:'Abrí la biblioteca técnica de la Academia.'};
     if (/\b(?:plantilla|plantillas)\b/.test(query)&&/\b(?:excel|inventario|pareto|desperdicio)\b/.test(query)) {
@@ -34,7 +49,7 @@
     if (/\bdiagnostico\b/.test(query)) return {target:'diagnostics',reply:'Abrí Diagnóstico guiado. Puedes registrar observaciones y pruebas.'};
     return null;
   }
-  const core={relevant,route};
+  const core={relevant,lookup,route};
   if(typeof module==='object')module.exports=core;
   else root.liftsEvolutionCore=core;
 })(globalThis);

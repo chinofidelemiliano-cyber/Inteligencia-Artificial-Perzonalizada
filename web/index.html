@@ -271,7 +271,7 @@
     <div id="guardianBrief" aria-live="polite"></div>
     <div class="evolution-controls">
       <button type="button" id="guardianFocus" class="secondary" aria-pressed="false">Una cosa a la vez</button>
-      <button type="button" data-page="routines" class="secondary">Hábitos y rutinas</button><button type="button" id="guardianAgenda" class="secondary">Abrir Agenda desde Guardian</button>
+      <button type="button" data-page="routines" class="secondary">Hábitos y rutinas</button><button type="button" data-page="field" class="secondary">Modo de campo</button><button type="button" data-page="calculatorHub" class="secondary">Calculadoras</button><button type="button" id="guardianAgenda" class="secondary">Abrir Agenda desde Guardian</button>
     </div>
   </article>
   <details class="card" data-guardian-detail>
@@ -302,6 +302,11 @@
   </article>
   <article class="card" data-guardian-detail>
     <h3>Preferencias de acompañamiento</h3>
+    <form id="guardianAssistantForm">
+      <label for="guardianAssistantMode">Modo de respuesta del asistente</label>
+      <select id="guardianAssistantMode"><option value="companion">Acompañante</option><option value="teacher">Profesor</option><option value="philosopher">Filósofo</option><option value="scientist">Científico</option><option value="engineer">Ingeniero</option><option value="secretary">Secretario</option><option value="critic">Crítico</option><option value="focus">Concentración</option></select>
+      <button>Guardar modo de respuesta</button>
+    </form>
     <form id="guardianPreferences">
       <label for="guardianLimit">Nivel de acompañamiento en el resumen</label>
       <select id="guardianLimit" name="limit">
@@ -333,6 +338,57 @@
     </form>
     <div id="guardianRecords"></div>
     <div id="guardianDraftPanel" hidden><label for="guardianDraft">Borrador del mensaje de seguimiento</label><textarea id="guardianDraft" rows="5"></textarea></div>
+  </article>
+</section>
+<section id="calculatorHub" hidden aria-labelledby="calculatorHubTitle">
+  <article class="card">
+    <h2 id="calculatorHubTitle">Centro de calculadoras</h2>
+    <div class="evolution-controls">
+      <button type="button" data-page="engineering">Ingeniería flexográfica</button>
+      <button type="button" data-page="builder" class="secondary">Crear una calculadora</button>
+      <button type="button" data-page="utilities" class="secondary">Fechas y bases numéricas</button>
+      <button type="button" data-page="routines" class="secondary">Presupuesto y gastos</button>
+    </div>
+  </article>
+  <article class="card">
+    <h3>Conversión de unidades</h3>
+    <p>Convierte longitudes, masas, duraciones o presiones en la misma magnitud. Ejemplo, usa mm y pulgadas al comprobar una medida de un plano.</p>
+    <form id="hubConvert">
+      <label for="hubValue">Cantidad de origen</label><input id="hubValue" inputmode="decimal" maxlength="30" required>
+      <div class="field-grid">
+        <div><label for="hubFrom">Unidad de origen</label><select id="hubFrom"></select></div>
+        <div><label for="hubTo">Unidad de destino</label><select id="hubTo"></select></div>
+      </div>
+      <button>Convertir unidades</button>
+    </form>
+    <p id="hubResult" role="status"></p>
+  </article>
+</section>
+<section id="field" hidden aria-labelledby="fieldTitle">
+  <article class="card">
+    <h2 id="fieldTitle">Modo de campo</h2>
+    <div class="evolution-controls">
+      <button data-page="diagnostics" type="button">Fotografiar, comparar muestras o registrar una falla</button>
+      <button data-page="engineering" type="button" class="secondary">Consultar fórmulas y equipos</button>
+      <button id="fieldProcedures" type="button" class="secondary">Consultar procedimientos</button>
+    </div>
+  </article>
+  <article class="card">
+    <h3>Cronómetro</h3>
+    <p id="fieldClock" aria-label="Tiempo transcurrido">00:00.0</p>
+    <button id="fieldStart" type="button">Iniciar cronómetro</button>
+    <button id="fieldReset" type="button" class="secondary">Restablecer cronómetro</button>
+  </article>
+  <article class="card">
+    <h3>Capturar una medición</h3>
+    <form id="fieldMeasure">
+      <label for="fieldMeasureTitle">Equipo o característica medida</label><input id="fieldMeasureTitle" maxlength="80" required>
+      <label for="fieldMeasureValues">Lecturas separadas por espacios</label><input id="fieldMeasureValues" maxlength="400" required>
+      <label for="fieldMeasureUnits">Unidad de medida</label><input id="fieldMeasureUnits" maxlength="24" required>
+      <label for="fieldMeasureNotes">Observaciones y referencia de evidencia</label><textarea id="fieldMeasureNotes" maxlength="400" rows="3"></textarea>
+      <button>Preparar registro de medición</button>
+    </form>
+    <p id="fieldStatus" role="status"></p>
   </article>
 </section>
 <section id="radar" hidden aria-labelledby="radarTitle"><article class="card">
@@ -581,7 +637,9 @@
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
 <script src="guardian-reference.js" defer></script>
+<script src="guardian-calculator.js" defer></script>
 <script src="guardian.js" defer></script>
+<script src="guardian-field.js" defer></script>
 <script src="guided-routines.js" defer></script>
 <script src="personal-models.js" defer></script>
 <script src="personal-characters.js" defer></script>

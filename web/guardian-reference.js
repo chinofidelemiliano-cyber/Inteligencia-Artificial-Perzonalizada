@@ -16,6 +16,12 @@
     {topic:'Sesgos cognitivos',title:'Buscar evidencia que contradiga tu idea',source:'Raymond S. Nickerson, Confirmation Bias, 1998',url:'https://doi.org/10.1037/1089-2680.2.2.175',
       idea:'El sesgo de confirmación puede aparecer al buscar o interpretar evidencia a favor de una idea previa. La coincidencia de dos hechos deja abiertas otras explicaciones.',
       practice:'Escribe qué observación te haría abandonar tu hipótesis antes de revisar los resultados.'},
+    {topic:'Psicología',title:'Posponer una interrupción con un plan concreto',source:'Peter Gollwitzer, Implementation Intentions, 1999',url:'https://doi.org/10.1037/0003-066X.54.7.493',
+      idea:'Un plan «si ocurre X, haré Y» vincula una señal concreta con una acción. Sirve para preparar una respuesta a una situación repetida.',
+      practice:'Para tu próxima sesión de estudio, escribe qué harás si surge una tarea que no requiere atención inmediata.'},
+    {topic:'Neurociencia',title:'Descanso y consolidación de la memoria',source:'Rasch y Born, About Sleep’s Role in Memory, 2013',url:'https://doi.org/10.1152/physrev.00032.2012',
+      idea:'La consolidación contribuye a estabilizar recuerdos después de adquirirlos. El sueño puede favorecer algunos tipos de aprendizaje. Un olvido aislado no permite concluir por qué falló el recuerdo.',
+      practice:'Después de estudiar un concepto, intenta explicarlo al día siguiente antes de abrir tus notas. Compara lo que recordaste con la fuente.'},
     {topic:'Aprendizaje',title:'Recuperar una explicación de memoria',source:'Roediger y Karpicke, Test-Enhanced Learning, 2006',url:'https://doi.org/10.1111/j.1467-9280.2006.01693.x',
       idea:'Intentar recordar activamente material estudiado puede ayudar a retenerlo. Comparar tu explicación con la fuente permite detectar omisiones concretas.',
       practice:'Cierra una lección y explica el concepto en tres frases. Abre la lección y corrige una de ellas.'}

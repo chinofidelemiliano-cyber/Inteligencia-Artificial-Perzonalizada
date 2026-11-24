@@ -115,6 +115,28 @@ test('Guardian focuses, saves follow-ups, restores its data and clears drafts be
     await page.getByRole('button',{name:'Ver acciones de captura'}).click();
     await page.getByRole('button',{name:'Preparar referencia'}).click();
     assert.equal(await page.locator('#journal [name=source]').inputValue(),'https://example.com/manual');
+    await page.evaluate(()=>window.liftsWorkspace.open('guardian'));
+    await page.getByLabel('Modo de respuesta del asistente').selectOption('scientist');
+    await page.getByRole('button',{name:'Guardar modo de respuesta',exact:true}).click();
+    await page.getByText('Modo de respuesta guardado.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saved.guardianAssistantMode),'scientist');
+    await page.getByRole('button',{name:'Modo de campo',exact:true}).click();
+    await page.getByRole('button',{name:'Iniciar cronómetro'}).click();
+    await page.getByRole('button',{name:'Pausar cronómetro'}).click();
+    await page.getByRole('button',{name:'Restablecer cronómetro'}).click();
+    await page.getByText('00:00.0',{exact:true}).waitFor();
+    await page.getByLabel('Equipo o característica medida').fill('Bobina patrón');
+    await page.getByLabel('Lecturas separadas por espacios').fill('3,27 3.29');
+    await page.getByLabel('Unidad de medida',{exact:true}).fill('mm');
+    await page.getByRole('button',{name:'Preparar registro de medición'}).click();
+    assert.equal(await page.locator('#journal [name=readings]').inputValue(),'3.27 3.29');
+    assert.equal(await page.locator('#journal [name=unit]').inputValue(),'mm');
+    await page.evaluate(()=>window.liftsWorkspace.open('calculatorHub'));
+    await page.getByLabel('Cantidad de origen').fill('1');
+    await page.getByLabel('Unidad de origen').selectOption('in');
+    await page.getByLabel('Unidad de destino').selectOption('mm');
+    await page.getByRole('button',{name:'Convertir unidades'}).click();
+    await page.getByText(/= 25[.,]4 mm/).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });
