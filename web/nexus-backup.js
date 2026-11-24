@@ -71,7 +71,14 @@
 
   const validators={
     tasks:normalizeTask,savedConversations:normalizeConversation,
-    privateMemories:value=>text(value.title,80)&&text(value.text,600)?{id:value.id,title:value.title,text:value.text}:null,
+    privateMemories:value=>{
+      if(!text(value.title,80)||!text(value.text,600))return null;
+      return {id:value.id,title:value.title,text:value.text,
+        ...(timestamp(value.createdAt)?{createdAt:value.createdAt}:{}),
+        ...(text(value.category,40)?{category:value.category}:{}),
+        ...(text(value.context,200)?{context:value.context}:{}),
+        ...(value.archived===true?{archived:true}:{})};
+    },
     inbox:value=>text(value.title,240)&&timestamp(value.createdAt)&&typeof value.processed==='boolean'?
       {id:value.id,title:value.title,createdAt:value.createdAt,processed:value.processed}:null,
     nexusJournal:normalizeJournal

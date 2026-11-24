@@ -42,17 +42,33 @@
     if(!enabled)$('shareMemory').checked = false;
     const list = $('memoryList');
     list.replaceChildren();
-    if(!memories(state).length)list.append(text('li','Todavía no hay recuerdos guardados.'));
-    for(const memory of memories(state)) {
+    const normalize=value=>String(value||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+    const terms=normalize($('memorySearch').value).split(/[^a-z0-9]+/).filter(term=>term.length>2);
+    const matching=memories(state).filter(memory=>{
+      const content=normalize([memory.title,memory.text,memory.category,memory.context].join(' '));
+      return ($('memoryArchived').checked||!memory.archived)&&(!terms.length||terms.some(term=>content.includes(term)));
+    });
+    if(!matching.length)list.append(text('li',memories(state).length?'No hay recuerdos que coincidan.':'Todavía no hay recuerdos guardados.'));
+    for(const memory of matching) {
       const entry = text('li','');
       entry.append(text('strong',memory.title),text('p',memory.text));
+      const date=Date.parse(memory.createdAt);
+      const metadata=[memory.category,Number.isFinite(date)?new Intl.DateTimeFormat('es-MX').format(date):'',memory.archived?'Archivado':''].filter(Boolean);
+      if(metadata.length)entry.append(text('p',metadata.join(' · ')));
+      if(memory.context)entry.append(text('p',memory.context));
       entry.append(button('Editar '+memory.title,()=>{
         editing = memory.id;
         $('memoryTitle').value = memory.title;
         $('memoryText').value = memory.text;
+        $('memoryCategory').value = memory.category||'';
+        $('memoryContext').value = memory.context||'';
         $('memorySave').textContent = 'Guardar cambios';
         $('memoryCancel').hidden = false;
         $('memoryTitle').focus();
+      }),button((memory.archived?'Recuperar ':'Archivar ')+memory.title,()=>{
+        if(editing===memory.id)resetEditor();
+        state.privateMemories=memories(state).map(record=>record.id===memory.id?{...record,archived:!record.archived}:record);
+        save(memory.archived?'Recuerdo recuperado.':'Recuerdo archivado.');
       }),button('Eliminar '+memory.title,()=>{
         if(!confirm('¿Eliminar este recuerdo de tu cuenta?'))return;
         if(editing===memory.id)resetEditor();
@@ -148,7 +164,10 @@
     const body = $('memoryText').value.trim();
     if(!title||!body){$('privacyStatus').textContent='Escribe un título y un recuerdo.';return;}
     if(!editing&&memories(state).length>=200){$('privacyStatus').textContent='Se alcanzó el límite de 200 recuerdos por espacio.';return;}
-    const record={id:editing||crypto.randomUUID(),title,text:body};
+    const previous=memories(state).find(memory=>memory.id===editing);
+    const record={...previous,id:editing||crypto.randomUUID(),title,text:body,
+      createdAt:previous?previous.createdAt||'':new Date().toISOString(),
+      category:$('memoryCategory').value,context:$('memoryContext').value.trim()};
     state.privateMemories = editing?memories(state).map(item=>item.id===editing?record:item):[record,...memories(state)];
     resetEditor();
     save('Recuerdo guardado.');
@@ -163,8 +182,13 @@
     link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
+  $('memorySearch').oninput=()=>renderMemory(current());
+  $('memoryArchived').onchange=()=>renderMemory(current());
   function reset() {
     resetEditor();
+    $('memorySearch').value='';
+    $('memoryArchived').checked=false;
+    renderMemory(current());
     $('privacyStatus').textContent='';
   }
   window.addEventListener('nexo-state',reset);

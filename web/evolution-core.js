@@ -5,7 +5,7 @@
   const words = text => [...new Set((normalize(text).match(/[a-z0-9]+/g)||[]).filter(word=>word.length>=4&&!ignored.has(word)))];
   function relevant(query, memories) {
     const keys = words(query);
-    return (Array.isArray(memories)?memories:[]).map(memory=>{
+    return (Array.isArray(memories)?memories:[]).filter(memory=>!memory.archived).map(memory=>{
       const title = words(memory.title), body = words(memory.text);
       const score = keys.reduce((total,key)=>total+(title.includes(key)?3:body.includes(key)?1:0),0);
       return {memory,score};

@@ -112,16 +112,36 @@
     }
     if(phase==='start'){
       element(host,'h3','Idea para practicar hoy');
-      element(host,'p','Separa lo que depende de ti de lo que no controlas. Elige una acción propia, como preparar una pregunta antes de una reunión.');
-      const source=element(host,'a','Epicteto, Manual, §1 (paráfrasis)');
-      source.href='https://www.gutenberg.org/ebooks/45109';
-      element(host,'p','Conocimiento breve: dos bloques consecutivos pueden caber sin solaparse. Si necesitas desplazarte o preparar materiales, reserva ese tiempo como otro bloque.');
+      reading(host,root.liftsGuardianReference.daily(clock.day));
     }
     if(phase==='during'){
       const checkpoint=root.liftsNexusCore?.recover(state.nexusCheckpoint);
       if(checkpoint)button(host,'Retomar '+checkpoint.label,()=>root.liftsNexus.open(checkpoint.target));
     }
   }
+  function reading(parent,item){
+    element(parent,'h4',item.title);
+    element(parent,'p',item.idea);
+    element(parent,'p',item.practice);
+    const source=element(parent,'a',item.source);
+    source.href=item.url;
+    element(parent,'p','Explicación y ejercicio de Lifts basados en la referencia.');
+    button(parent,'Preparar reflexión',()=>root.liftsJournal.prepareDraft('lesson',{
+      title:item.title,situation:item.practice,evidence:item.source+' · '+item.url
+    }));
+  }
+  function reference(){
+    const results=$('guardianReferenceResults');
+    results.replaceChildren();
+    const matches=root.liftsGuardianReference.search($('guardianReferenceQuery').value);
+    if(!matches.length)element(results,'p','No se encontraron lecturas en la colección.');
+    for(const item of matches){
+      const detail=element(results,'details','');
+      element(detail,'summary',item.title+' · '+item.topic);
+      reading(detail,item);
+    }
+  }
+  $('guardianReferenceQuery').oninput=reference;
   async function save(key,value,message){
     if(busy)return false;
     const state=app.getState(),before=state[key];
@@ -195,6 +215,56 @@
       if(await save('guardianFollowups',next,'Seguimiento guardado.'))resetForm();
     }catch(error){status.textContent=error.message;}
   };
+  const capture=$('guardianClipboardText'),captureResult=$('guardianClipboardResult');
+  capture.oninput=()=>captureResult.replaceChildren();
+  $('guardianClipboardForm').onsubmit=event=>{
+    event.preventDefault();
+    captureResult.replaceChildren();
+    const value=capture.value.trim();
+    if(!value){element(captureResult,'p','Pega el dato que quieres revisar.');return;}
+    const lines=value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+    const title=lines[0].slice(0,80);
+    const arithmetic=value.replace(/^=\s*/,'');
+    if(arithmetic.length<=100&&/^[0-9.()+*/^% -]+$/.test(arithmetic)&&/[+*/^%-]/.test(arithmetic)&&!dates(value)){
+      button(captureResult,'Calcular expresión',()=>{
+        let message;
+        try{
+          const result=root.liftsBuilderCore.compile(arithmetic,new Set())({});
+          message=arithmetic+' = '+result;
+        }catch(error){message=error.message;}
+        element(captureResult,'p',message);
+      });
+    }
+    if(dates(value)){
+      button(captureResult,'Preparar aviso para '+value,()=>{
+        root.liftsReminders.open('Aviso para '+value);
+        $('reminderDate').focus();
+      });
+    }
+    let url;
+    try{const parsed=new URL(value);if(['https:','http:'].includes(parsed.protocol))url=parsed.href;}catch{}
+    if(url)button(captureResult,'Preparar referencia',()=>root.liftsJournal.prepareDraft('knowledge',{title:'Referencia web',source:url}));
+    if(lines.length>1){
+      button(captureResult,'Revisar como instrucción',()=>{
+        $('guardianInstructionText').value=value;
+        $('guardianInstructionText').dispatchEvent(new Event('input'));
+        $('guardianInstructionText').focus();
+      });
+      button(captureResult,'Ver como tabla',()=>{
+        const table=element(captureResult,'table','');
+        element(table,'caption','Lista de '+lines.length+' elementos');
+        const body=element(table,'tbody','');
+        lines.slice(0,100).forEach((line,index)=>{
+          const row=element(body,'tr','');
+          element(row,'th',String(index+1)).scope='row';
+          element(row,'td',line);
+        });
+        if(lines.length>100)element(captureResult,'p','Se muestran los primeros 100 elementos.');
+      });
+    }
+    button(captureResult,'Preparar nota',()=>root.liftsJournal.prepareDraft('note',{title,content:value}));
+    button(captureResult,'Preparar misión',()=>root.liftsJournal.prepareDraft('mission',{title,objective:value}));
+  };
   const instructionResult=$('guardianInstructionResult');
   $('guardianInstructionText').oninput=()=>instructionResult.replaceChildren();
   $('guardianInstruction').onsubmit=event=>{
@@ -221,11 +291,13 @@
     button.onclick=()=>{phase=button.dataset.guardianPhase;render();};
   });
   root.addEventListener('lifts-page',event=>{
-    if(event.detail.page==='guardian'){loadPreferences();render();renderRecords();}
+    if(event.detail.page==='guardian'){loadPreferences();render();renderRecords();reference();}
   });
   root.addEventListener('nexo-state',()=>{
     phase='start';focus=busy=false;resetForm();status.textContent='';
     $('guardianInstruction').reset();instructionResult.replaceChildren();
+    $('guardianReferenceQuery').value='';reference();
+    $('guardianClipboardForm').reset();captureResult.replaceChildren();$('guardianClipboard').open=false;
     $('guardianFocus').setAttribute('aria-pressed','false');
     $('guardianDraftPanel').hidden=true;$('guardianDraft').value='';
     loadPreferences();render();renderRecords();

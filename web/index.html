@@ -122,6 +122,21 @@
 <h3>Tus avisos</h3><div id="reminderItems"></div>
 </article><article class="card"><h3>Recordatorios que tú controlas</h3><button id="enableNotifications">Activar notificaciones</button><button id="testNotification" class="secondary">Probar aviso en pantalla</button><div class="companion-actions"><button id="enablePush" type="button">Activar avisos en segundo plano</button><button id="checkPush" type="button" class="secondary">Comprobar último envío</button><button id="disablePush" type="button" class="secondary">Desactivar en este dispositivo</button></div><p id="pushStatus" role="status"></p><button id="exportCalendar" class="secondary">Exportar al calendario</button><label><input id="notificationDetails" type="checkbox" style="width:auto"> Mostrar el título del pendiente en la notificación.</label><p class="notice">Esta opción se guarda en tu cuenta. El título podría verse en la pantalla bloqueada de tus dispositivos.</p><p id="notificationStatus" role="status"></p><p class="notice">Los avisos en segundo plano requieren permiso, un servidor de avisos activo y un dispositivo compatible. Puedes usar Google Calendar o exportar los bloques a un calendario y comprobar sus alertas. El archivo puede incluir títulos de trabajo: guárdalo en un calendario privado.</p><div id="dueReminders" aria-live="polite"></div></article></section>
 <section id="routines" hidden>
+<details id="guidedRoutines" class="card">
+  <summary>Rutinas guiadas</summary>
+  <label for="guidedTemplate">Plantilla de rutina</label><select id="guidedTemplate"></select>
+  <button id="guidedUse" type="button" class="secondary">Cargar plantilla</button>
+  <label for="guidedSaved">Rutina guardada</label><select id="guidedSaved"></select>
+  <form id="guidedForm">
+    <label for="guidedTitle">Nombre de la rutina</label><input id="guidedTitle" maxlength="100" required>
+    <label for="guidedMaterials">Materiales e instrucciones previas</label><textarea id="guidedMaterials" maxlength="500" rows="2"></textarea>
+    <label for="guidedSteps">Pasos de la rutina</label><textarea id="guidedSteps" maxlength="3500" rows="5" required aria-describedby="guidedHelp"></textarea>
+    <p id="guidedHelp">Un paso por línea. Opcionalmente agrega minutos y la palabra «opcional», separados por |. Ejemplo: Revisar materiales | 5 | opcional.</p>
+    <button>Guardar rutina guiada</button>
+  </form>
+  <div id="guidedRunner"></div>
+  <p id="guidedStatus" role="status"></p>
+</details>
 <article class="card"><h2>Hábitos y seguimiento</h2>
 <p>Elige en qué quieres que Lifts te acompañe y a qué hora. Puedes ajustar, pausar o desactivar cada aviso desde Recordatorios.</p>
 <div id="routineChoices" class="learning-catalog"></div>
@@ -256,9 +271,24 @@
     <div id="guardianBrief" aria-live="polite"></div>
     <div class="evolution-controls">
       <button type="button" id="guardianFocus" class="secondary" aria-pressed="false">Una cosa a la vez</button>
-      <button type="button" id="guardianAgenda" class="secondary">Abrir Agenda desde Guardian</button>
+      <button type="button" data-page="routines" class="secondary">Hábitos y rutinas</button><button type="button" id="guardianAgenda" class="secondary">Abrir Agenda desde Guardian</button>
     </div>
   </article>
+  <details class="card" data-guardian-detail>
+    <summary>Consulta rápida y lecturas</summary>
+    <label for="guardianReferenceQuery">Buscar tema de lectura</label><input type="search" id="guardianReferenceQuery" maxlength="120">
+    <div id="guardianReferenceResults"></div>
+  </details>
+  <details class="card" id="guardianClipboard" data-guardian-detail>
+    <summary>Captura rápida</summary>
+    <form id="guardianClipboardForm">
+      <label for="guardianClipboardText">Texto para analizar</label>
+      <textarea id="guardianClipboardText" rows="4" maxlength="2000" required></textarea>
+      <button>Ver acciones de captura</button>
+    </form>
+    <p>El texto se procesa cuando lo pegas y eliges una acción.</p>
+    <div id="guardianClipboardResult" aria-live="polite"></div>
+  </details>
   <p id="guardianStatus" role="status"></p>
   <article class="card" data-guardian-detail>
     <h3>Preparar una solicitud</h3>
@@ -422,10 +452,13 @@
     <form id="memoryForm">
       <label for="memoryTitle">Título</label><input id="memoryTitle" required maxlength="80">
       <label for="memoryText">Recuerdo</label><textarea id="memoryText" required maxlength="600"></textarea>
+      <label for="memoryCategory">Categoría del recuerdo</label>
+      <select id="memoryCategory"><option value="">Sin categoría</option><option>Objeto guardado</option><option>Préstamo</option><option>Solicitud</option><option>Recomendación</option><option>Compra</option><option>Ajuste</option><option>Procedimiento</option><option>Pregunta</option><option>Investigación</option><option>Actividad inconclusa</option></select>
+      <label for="memoryContext">Contexto del recuerdo</label><input id="memoryContext" maxlength="200">
       <div class="evolution-controls"><button id="memorySave">Guardar recuerdo</button><button id="memoryCancel" type="button" class="secondary" hidden>Cancelar edición</button></div>
     </form>
     <p id="privacyStatus" role="status"></p>
-    <h3>Mis recuerdos</h3><ul id="memoryList" class="memory-list"></ul>
+    <h3>Mis recuerdos</h3><label for="memorySearch">Buscar en mis recuerdos</label><input id="memorySearch" type="search" maxlength="200"><label><input id="memoryArchived" type="checkbox"> Mostrar recuerdos archivados</label><ul id="memoryList" class="memory-list"></ul>
     <h3>Datos de mi espacio</h3><p>La exportación incluye la información que conserva el espacio de trabajo, como tus tareas, preferencias, conversaciones guardadas y recuerdos. Protege el archivo descargado.</p>
     <button id="exportSpace" type="button" class="secondary">Exportar datos del espacio (JSON)</button>
     <div id="nexusBackup"></div>
@@ -547,7 +580,9 @@
 <script src="personal-builder-core.js" defer></script>
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
+<script src="guardian-reference.js" defer></script>
 <script src="guardian.js" defer></script>
+<script src="guided-routines.js" defer></script>
 <script src="personal-models.js" defer></script>
 <script src="personal-characters.js" defer></script>
 <script src="personal-systems.js" defer></script>
