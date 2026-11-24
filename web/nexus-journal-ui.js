@@ -222,6 +222,7 @@
       const link=document.createElement('a');link.href=url;link.download='lifts-minuta.pdf';link.click();
       setTimeout(()=>URL.revokeObjectURL(url),30000);
     });
+    if(item?.kind==='calibration')button(form,'Preparar QR privado',()=>window.liftsFieldLinks.prepare('calibration',item.id));
     if(item&&['vehicle','subscription','calibration'].includes(item.kind)&&item.data.date){
       const actions={vehicle:'Servicio de ',subscription:'Renovación de ',calibration:'Calibración de '};
       button(form,'Preparar aviso con esta fecha',()=>{

@@ -186,6 +186,18 @@
     <p id="nexusPdfLoading" role="status"></p>
     <div id="nexusPdfPanel"></div>
   </details>
+  <details id="guardianPdfText" class="card">
+    <summary>Extraer y buscar texto en PDF</summary>
+    <p>Procesa hasta 15 MiB y 30 páginas en tu navegador. Los PDF escaneados requieren OCR.</p>
+    <label for="guardianPdfFile">PDF para extraer texto</label><input type="file" id="guardianPdfFile" accept=".pdf,application/pdf">
+    <p id="guardianPdfStatus" role="status"></p>
+    <div id="guardianPdfOutput" hidden>
+      <label for="guardianPdfQuery">Buscar en el texto extraído</label><input id="guardianPdfQuery" type="search" maxlength="100">
+      <label for="guardianPdfPage">Página con texto extraído</label><select id="guardianPdfPage"></select>
+      <label for="guardianPdfPreview">Texto de la página</label><textarea id="guardianPdfPreview" rows="10" readonly></textarea>
+      <button id="guardianPdfDownload" type="button">Descargar texto del PDF</button>
+    </div>
+  </details>
   <details id="nexusPdfMarkup" class="card">
     <summary>Subrayar un PDF</summary>
     <p id="nexusPdfMarkupLoading" role="status"></p>
@@ -382,6 +394,8 @@
 <section id="field" hidden aria-labelledby="fieldTitle">
   <article class="card">
     <h2 id="fieldTitle">Modo de campo</h2>
+    <p id="fieldLinkStatus" role="status"></p>
+    <p>Desde una máquina, un artículo de inventario o una calibración guardada, prepara un QR privado. Escanéalo con la cámara del teléfono y abre Lifts con tu cuenta.</p>
     <div class="evolution-controls">
       <button data-page="diagnostics" type="button">Fotografiar, comparar muestras o registrar una falla</button>
       <button data-page="engineering" type="button" class="secondary">Consultar fórmulas y equipos</button>
@@ -683,6 +697,8 @@
 <script src="nexus-feedback.js" defer></script>
 <script src="nexus-utilities-core.js" defer></script>
 <script src="nexus-utilities-ui.js" defer></script>
+<script src="guardian-field-links.js" defer></script>
+<script src="guardian-pdf-text.js" type="module"></script>
 <script src="nexus-pdf-entry.js" defer></script>
 <script src="negotiation.js" defer></script>
 <script src="negotiation-ui.js" defer></script>

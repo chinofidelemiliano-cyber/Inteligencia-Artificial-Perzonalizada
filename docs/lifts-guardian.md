@@ -13,8 +13,8 @@ Lifts ya tiene Agenda y enfoque, recordatorios configurables, hábitos, Radar, m
 | 5 · Memory Assistant | Parcial | Categoría, contexto, fecha de alta, búsqueda local, archivo y recuperación. Consulta local mediante «Busca en mis recuerdos sobre…», por texto o dictado del chat. Falta captura dedicada por voz. |
 | 6 · Calculator Hub | Parcial | Centro que enlaza Ingeniería, Builder, utilidades y presupuesto. Convierte longitudes, masas, duraciones y presión, muestra la sustitución y recibe valores de Captura rápida. Incluye doce fórmulas adicionales probadas. Falta el catálogo completo. |
 | 7 · Time Intelligence | Parcial | Agenda, cruces y planificación existentes. Falta ampliar el análisis temporal solicitado. |
-| 8 · Field Mode | Parcial | Cronómetro local, mediciones con unidad como borrador de experimento y accesos a equipos, procedimientos y fotos de diagnóstico. Incluye grabación local, reproducción y descarga de audio. Faltan fichas mediante QR y captura de parámetros especializada. |
-| 9 · Document Intelligence | Parcial | Utilidades PDF locales y biblioteca existentes. Falta ampliar extracción y análisis. |
+| 8 · Field Mode | Parcial | Cronómetro local, mediciones con unidad como borrador de experimento y accesos a equipos, procedimientos y fotos de diagnóstico. Incluye grabación local, reproducción y descarga de audio. QR para máquinas, inventario y calibraciones existentes. Falta captura de parámetros especializada. |
+| 9 · Document Intelligence | Parcial | Extracción local de texto PDF, búsqueda por página y descarga TXT. Faltan OCR, otros formatos y análisis documental ampliado. |
 | 10 · Visual Tools | Parcial | Diagnóstico y utilidades visuales existentes. Falta la cobertura de la especificación. |
 | 11 · Control Panel | Parcial | Panel de operaciones, permisos y Radar existentes. Falta unificar los controles de Guardian. |
 | 12 · Quick Reference | Parcial | Consulta rápida filtrable de ocho lecturas con fuentes. Faltan fichas científicas, técnicas y profesionales. |
@@ -84,3 +84,10 @@ Modo de campo permite grabar observaciones de hasta un minuto con el micrófono 
 Abre **Guardian → Curso de filosofía práctica**, o busca el curso por nombre. Incluye cinco lecciones con teoría, aplicación, fuentes y práctica con retroalimentación. El progreso se guarda en `guardianPhilosophy` al acertar y se recupera con la cuenta. Las fuentes son referencias de consulta y los textos de las lecciones son explicaciones propias.
 
 **Guardian → Calculadoras → Cálculos con fórmula** presenta doce operaciones con valores de ejemplo, fórmula, supuestos y resultado. La lógica en `web/guardian-formulas.js` valida magnitudes, denominadores, rangos e intervalos y funciona sin IA. Los datos de ejemplo son didácticos. `tests/guardian-formulas.test.cjs` verifica resultados y errores. El recorrido móvil comprueba la separación entre etiquetas, la retroalimentación de filosofía y la recuperación del progreso.
+
+
+## QR de campo y texto de PDF
+
+Desde una máquina, un artículo industrial o una calibración guardada, **Preparar QR privado** abre el generador existente. El QR contiene la dirección de Lifts, el tipo de ficha y el identificador en un fragmento de URL. El registro solo se busca en el espacio autenticado que cargó Lifts. Un identificador de otra cuenta muestra un mensaje genérico. Para escanear, se usa la cámara del teléfono. Las órdenes de producción quedan fuera de este flujo.
+
+En **Utilidades locales → Extraer y buscar texto en PDF**, se procesan hasta 30 páginas, 15 MiB y 150 000 caracteres. El texto se busca por página o se descarga en TXT. PDF.js se carga bajo demanda. La herramienta usa texto seleccionable, no OCR, y la extracción puede diferir de la distribución visual del original.

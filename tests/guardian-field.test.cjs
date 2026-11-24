@@ -23,3 +23,14 @@ test('calculator hub converts physical units and rejects incompatible dimensions
   assert.equal(convert('1,25','bar','kPa').result,125);
   assert.throws(()=>convert('1','kg','mm'),/misma magnitud/);
 });
+
+test('field links require an exact identifier in the requested collection of the current space',()=>{
+  const {parse,owns}=require('../web/guardian-field-links.js');
+  const id='10000000-0000-4000-8000-000000000001';
+  assert.deepEqual(parse('#ficha/calibration/'+id),{kind:'calibration',id});
+  assert.equal(parse('#ficha/orders/'+id),null);
+  assert.equal(parse('#ficha/calibration/'+id+'/extra'),null);
+  assert.equal(owns({industrial:{stock:[{id}]}},'machines',id),false);
+  assert.equal(owns({nexusJournal:[{kind:'note',id}]},'calibration',id),false);
+  assert.equal(owns({nexusJournal:[{kind:'calibration',id}]},'calibration',id),true);
+});

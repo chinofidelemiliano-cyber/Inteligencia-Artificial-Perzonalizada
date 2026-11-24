@@ -192,6 +192,42 @@ test('Guardian focuses, saves follow-ups, restores its data and clears drafts be
     },studied);
     await page.getByText('Curso de filosofía práctica',{exact:true}).click();
     await page.getByText('1 de 5 lecciones completadas',{exact:true}).waitFor();
+    const key='10000000-0000-4000-8000-000000000001';
+    await page.evaluate(id=>{
+      const current=window.liftsWorkspace.getState();
+      current.industrial={machines:[],orders:[],rules:[],stock:[{id,name:'Anilox privado',category:'anilox',quantity:1,unit:'pieza'}]};
+      location.hash='#ficha/stock/'+id;
+    },key);
+    await page.getByRole('heading',{name:'Anilox privado',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Preparar QR privado'}).click();
+    const payload=await page.getByLabel('Texto o enlace del código QR').inputValue();
+    assert.equal(payload,base+'/#ficha/stock/'+key);
+    assert.doesNotMatch(payload,/Anilox/);
+    await page.getByRole('button',{name:'Generar código QR',exact:true}).click();
+    await page.getByRole('button',{name:'Descargar código QR'}).waitFor();
+    await page.evaluate(id=>{window.loginFixture();location.hash='#ficha/stock/'+id;},key);
+    await page.getByText('Esa ficha no está disponible en esta cuenta.').waitFor();
+    assert.equal(await page.getByRole('heading',{name:'Anilox privado',exact:true}).count(),0);
+
+    const {PDFDocument}=await import('../web/vendor/cantoo-pdf-lib-2.11.1.js');
+    const file=await PDFDocument.create();
+    file.addPage().drawText('Temperatura de prueba');
+    file.addPage().drawText('Registro de mantenimiento');
+    await page.evaluate(()=>window.liftsWorkspace.open('utilities'));
+    await page.getByText('Extraer y buscar texto en PDF',{exact:true}).click();
+    await page.getByLabel('PDF para extraer texto').setInputFiles({
+      name:'texto.pdf',mimeType:'application/pdf',buffer:Buffer.from(await file.save())
+    });
+    await page.getByText('2 páginas con texto coincidente.',{exact:true}).waitFor();
+    await page.getByLabel('Buscar en el texto extraído').fill('mantenimiento');
+    assert.equal(await page.getByLabel('Página con texto extraído').inputValue(),'2');
+    assert.match(await page.getByLabel('Texto de la página').inputValue(),/Registro de mantenimiento/);
+    const [textDownload]=await Promise.all([
+      page.waitForEvent('download'),page.getByRole('button',{name:'Descargar texto del PDF'}).click()
+    ]);
+    assert.match(await readFile(await textDownload.path(),'utf8'),/Página 1\nTemperatura de prueba/);
+    await page.evaluate(()=>{window.liftsWorkspace.open('guardian');window.liftsWorkspace.open('utilities');});
+    assert.equal(await page.getByLabel('Texto de la página').inputValue(),'');
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

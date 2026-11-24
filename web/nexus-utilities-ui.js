@@ -232,6 +232,12 @@
       };
     }
     mode.onchange=render;
+    window.liftsUtilities.prepareQr=value=>{
+      window.liftsWorkspace.open('utilities');
+      mode.value='qr';render();
+      const payload=panel.querySelector('[name="qr-payload"]');
+      payload.value=value;payload.focus();
+    };
     render();
   }
 

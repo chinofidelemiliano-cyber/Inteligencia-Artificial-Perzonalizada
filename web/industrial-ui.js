@@ -51,6 +51,7 @@
     if(!item)return;
     node(visual,'h4',item.name);
     if(kind==='machines')draw(item);
+    if(['machines','stock'].includes(kind))button(visual,'Preparar QR privado',()=>window.liftsFieldLinks.prepare(kind,item.id));
     if(kind==='rules')node(visual,'p',item.active===false?'Regla inactiva':'Regla activa');
     if(kind!=='orders')return;
     const result=core.assess(space(),item);
@@ -138,7 +139,15 @@
     $('industrialPanel').scrollIntoView({block:'start'});
     return true;
   }
-  window.liftsIndustrial={reset,openOrder};
+  function openAsset(kind,id){
+    if(!['machines','stock'].includes(kind)||!space()[kind].some(item=>item.id===id))return false;
+    api.open('engineering');
+    if($('engineering').hidden)return false;
+    $('industrialPanel').open=true;mode.value=kind;current=id;render();
+    $('industrialPanel').scrollIntoView({block:'start'});
+    return true;
+  }
+  window.liftsIndustrial={reset,openOrder,openAsset};
   window.addEventListener('nexo-state',reset);
   window.addEventListener('lifts-page',event=>{
     if(event.detail.page==='engineering'&&mode.value==='orders')inspect('orders',space().orders.find(item=>item.id===current));
