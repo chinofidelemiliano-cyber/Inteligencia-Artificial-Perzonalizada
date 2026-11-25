@@ -2,12 +2,9 @@
 (()=>{
   const $=id=>document.getElementById(id),app=window.liftsWorkspace;
   const form=$('desktopActionForm'),status=$('desktopActionStatus');
+  const legacy={task:'draft-task',reminder:'draft-reminder',idea:'draft-idea',focus:'open-focus',expense:'open-expense'};
   const actions=new Map([
-    ['task',['Preparar una tarea',()=>window.liftsWorkUI.prepareTask('')]],
-    ['reminder',['Crear recordatorio',()=>window.liftsReminders.open()]],
-    ['idea',['Registrar una idea',()=>window.liftsJournal.prepareDraft('note')]],
-    ['focus',['Abrir concentración',()=>{app.open('tasks');$('focusMinutes').focus();}]],
-    ['expense',['Registrar gasto',()=>{app.open('routines');$('moneyAmount').focus();}]],
+    ...Object.entries(legacy).map(([key,id])=>[key,[window.liftsNexusCore.tools[id].label,()=>window.liftsNexus.open({id,key:''})]]),
     ...[...window.liftsNavigation.tools].filter(([key])=>key!=='desktop').map(([key,label])=>['page:'+key,[label,()=>app.open(key)]])
   ]);
   function node(parent,tag,label=''){

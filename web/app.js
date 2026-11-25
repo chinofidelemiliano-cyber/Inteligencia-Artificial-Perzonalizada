@@ -32,6 +32,23 @@ function renderMessageText(element,message){
   }
   const tail=document.createElement('span');tail.textContent=message.text.slice(offset);element.append(tail);
 }
+function previewMemory(){
+  const target=$('memoryContextPreview');
+  const enabled=state.privateMemoryEnabled===true&&$('shareMemory').checked;
+  target.hidden=!enabled;target.replaceChildren();
+  if(!enabled)return;
+  const memories=window.liftsEvolutionCore?.relevant($('question').value,state.privateMemories)||[];
+  if(!memories.length){target.textContent='No hay recuerdos relacionados con esta consulta.';return;}
+  const label=document.createElement('p');
+  label.textContent='Vista previa de recuerdos para el próximo envío';
+  const entries=document.createElement('ul');
+  for(const item of memories){
+    const row=document.createElement('li');row.textContent=item.title+' · '+item.text;entries.append(row);
+  }
+  target.append(label,entries);
+}
+$('shareMemory').onchange=previewMemory;
+$('question').oninput=previewMemory;
 function render(){
   $('assistantTitle').textContent=assistantName()+' · Tu asistente';
   $('welcomeTitle').textContent='Hola, soy '+assistantName()+'. Vamos a conocernos.';
@@ -57,7 +74,7 @@ function render(){
   $('taskList').replaceChildren();
   if(!state.tasks.length) $('taskList').textContent='Todavía no tienes pendientes. Agrega el primero.';
   for(const t of state.tasks){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`Completar ${t.title}`);check.onchange=()=>{t.done=check.checked;persist();render();};const label=document.createElement('span');label.textContent=t.title+(t.date?` · ${t.date}`:'');const remove=document.createElement('button');remove.textContent='Eliminar';remove.setAttribute('aria-label',`Eliminar ${t.title}`);remove.onclick=()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);persist();render();};row.append(check,label,remove);$('taskList').append(row);}
-  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsRoutines?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();window.liftsEvolution?.render();
+  window.liftsWorkUI?.render();window.liftsReminders?.render();window.liftsRoutines?.render();window.liftsCoachUI?.render();window.liftsWellbeingUI?.render();window.liftsEvolution?.render();previewMemory();
 }
 $('readLatest').onclick=()=>window.liftsVoice?.speak(state.messages.filter(m=>m.role==='assistant').at(-1)?.text || '');
 $('assistantForm').onsubmit=async event=>{
@@ -78,7 +95,7 @@ $('chat').onsubmit=async e=>{
   const action=window.liftsAssistantActions?.handle(text) || window.liftsEvolution?.handle(text);
   if(action){
     state.messages.push({role:'user',text,source:'local'},{role:'assistant',text:action.reply,source:'local'});
-    $('question').value='';render();
+    $('question').value='';$('shareMemory').checked=false;render();
     const inVoice=window.liftsConversationUI?.active();
     if(!inVoice)action.open?.();
     const reply=inVoice&&action.open?action.reply+' Pulsa Revisar en Lifts para abrirlo.':action.reply;
@@ -94,6 +111,7 @@ $('chat').onsubmit=async e=>{
   if($('shareMemory').checked && state.privateMemoryEnabled===true){
     const memories=window.liftsEvolutionCore.relevant(text,state.privateMemories);
     if(memories.length)payload.memoryContext=memories;
+    $('shareMemory').checked=false;previewMemory();
   }
   if($('shareProfile').checked)payload.profile={...state.profile};
   const wellbeing=window.liftsWellbeingUI?.context();if(wellbeing)payload.wellbeingContext=wellbeing;
@@ -124,6 +142,13 @@ function conversationDirty(){
   const saved=state.savedConversations?.find(c=>c.id===activeConversation);
   return state.messages.length>0 && (!saved || JSON.stringify(saved.messages)!==JSON.stringify(state.messages));
 }
+function openConversation(id){
+  const conversation=state.savedConversations?.find(item=>item.id===id);
+  if(!conversation)return false;
+  if(conversationDirty()&&!confirm('¿Dejar los cambios sin guardar y abrir esta conversación?'))return false;
+  cancelChat();activeConversation=id;state.messages=JSON.parse(JSON.stringify(conversation.messages));$('question').value='';page('home');render();
+  return true;
+}
 function renderConversations(){
   const records=state.savedConversations || [];
   const saved=records.find(c=>c.id===activeConversation);
@@ -135,10 +160,7 @@ function renderConversations(){
   for(const conversation of records){
     const row=document.createElement('div');row.className='task';
     const open=document.createElement('button');open.type='button';open.className='secondary';open.textContent=conversation.title || 'Conversación guardada';
-    open.onclick=()=>{
-      if(conversationDirty() && !confirm('¿Dejar los cambios sin guardar y abrir esta conversación?'))return;
-      cancelChat();activeConversation=conversation.id;state.messages=JSON.parse(JSON.stringify(conversation.messages));$('question').value='';render();
-    };
+    open.onclick=()=>openConversation(conversation.id);
     const remove=document.createElement('button');remove.type='button';remove.textContent='Eliminar';remove.onclick=()=>{
       if(!confirm('¿Eliminar esta conversación guardada?'))return;
       state.savedConversations=state.savedConversations.filter(c=>c.id!==conversation.id);pendingConversations.delete(conversation.id);
@@ -217,4 +239,4 @@ $('forgetProfile').onclick=()=>{if(!confirm('¿Borrar tus preferencias guardadas
 render();
 renderWelcome();
 
-window.liftsWorkspace={getState:()=>state,save:()=>window.nexoAccount.save(personal.snapshot(state)),render,open:page,assistantName,isBusy:()=>chatBusy,cancelResponse:cancelChat,ask:text=>{$('question').value=String(text).slice(0,5000);return $('chat').onsubmit({preventDefault(){}});}};
+window.liftsWorkspace={getState:()=>state,save:()=>window.nexoAccount.save(personal.snapshot(state)),render,open:page,openConversation,assistantName,isBusy:()=>chatBusy,cancelResponse:cancelChat,ask:text=>{$('question').value=String(text).slice(0,5000);return $('chat').onsubmit({preventDefault(){}});}};

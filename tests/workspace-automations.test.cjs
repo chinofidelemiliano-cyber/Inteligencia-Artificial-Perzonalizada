@@ -23,3 +23,14 @@ test('calibration rules reuse dated active records without loading manual files'
   assert.equal(evaluate(state,'2026-11-25')[0].signal.destination.key,'active');
   assert.equal(evaluate(state,'2026-11-25').length,1);
 });
+
+test('rules detect due follow-ups and maintenance and ignore closed follow-ups',()=>{
+  const day='2026-11-25';
+  const state={
+    workspaceAutomations:{rules:['followup','household'].map(when=>define({name:when,when,then:'open'},when))},
+    guardianFollowups:[{id:'open',next:day,subject:'Revisar muestra',priority:'high'},
+      {id:'done',next:day,subject:'Cerrado',closed:true}],
+    nexusJournal:[{id:'asset',kind:'household',title:'Equipo con servicio',data:{date:day}}]
+  };
+  assert.deepEqual(evaluate(state,day).map(({signal})=>signal.destination.id),['guardian','journal-record']);
+});

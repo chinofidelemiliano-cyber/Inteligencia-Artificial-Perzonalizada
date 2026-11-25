@@ -12,7 +12,27 @@
     validate:key=>lesson?/^[a-z0-9-]{1,80}\/[a-z0-9-]{1,80}$/.test(key):key==='',
     open:(_workspace,_id,key)=>root.liftsAcademy.open(view,key)
   });
+  const draftAction=(label,purpose,dependency,open)=>({
+    label,purpose,dependency,open,input:'Sin parámetros',output:'Editor o borrador local',
+    permission:'Acción explícita en sesión autenticada',limitations:'Confirma el guardado desde la herramienta.',
+    validate:key=>key==='',action:true
+  });
   const tools = Object.freeze({
+    home:plainPage('Chat','Conversar con el asistente y consultar el historial','El uso remoto requiere conexión.'),
+    work:plainPage('Trabajo y cursos breves','Consultar herramientas de trabajo y calidad','El guardado se confirma desde cada herramienta.'),
+    images:plainPage('Crear imágenes','Preparar imágenes desde una descripción','La generación remota depende de la configuración del proveedor.'),
+    identity:plainPage('Propuestas de logotipo','Comparar variantes de identidad visual','La elección se aplica a tu espacio.'),
+    profile:plainPage('Mi perfil','Consultar preferencias y ajustes de cuenta','Las preferencias se guardan por cuenta.'),
+    routines:plainPage('Hábitos y dinero','Consultar presupuesto, gastos y rutinas','Los datos se guardan por cuenta.'),
+    'draft-task':draftAction('Preparar una tarea','Crear pendiente y abrir un borrador','Agenda',()=>root.liftsWorkUI.prepareTask('')),
+    'draft-reminder':draftAction('Crear recordatorio','Programar aviso desde un borrador','Recordatorios',()=>root.liftsReminders.open()),
+    'draft-idea':draftAction('Registrar una idea','Preparar una nota privada','Nexus',()=>root.liftsJournal.prepareDraft('note')),
+    'open-focus':draftAction('Abrir concentración','Abrir temporizador de concentración','Agenda',workspace=>{
+      workspace.open('tasks');root.document.getElementById('focusMinutes').focus();
+    }),
+    'open-expense':draftAction('Registrar gasto','Abrir captura de gasto personal','Hábitos y dinero',workspace=>{
+      workspace.open('routines');root.document.getElementById('moneyAmount').focus();
+    }),
     backup:{
       label:'Recuperar respaldo de Lifts',purpose:'Revisar una exportación JSON y recuperar registros privados',
       input:'Sin parámetros',output:'Centro de privacidad',permission:'Sesión del propietario',
@@ -87,7 +107,7 @@
     },
     tasks:plainPage('Agenda','Consultar pendientes','Los cambios de tareas se guardan desde Agenda.'),
     reminders:plainPage('Recordatorios','Consultar avisos','La entrega depende de la configuración de avisos.'),
-    engineering:plainPage('Ingeniería · Placas y distorsión','Calcular distorsión y guardar fichas','Las entradas sin guardar requieren volver a capturarse.'),
+    engineering:plainPage('Ingeniería · Placas y distorsión','Calculadora de distorsión y fichas de ingeniería','Las entradas sin guardar requieren volver a capturarse.'),
     'engineering-record':{
       label:'Ficha de ingeniería guardada',purpose:'Recuperar una ficha y sus entradas',
       input:'Identificador de ficha',output:'Ficha cargada en la calculadora',
@@ -138,18 +158,28 @@
     const target=location(value?.target?.id,value?.target?.key);
     return target?{target,at:typeof value.at==='string'?value.at:'',label:typeof value.label==='string'?value.label.slice(0,180):tools[target.id].label}:null;
   }
+  const normalize=value=>String(value||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  const fillers=new Set('a al con cual donde el en encuentra esta la las localizar lo los me mi mis muestra muestrame necesito para por que quiero sobre ver y de del un una busca buscar'.split(' '));
+  function queryTerms(query){
+    const words=normalize(query).match(/[a-z0-9]+/g)||[];
+    return [...new Set(words.filter(word=>!fillers.has(word)))];
+  }
+  function matches(query,...fields){
+    const terms=queryTerms(query);
+    const haystack=normalize(fields.filter(field=>typeof field==='string').join(' '));
+    return terms.length?terms.every(term=>haystack.includes(term)):!query.trim();
+  }
   function commands(query='') {
-    const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
-    const term=normalize(query.trim());
-    const results=Object.entries(tools).filter(([id,tool])=>id!=='lesson'&&!id.endsWith('-record')&&normalize(tool.label+' '+tool.purpose).includes(term))
+    const term=query.trim();
+    const results=Object.entries(tools).filter(([id,tool])=>id!=='lesson'&&!id.endsWith('-record')&&(!tool.action||term)&&matches(term,tool.label,tool.purpose))
       .map(([id,tool])=>({label:tool.label,target:location(id,id==='excel'?'basics':'')}));
     const excelViews=[['Inventario de tintas · Excel','inventory'],['Desperdicio · Excel','waste'],['Pareto · Excel','pareto'],['Revisar CSV · Excel','csv']];
     if(term)for(const [label,key] of excelViews){
-      if(normalize(label).includes(term))results.push({label,target:location('excel',key)});
+      if(matches(term,label))results.push({label,target:location('excel',key)});
     }
     return results;
   }
-  const api={tools,fields,location,context,recover,commands};
+  const api={tools,fields,location,context,recover,commands,matches,queryTerms};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusCore=api;
 })(globalThis);

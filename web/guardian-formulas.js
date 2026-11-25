@@ -68,6 +68,15 @@
         '. Resultado: '+number.format(result)+(definition.unit?' '+definition.unit:'')+'.';
     }catch(error){status.textContent=error.message;}
   };
+  root.liftsFormulaSearch={
+    calculate,
+    entries:()=>Object.entries(definitions).map(([id,item])=>({id,name:item.name,description:item.use})),
+    open(id){
+      if(!Object.hasOwn(definitions,id))return;
+      root.liftsWorkspace.open('calculatorHub');
+      picker.value=id;render();picker.focus();
+    }
+  };
   picker.onchange=render;
   root.addEventListener('nexo-state',()=>{picker.selectedIndex=0;render();});
   render();

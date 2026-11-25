@@ -21,3 +21,10 @@ test('context keeps explicit editable fields with bounded plain text',()=>{
   assert.equal(value.missing,'');
   assert.equal(value.privateMetadata,undefined);
 });
+
+test('natural language in the palette matches accents and meaningful terms',()=>{
+  const {matches,commands}=require('../web/nexus-core.js');
+  assert.equal(matches('Encuentra las notas donde estudié teoría del color','notas','Estudié teoría del color'),true);
+  assert.equal(matches('Busca el presupuesto y la calibración','Presupuesto anual'),false);
+  assert.ok(commands('¿Dónde está la calculadora de distorsión?').some(item=>item.target?.id==='engineering'));
+});

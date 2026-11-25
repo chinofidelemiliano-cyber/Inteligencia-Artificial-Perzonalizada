@@ -8,7 +8,7 @@ test('private memory requires matching terms and returns only bounded reference 
   const memories=[{id:'1',title:'Comco Cadet',text:'Estaciones documentadas.'},{id:'2',title:'Presupuesto',text:'Gastos del año.'}];
   assert.deepEqual(relevant('¿Cómo es la Comco?',memories),[{title:'Comco Cadet',text:'Estaciones documentadas.'}]);
   assert.deepEqual(relevant('¿Puedes explicar el calor?',memories),[]);
-  assert.equal(relevant('Comco',Array(7).fill(memories[0])).length,3);
+  assert.equal(relevant('Comco',Array(7).fill(memories[0])).length,1);
 });
 
 test('offline chat opens intended tools and calculates a circumference with units',()=>{

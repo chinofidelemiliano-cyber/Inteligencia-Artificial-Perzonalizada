@@ -27,6 +27,12 @@
         label+' registrado para '+due+'. Abre la ficha para revisar su seguimiento.',
         {id:'journal-record',key:item.id},due<day?'alta':'media');
     }
+    for(const followup of state.guardianFollowups||[]){
+      if(!followup.closed&&date(followup.next)&&followup.next<=day){
+        push('followup:'+followup.id+':'+followup.next,followup.subject,
+          'Seguimiento registrado para '+followup.next+'.',{id:'guardian'},followup.priority==='high'?'alta':'media');
+      }
+    }
     const reviews=Object.entries(state.academyProgress?.reviews||{}).filter(([,review])=>date(review?.due)&&review.due<=day);
     for(const [key,entry] of reviews)push('review:'+key+':'+entry.due,'Lección para repasar','El repaso estaba programado para '+entry.due+'. Abre Rutas y repasos.',{id:'study-paths'});
     const month=day.slice(0,7);

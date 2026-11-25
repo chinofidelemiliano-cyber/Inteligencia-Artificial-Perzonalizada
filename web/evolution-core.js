@@ -5,12 +5,20 @@
   const words = text => [...new Set((normalize(text).match(/[a-z0-9]+/g)||[]).filter(word=>word.length>=4&&!ignored.has(word)))];
   function relevant(query, memories) {
     const keys = words(query);
-    return (Array.isArray(memories)?memories:[]).filter(memory=>!memory.archived).map(memory=>{
-      const title = words(memory.title), body = words(memory.text);
-      const score = keys.reduce((total,key)=>total+(title.includes(key)?3:body.includes(key)?1:0),0);
+    const ranked=(Array.isArray(memories)?memories:[]).filter(memory=>!memory.archived).map(memory=>{
+      const title=words(memory.title),body=words(memory.text),context=words([memory.category,memory.context].join(' '));
+      const score=keys.reduce((sum,key)=>sum+(title.includes(key)?4:context.includes(key)?3:body.includes(key)?1:0),0);
       return {memory,score};
-    }).filter(item=>item.score>=3).sort((a,b)=>b.score-a.score).slice(0,3)
-      .map(({memory})=>({title:memory.title,text:memory.text}));
+    }).filter(item=>item.score>=3).sort((a,b)=>b.score-a.score);
+    const seen=new Set(),result=[];
+    for(const {memory} of ranked){
+      const title=String(memory.title||'').slice(0,80),text=String(memory.text||'').slice(0,600);
+      const key=normalize(title+'\n'+text);
+      if(!title||!text||seen.has(key))continue;
+      seen.add(key);result.push({title,text});
+      if(result.length===3)break;
+    }
+    return result;
   }
 
   function lookup(text,memories){

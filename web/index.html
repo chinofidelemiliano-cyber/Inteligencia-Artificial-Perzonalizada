@@ -111,7 +111,7 @@
   <section aria-labelledby="osCommandTitle"><h2 id="osCommandTitle">Centro de mando</h2>
   <div id="evolutionPanels" class="evolution-panels"></div></section>
   <details><summary>Personalizar inicio</summary><div id="evolutionPanelSettings"></div></details>
-</section><div class="intro"><div class="intro-copy"><small class="eyebrow">TRABAJO Y VIDA, EN UN MISMO LUGAR</small><h2>Lifts: tu asistente para la vida y el trabajo.</h2><p>Lifts te ayuda a conversar, organizar pendientes personales y laborales, preparar horarios, revisar cómo vas y aprender a mejorar tus procesos. Tú eliges qué compartir y qué guardar.</p><p>Nació con el objetivo de ofrecer acompañamiento práctico y personal: convertir lo que tienes en mente en pasos claros, con tiempo para aprender y descansar.</p><p class="notice">Primera versión registrada: <time datetime="2026-11-05">5 de noviembre de 2026</time>, según el historial del proyecto. La plataforma sigue en desarrollo.</p><div class="companion-actions"><button class="secondary" id="plan">Organizar mis pendientes</button><button class="secondary" id="openMethods" type="button">Resolver un problema laboral</button><button class="secondary" id="openCourses" type="button">Explorar cursos breves</button></div></div><img class="brand-banner" src="/assets/lifts-banner.png" alt="Logo Lifts con cerebro de circuitos y acentos cian y violeta" width="1536" height="1024"></div><div class="grid"><article class="card"><h3 class="assistant-heading"><span class="assistant-orb" aria-hidden="true"></span><span id="assistantTitle">Lifts · Tu asistente</span></h3><p class="muted">Elige un tema sugerido o escribe lo que tengas en mente.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="saveConversation" type="button">Guardar conversación</button><button id="newConversation" type="button" class="secondary">Nueva conversación</button></div><p id="conversationStatus" role="status" aria-live="polite"></p><p class="muted">Solo las conversaciones guardadas se conservan al recargar.</p><details><summary>Mis conversaciones guardadas</summary><div id="savedConversations"></div></details><div class="voice-toolbar"><button id="readLatest" type="button" class="secondary">▷ Escuchar respuesta</button><button id="stopVoice" type="button" class="secondary">◼ Detener voz</button><span id="voiceStatus" role="status" aria-live="polite"></span></div><div id="messages" aria-live="polite"></div><div id="streamingAnswer" class="message" hidden aria-live="polite"></div><form id="chat"><label id="memoryShareLabel" hidden><input id="shareMemory" type="checkbox"> Compartir recuerdos relacionados con Cloudflare Workers AI al consultar</label><label for="question">¿En qué necesitas ayuda?</label><textarea id="question" required maxlength="5000" placeholder="¿Qué te gustaría organizar, aprender o explorar hoy?"></textarea><label for="chatEngine">Modelo de respuesta</label><select id="chatEngine"><option value="balanced" selected>Equilibrado · Gemma 4 26B</option><option value="fast">Ligero · Llama 3.2 3B</option><option value="deep">Mayor capacidad · Qwen3.8 27B</option></select><p class="notice">La IA remota solo se habilita tras confirmar un plan gratuito. Al agotarse la cuota, se pausa; no hay cambio automático a una API de pago.</p><label for="responseDetail">Nivel de detalle</label><select id="responseDetail"><option value="brief">Breve · puntos esenciales</option><option value="detailed" selected>Detallada · explicación y ejemplos</option><option value="deep">Profunda · desarrollo paso a paso</option></select><button id="sendChat">Enviar a Lifts</button><p id="chatStatus" role="status" aria-live="polite"></p><button id="testAI" type="button" class="secondary">Comprobar conexión de IA</button><p class="notice">La comprobación usa una consulta de tu cuota y envía solo una pregunta fija; no incluye perfil ni historial.</p><p id="aiDiagnostic" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></p></form><p class="notice">Las respuestas son generadas por IA y pueden contener errores. La búsqueda web de pago fue retirada. Lifts no crea tareas automáticamente. Verifica las recomendaciones técnicas con documentación del fabricante.</p></article><div><article class="card"><h3>Tu espacio, a tu manera</h3><p id="focus"></p><div id="topics" class="areas" aria-label="Temas sugeridos"></div><p id="personalizationNote" class="muted"></p><button id="personalize" class="secondary">Personalizar mi experiencia</button></article><article class="card"><h3>Hoy, paso a paso</h3><p id="count"></p><progress id="taskProgress" max="1" value="0" aria-label="Progreso de tareas"></progress><button class="secondary" id="openTasks">Ver mis tareas</button> <button type="button" class="secondary" data-page="routines">Hábitos y dinero</button></article></div></div></section>
+</section><div class="intro"><div class="intro-copy"><small class="eyebrow">TRABAJO Y VIDA, EN UN MISMO LUGAR</small><h2>Lifts: tu asistente para la vida y el trabajo.</h2><p>Lifts te ayuda a conversar, organizar pendientes personales y laborales, preparar horarios, revisar cómo vas y aprender a mejorar tus procesos. Tú eliges qué compartir y qué guardar.</p><p>Nació con el objetivo de ofrecer acompañamiento práctico y personal: convertir lo que tienes en mente en pasos claros, con tiempo para aprender y descansar.</p><p class="notice">Primera versión registrada: <time datetime="2026-11-05">5 de noviembre de 2026</time>, según el historial del proyecto. La plataforma sigue en desarrollo.</p><div class="companion-actions"><button class="secondary" id="plan">Organizar mis pendientes</button><button class="secondary" id="openMethods" type="button">Resolver un problema laboral</button><button class="secondary" id="openCourses" type="button">Explorar cursos breves</button></div></div><img class="brand-banner" src="/assets/lifts-banner.png" alt="Logo Lifts con cerebro de circuitos y acentos cian y violeta" width="1536" height="1024"></div><div class="grid"><article class="card"><h3 class="assistant-heading"><span class="assistant-orb" aria-hidden="true"></span><span id="assistantTitle">Lifts · Tu asistente</span></h3><p class="muted">Elige un tema sugerido o escribe lo que tengas en mente.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="saveConversation" type="button">Guardar conversación</button><button id="newConversation" type="button" class="secondary">Nueva conversación</button></div><p id="conversationStatus" role="status" aria-live="polite"></p><p class="muted">Solo las conversaciones guardadas se conservan al recargar.</p><details><summary>Mis conversaciones guardadas</summary><div id="savedConversations"></div></details><div class="voice-toolbar"><button id="readLatest" type="button" class="secondary">▷ Escuchar respuesta</button><button id="stopVoice" type="button" class="secondary">◼ Detener voz</button><span id="voiceStatus" role="status" aria-live="polite"></span></div><div id="messages" aria-live="polite"></div><div id="streamingAnswer" class="message" hidden aria-live="polite"></div><form id="chat"><label id="memoryShareLabel" hidden><input id="shareMemory" type="checkbox"> Compartir recuerdos relacionados con Cloudflare Workers AI en la próxima consulta</label><div id="memoryContextPreview" hidden></div><label for="question">¿En qué necesitas ayuda?</label><textarea id="question" required maxlength="5000" placeholder="¿Qué te gustaría organizar, aprender o explorar hoy?"></textarea><label for="chatEngine">Modelo de respuesta</label><select id="chatEngine"><option value="balanced" selected>Equilibrado · Gemma 4 26B</option><option value="fast">Ligero · Llama 3.2 3B</option><option value="deep">Mayor capacidad · Qwen3.8 27B</option></select><p class="notice">La IA remota solo se habilita tras confirmar un plan gratuito. Al agotarse la cuota, se pausa; no hay cambio automático a una API de pago.</p><label for="responseDetail">Nivel de detalle</label><select id="responseDetail"><option value="brief">Breve · puntos esenciales</option><option value="detailed" selected>Detallada · explicación y ejemplos</option><option value="deep">Profunda · desarrollo paso a paso</option></select><button id="sendChat">Enviar a Lifts</button><p id="chatStatus" role="status" aria-live="polite"></p><button id="testAI" type="button" class="secondary">Comprobar conexión de IA</button><p class="notice">La comprobación usa una consulta de tu cuota y envía solo una pregunta fija; no incluye perfil ni historial.</p><p id="aiDiagnostic" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></p></form><p class="notice">Las respuestas son generadas por IA y pueden contener errores. La búsqueda web de pago fue retirada. Lifts no crea tareas automáticamente. Verifica las recomendaciones técnicas con documentación del fabricante.</p></article><div><article class="card"><h3>Tu espacio, a tu manera</h3><p id="focus"></p><div id="topics" class="areas" aria-label="Temas sugeridos"></div><p id="personalizationNote" class="muted"></p><button id="personalize" class="secondary">Personalizar mi experiencia</button></article><article class="card"><h3>Hoy, paso a paso</h3><p id="count"></p><progress id="taskProgress" max="1" value="0" aria-label="Progreso de tareas"></progress><button class="secondary" id="openTasks">Ver mis tareas</button> <button type="button" class="secondary" data-page="routines">Hábitos y dinero</button></article></div></div></section>
 <section id="desktop" hidden aria-labelledby="desktopTitle">
   <article class="card">
     <h2 id="desktopTitle">Escritorio</h2>
@@ -133,20 +133,25 @@
     </details>
     <p id="desktopActionStatus" role="status"></p>
   </article>
-  <div class="evolution-panels">
-    <article class="card">
+  <details class="card"><summary>Personalizar paneles del escritorio</summary>
+    <div id="desktopWidgetOptions"></div>
+    <button id="desktopWidgetSave" type="button">Guardar paneles</button>
+    <p id="desktopWidgetStatus" role="status"></p>
+  </details>
+  <div class="evolution-panels" id="desktopWidgets">
+    <article class="card" data-widget="tasks">
       <h3>Agenda de hoy</h3><ul id="desktopTasks"></ul>
       <button type="button" data-page="tasks" class="secondary">Ver agenda completa</button>
     </article>
-    <article class="card">
+    <article class="card" data-widget="alerts">
       <h3>Avisos pendientes</h3><ul id="desktopAlerts"></ul>
       <button type="button" data-page="reminders" class="secondary">Ver todos los avisos</button>
     </article>
-    <article class="card">
+    <article class="card" data-widget="automations">
       <h3>Reglas con coincidencias</h3><p id="desktopAutomation"></p>
       <button id="desktopOpenAutomation" type="button" class="secondary">Abrir automatizaciones</button>
     </article>
-    <article class="card">
+    <article class="card" data-widget="next">
       <h3>Próxima acción</h3><p id="desktopNext"></p>
       <button type="button" data-page="journal" class="secondary">Ir a misiones y conocimiento</button>
     </article>
@@ -507,6 +512,19 @@
     <form id="formulaForm"><div id="formulaInputs"></div><button>Calcular fórmula</button></form>
     <p id="formulaResult" role="status"></p>
   </article>
+  <details class="card">
+    <summary>Amortización de préstamo</summary>
+    <p>Cuota fija, tasa constante por periodo y pagos al final de cada periodo. Excluye comisiones, seguros e impuestos.</p>
+    <form id="amortizationForm">
+      <label for="amortizationPrincipal">Monto del préstamo</label><input id="amortizationPrincipal" inputmode="decimal" name="principal" required maxlength="20">
+      <label for="amortizationRate">Tasa por periodo (%)</label><input id="amortizationRate" inputmode="decimal" name="rate" required maxlength="16">
+      <label for="amortizationPeriods">Número de pagos</label><input id="amortizationPeriods" inputmode="numeric" name="periods" required maxlength="4">
+      <button>Calcular amortización</button>
+    </form>
+    <p id="amortizationStatus" role="status"></p>
+    <div id="amortizationRows" class="os-overflow"></div>
+    <button id="amortizationDownload" type="button" class="secondary" hidden>Descargar amortización CSV</button>
+  </details>
 </section>
 <section id="field" hidden aria-labelledby="fieldTitle">
   <article class="card">
@@ -593,13 +611,14 @@
     <form id="automationForm">
       <label for="automationName">Nombre de la regla</label><input id="automationName" name="name" maxlength="80" required>
       <label for="automationWhen">Cuando ocurra</label><select id="automationWhen" name="when">
-        <option value="task">Tarea vencida</option><option value="calibration">Calibración próxima</option><option value="budget">Presupuesto mensual excedido</option><option value="review">Repaso previsto</option>
+        <option value="task">Tarea vencida</option><option value="calibration">Calibración próxima</option><option value="budget">Presupuesto mensual excedido</option><option value="review">Repaso previsto</option><option value="household">Mantenimiento previsto</option><option value="followup">Seguimiento de Guardian</option>
       </select>
       <label for="automationCondition">Si coincide con (opcional)</label><input id="automationCondition" name="condition" maxlength="80">
       <label for="automationThen">Entonces ofrecer</label><select id="automationThen" name="then">
         <option value="open">Abrir el origen</option><option value="reminder">Preparar un recordatorio</option>
       </select>
-      <button>Guardar regla</button>
+      <label for="automationPriority">Prioridad de la coincidencia</label><select id="automationPriority" name="priority"><option value="">Cualquier prioridad</option><option value="alta">Alta</option><option value="media">Media</option></select>
+      <button>Guardar regla</button><button id="automationCancelEdit" type="button" class="secondary" hidden>Cancelar edición de regla</button>
     </form>
     <div id="automationRules"></div>
     <button id="automationRun" type="button">Revisar reglas y guardar en historial</button>
@@ -793,7 +812,6 @@
 <script src="app.js" defer></script>
 <script src="workspace-navigation.js" defer></script>
 <script src="workspace-desktop.js" defer></script>
-<script src="workspace-actions.js" defer></script>
 <script src="images.js" defer></script>
 <script src="work-ui.js" defer></script>
 <script src="coaching-ui.js" defer></script>
@@ -822,6 +840,7 @@
 <script src="guardian-philosophy.js" defer></script>
 <script src="guardian-calculator.js" defer></script>
 <script src="guardian-formulas.js" defer></script>
+<script src="finance-amortization.js" defer></script>
 <script src="guardian.js" defer></script>
 <script src="mind-core.js" defer></script>
 <script src="mind-ui.js" defer></script>
@@ -833,6 +852,7 @@
 <script src="personal-systems.js" defer></script>
 <script src="personal-preflight-ui.js" type="module"></script>
 <script src="nexus-ui.js" defer></script>
+<script src="workspace-actions.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
 <script src="nexus-backup.js" defer></script>

@@ -132,12 +132,61 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.getByLabel('Entonces ofrecer').selectOption('reminder');
     await page.getByRole('button',{name:'Guardar regla',exact:true}).click();
     await page.getByText('Regla guardada.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Editar Seguir presión',exact:true}).click();
+    await page.getByLabel('Prioridad de la coincidencia').selectOption('alta');
+    await page.getByRole('button',{name:'Guardar cambios de la regla',exact:true}).click();
+    await page.getByText('Regla guardada.',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Revisar reglas y guardar en historial'}).click();
     await page.getByText('Revisión guardada.',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>window.saved.workspaceAutomations.history[0].total),1);
     await page.getByRole('button',{name:'Preparar un recordatorio',exact:true}).click();
     assert.equal(await page.locator('#reminderTitle').inputValue(),'Ajustar presión');
     assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().tasks.length),2);
+    await page.evaluate(()=>{
+      const space=window.liftsWorkspace.getState();
+      space.savedConversations=[{id:'query-test',title:'Apuntes de turno',messages:[{role:'user',text:'Revisar teoría del color'}]}];
+      window.liftsWorkspace.open('desktop');
+    });
+    await page.getByText('Personalizar paneles del escritorio',{exact:true}).click();
+    await page.getByLabel('Mostrar Avisos pendientes',{exact:true}).uncheck();
+    await page.getByRole('button',{name:'Subir panel Próxima acción'}).click();
+    await page.getByRole('button',{name:'Guardar paneles',exact:true}).click();
+    await page.getByText('Paneles guardados.',{exact:true}).waitFor();
+    const customized=await page.evaluate(()=>window.saved);
+    await page.evaluate(data=>{
+      window.dispatchEvent(new CustomEvent('nexo-state',{detail:data}));
+      window.liftsWorkspace.open('desktop');
+    },customized);
+    assert.equal(await page.locator('[data-widget="alerts"]').isVisible(),false);
+    assert.deepEqual(await page.locator('#desktopWidgets > article').evaluateAll(cards=>cards.map(card=>card.dataset.widget)),customized.desktopWidgets.order);
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('Encuentra mis conversaciones sobre teoría del color');
+    await page.getByRole('button',{name:'Apuntes de turno · Conversación',exact:true}).click();
+    await page.locator('#home').waitFor();
+    assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().messages[0].text),'Revisar teoría del color');
+    await page.evaluate(()=>{
+      const space=window.liftsWorkspace.getState();
+      space.privateMemoryEnabled=true;
+      space.privateMemories=[{id:'preview-fixture',title:'Rebobinador',text:'Referencia del taller',context:'Contexto reservado'}];
+      window.liftsWorkspace.render();
+    });
+    await page.locator('#question').fill('¿Dónde está el rebobinador?');
+    await page.locator('#shareMemory').check();
+    await page.getByText('Rebobinador · Referencia del taller',{exact:true}).waitFor();
+    assert.doesNotMatch(await page.locator('#memoryContextPreview').innerText(),/Contexto reservado/);
+    await page.locator('#shareMemory').uncheck();
+    assert.equal(await page.locator('#memoryContextPreview').isVisible(),false);
+    await page.evaluate(()=>window.liftsWorkspace.open('calculatorHub'));
+    await page.getByText('Amortización de préstamo',{exact:true}).click();
+    await page.getByLabel('Monto del préstamo').fill('1200');
+    await page.getByLabel('Tasa por periodo (%)',{exact:true}).fill('0');
+    await page.getByLabel('Número de pagos',{exact:true}).fill('12');
+    await page.getByRole('button',{name:'Calcular amortización'}).click();
+    await page.getByText(/Cuota de referencia 100/).waitFor();
+    const [amortization]=await Promise.all([
+      page.waitForEvent('download'),page.getByRole('button',{name:'Descargar amortización CSV'}).click()
+    ]);
+    assert.match(await readFile(await amortization.path(),'utf8'),/12,100.00,0.00,100.00,0.00/);
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

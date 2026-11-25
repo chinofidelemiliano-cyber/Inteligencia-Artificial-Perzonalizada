@@ -3,10 +3,6 @@
   const $=id=>document.getElementById(id);
   const api=window.liftsWorkspace;
   const root=document.documentElement;
-  const sections=[
-    ['Chat','home'],['Trabajo y cursos breves','work'],['Crear imágenes','images'],
-    ['Propuestas de logotipo','identity'],['Privacidad y memoria','privacy'],['Mi perfil','profile'],['Hábitos y dinero','routines']
-  ];
   let searchVersion=0;
   function remember(name,value){try{localStorage.setItem(name,value);}catch{}}
   function read(name){try{return localStorage.getItem(name);}catch{return null;}}
@@ -42,38 +38,40 @@
   async function search() {
     const value=query.value.trim(),version=++searchVersion;
     const term=normalize(value);
+    const match=(...fields)=>window.liftsNexusCore.matches(value,...fields);
     results.replaceChildren();
     for(const command of window.liftsNexusCore.commands(value)){
       add(command.label,()=>window.liftsNexus.open(command.target));
     }
-    for(const [label,page] of sections){
-      if(!normalize(label).includes(term))continue;
-      add(label,()=>api.open(page));
-    }
     if(!term)return;
-    for(const task of api.getState().tasks.filter(task=>!task.archived && normalize(String(task.title)).includes(term)).slice(0,5)){
+    for(const task of api.getState().tasks.filter(task=>!task.archived && match(task.title,task.date,'tareas agenda eventos')).slice(0,5)){
       add(task.title+' · '+(task.kind==='reminder'?'Recordatorios':'Agenda'),()=>api.open(task.kind==='reminder'?'reminders':'tasks'));
     }
-    for(const item of (api.getState().engineeringRecords||[]).filter(item=>normalize(item.data.name+' '+item.data.model).includes(term)).slice(0,4)){
+    for(const item of (api.getState().engineeringRecords||[]).filter(item=>match(item.data.name,item.data.model,'ingenieria flexografia')).slice(0,4)){
       add(item.data.name+' · Ficha de ingeniería',()=>window.liftsNexus.open({id:'engineering-record',key:item.id}));
     }
     for(const item of window.liftsDiagnostics.search(value).slice(0,4)){
       add(item.data.name+' · Caso de diagnóstico',()=>window.liftsNexus.open({id:'diagnostic-record',key:item.id}));
     }
-    for(const item of (api.getState().industrial?.orders||[]).filter(item=>normalize(item.name+' '+item.note).includes(term)).slice(0,5)){
+    for(const item of (api.getState().industrial?.orders||[]).filter(item=>match(item.name,item.note,'orden interna')).slice(0,5)){
       add(item.name+' · Orden interna',()=>window.liftsNexus.open({id:'industrial-order-record',key:item.id}));
     }
-    for(const item of (api.getState().nexusJournal||[]).filter(item=>normalize(item.title).includes(term)).slice(0,5)){
+    for(const item of (api.getState().nexusJournal||[]).filter(item=>match(item.title,...Object.values(item.data||{}),window.liftsNexusJournal?.kinds?.[item.kind]?.label||item.kind,({note:'notas',mission:'proyectos misiones',reading:'lecturas documentos',decision:'decisiones'})[item.kind])).slice(0,5)){
       add(item.title+' · Nexus',()=>window.liftsNexus.open({id:'journal-record',key:item.id}));
     }
     for(const item of (window.liftsFeedback?.search(value)||[]).slice(0,5)){
       add(item.topic+' · Evaluación privada',()=>window.liftsNexus.open({id:'feedback-record',key:item.id}));
     }
-    for(const item of (api.getState().builderTools||[]).filter(item=>!item.archived&&normalize(item.spec.name).includes(term)).slice(0,5)){
+    for(const item of (api.getState().builderTools||[]).filter(item=>!item.archived&&match(item.spec.name,item.spec.formula,'formula calculadora builder')).slice(0,5)){
       add(item.spec.name+' · Builder',()=>window.liftsNexus.open({id:'builder-record',key:item.id}));
     }
     const state=api.getState();
-    const match=(...fields)=>fields.some(field=>typeof field==='string'&&normalize(field).includes(term));
+    for(const item of (state.savedConversations||[]).filter(item=>match(item.title,'conversaciones chat',...(item.messages||[]).map(message=>message.text))).slice(0,5)){
+      add((item.title||'Conversación guardada')+' · Conversación',()=>api.openConversation(item.id));
+    }
+    for(const item of (window.liftsFormulaSearch?.entries()||[]).filter(item=>match(item.name,item.description,'formula calculadora')).slice(0,8)){
+      add(item.name+' · Calculadora',()=>window.liftsFormulaSearch.open(item.id));
+    }
     for(const item of (state.privateMemories||[]).filter(item=>!item.archived&&match(item.title,item.text,item.context)).slice(0,4)){
       add(item.title+' · Recuerdo privado',()=>{
         api.open('privacy');
@@ -91,7 +89,7 @@
       }
     }
     try {
-      const lessons=await window.liftsAcademy.search(value);
+      const lessons=await window.liftsAcademy.search(window.liftsNexusCore.queryTerms(value).join(' ')||value);
       if(version!==searchVersion||!dialog.open)return;
       for(const lesson of lessons)add(lesson.label,()=>window.liftsNexus.open({id:'lesson',key:lesson.key}));
       if(!results.children.length)results.textContent='Sin coincidencias.';
