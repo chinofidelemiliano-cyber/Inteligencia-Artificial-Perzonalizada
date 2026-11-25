@@ -6,7 +6,7 @@
     knowledge:{label:'Conocimiento',fields:{summary:'Conocimiento',source:'Fuente',author:'Autor',date:'Fecha de la fuente',version:'Versión',evidence:'Evidencia',applicability:'Aplicabilidad',limitations:'Limitaciones',conflicts:'Fuentes contradictorias'}},
     lesson:{label:'Lecciones aprendidas',fields:{situation:'Situación',cause:'Causa y cómo se confirmó',action:'Acción',result:'Resultado',evidence:'Evidencia',lesson:'Aprendizaje',prevention:'Prevención'}},
     review:{label:'Revisión crítica',fields:{claim:'Idea a evaluar',facts:'Hechos y fuentes',hypotheses:'Hipótesis y opiniones',assumptions:'Suposiciones',contradictions:'Contradicciones o sesgos',counterarguments:'Argumentos y explicaciones alternativas',risks:'Riesgos y premortem',tests:'Evidencia pendiente y prueba de descarte'}},
-    experiment:{label:'Experimentos',fields:{question:'Pregunta',hypothesis:'Hipótesis',independent:'Variables independientes',dependent:'Variables dependientes',controls:'Variables controladas',conditions:'Condiciones iniciales',procedure:'Procedimiento',readings:'Mediciones numéricas en la misma unidad (separadas por espacios)',unit:'Unidad de las mediciones',repeats:'Repeticiones',groups:'Grupos para ANOVA (una línea por grupo, ej. A: 1 2 3)',uncertainty:'Incertidumbre',conclusion:'Conclusiones y limitaciones'}},
+    experiment:{label:'Experimentos',fields:{question:'Pregunta',hypothesis:'Hipótesis',independent:'Variables independientes',dependent:'Variables dependientes',controls:'Variables controladas',conditions:'Condiciones iniciales',procedure:'Procedimiento',readings:'Mediciones numéricas en la misma unidad (separadas por espacios)',unit:'Unidad de las mediciones',repeats:'Repeticiones',groups:'Grupos para ANOVA (una línea por grupo, ej. A: 1 2 3)',factorial:'Diseño factorial 2×2 (una línea por combinación: --, +-, -+, ++)',uncertainty:'Incertidumbre',conclusion:'Conclusiones y limitaciones'}},
     scenario:{label:'Escenarios de costos',fields:{unit:'Moneda o unidad de costo',base:'Costo base',favorable:'Costo favorable',adverse:'Costo desfavorable',assumptions:'Suposiciones',constraints:'Restricciones',risks:'Riesgos'}},
     risk:{label:'Riesgos',fields:{area:'Categoría del riesgo',description:'Situación',cause:'Causa',impactDetail:'Consecuencia',scale:'Máximo de la escala (2 a 10)',likelihood:'Probabilidad estimada en tu escala',impact:'Impacto en tu escala',detection:'Dificultad de detección (opcional)',prevent:'Prevención',contingency:'Plan de contingencia',owner:'Responsable',reviewDate:'Fecha de revisión (AAAA-MM-DD)'}},
     qualityCost:{label:'Costos de calidad',fields:{unit:'Moneda',rework:'Retrabajos',waste:'Desperdicios',downtime:'Tiempos muertos',returns:'Devoluciones',complaints:'Reclamaciones',reprints:'Reimpresiones',consumables:'Consumos adicionales',prevention:'Prevención',inspection:'Inspección',cause:'Causa registrada',action:'Acción correctiva'}},
@@ -255,6 +255,19 @@
     }
     return {count,mean,deviation:Math.sqrt(sumSquaredDeviations/(count-1))};
   }
+  function factorialEffects(raw){
+    const cells=new Map();
+    for(const line of clean(raw).split(/\r?\n/).map(value=>value.trim()).filter(Boolean)){
+      const match=/^([+-]{2}):\s*(.+)$/.exec(line);
+      if(!match||cells.has(match[1]))throw new Error('Escribe una línea por combinación: --, +-, -+ y ++, seguida de dos puntos y las mediciones.');
+      cells.set(match[1],measurementSummary(match[2]));
+    }
+    if(cells.size!==4||new Set([...cells.values()].map(cell=>cell.count)).size!==1)
+      throw new Error('Registra las cuatro combinaciones con el mismo número de mediciones, al menos dos por combinación.');
+    const [ll,hl,lh,hh]=['--','+-','-+','++'].map(key=>cells.get(key).mean);
+    return {cells:[...cells].map(([key,data])=>({key,...data})),
+      a:(hl+hh-ll-lh)/2,b:(lh+hh-ll-hl)/2,interaction:(hh+ll-hl-lh)/2};
+  }
   function oneWayAnova(raw){
     const lines=clean(raw).split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
     if(lines.length<2||lines.length>20)throw new Error('Registra entre 2 y 20 grupos.');
@@ -275,7 +288,7 @@
     const dfBetween=groups.length-1,dfWithin=count-groups.length;
     return {groups,dfBetween,dfWithin,between,within,f:(between/dfBetween)/(within/dfWithin)};
   }
-  const api={kinds,statuses,relationStates,steps,record,decisionReviews,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,riskScore,oneWayAnova,graphNodes,graphView,linkedCases};
+  const api={kinds,statuses,relationStates,steps,record,decisionReviews,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,riskScore,factorialEffects,oneWayAnova,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);

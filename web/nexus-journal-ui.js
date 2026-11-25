@@ -202,6 +202,24 @@
       });
     }
     if(kind==='experiment'){
+      const instructions=node(form,'details');node(instructions,'summary','Cómo usar un diseño factorial 2×2');
+      node(instructions,'p','El primer signo indica el nivel del factor A y el segundo el de B. Usa cuatro líneas, por ejemplo «--: 8 10», y el mismo número de mediciones por combinación. Define los factores y niveles en el registro.');
+      const result=node(form,'div');result.setAttribute('role','status');
+      button(form,'Calcular efectos factoriales',()=>{
+        result.replaceChildren();
+        try{
+          const summary=core.factorialEffects(form.elements.namedItem('factorial').value);
+          const unit=form.elements.namedItem('unit').value.trim();
+          if(!unit)throw new Error('Indica la unidad de medida.');
+          const format=new Intl.NumberFormat('es-MX',{maximumSignificantDigits:7});
+          node(result,'p','Efecto A '+format.format(summary.a)+' · Efecto B '+format.format(summary.b)+' · Interacción '+format.format(summary.interaction)+' '+unit+'.');
+          const list=node(result,'ul');
+          for(const cell of summary.cells)node(list,'li',cell.key+' · n = '+cell.count+' · media '+format.format(cell.mean)+' '+unit);
+          node(result,'p','Efectos descriptivos: se comparan las medias de los niveles alto y bajo. Comprueba el diseño, el orden de ejecución y la variabilidad antes de generalizar.');
+        }catch(error){node(result,'p',error.message);}
+      });
+    }
+    if(kind==='experiment'){
       const result=node(form,'div');
       result.setAttribute('role','status');
       button(form,'Calcular ANOVA de una vía',()=>{

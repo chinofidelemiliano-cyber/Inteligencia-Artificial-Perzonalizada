@@ -49,3 +49,18 @@ test('typed machine components preserve the real band path and remain compatible
   assert.deepEqual(item.path,['Entrada','Túnel','Salida']);
   assert.deepEqual(item.componentKinds,['rodillo','secado','']);
 });
+
+test('compatibility consults active evidence without treating unknown pairs as approved',()=>{
+  const {blank,change,comparePair,assess}=require('../web/industrial-core.js');
+  const press=change(blank(),'machines',{name:'Prensa',path:'Entrada\nSalida'});
+  const stock=change(press.space,'stock',{name:'Material',category:'material'});
+  const left=press.item.id,right=stock.item.id;
+  assert.equal(comparePair(stock.space,left,right).status,'unknown');
+  const raw={name:'Prueba',left,right,reason:'Prueba registrada',compatibility:'conditional',compatibilitySource:'Acta'};
+  assert.throws(()=>change(stock.space,'rules',raw),/condiciones/);
+  const saved=change(stock.space,'rules',{...raw,conditions:'Bajo condiciones documentadas'});
+  assert.equal(comparePair(saved.space,right,left).status,'conditional');
+  assert.equal(assess(saved.space,{machine:left,items:{material:right}}).violations.length,0);
+  assert.equal(comparePair({...saved.space,rules:[{...saved.item,active:false}]},left,right).status,'unknown');
+  assert.throws(()=>comparePair(stock.space,left,'foreign'),/cuenta/);
+});

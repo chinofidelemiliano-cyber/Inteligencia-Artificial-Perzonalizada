@@ -34,3 +34,9 @@ La prueba móvil se repitió tras incorporar las preferencias de frecuencia. Apr
 - 231 pruebas automatizadas aprobadas. Incluyen signo del desfase, conversiones de velocidad, recorrido etiquetado y validaciones de mantenimiento.
 - Tres recorridos Chromium aprobaron la regresión de Ingeniería, Guardian, Preflight y diagnóstico. Después del mantenimiento se repitió el recorrido móvil y se verificó el activo enlazado, el retorno a su ficha y el historial.
 - El diagnóstico guardó una hipótesis separada de la causa, abrió la máquina vinculada y recuperó el caso desde su ficha. La simulación produjo la gráfica con el tiempo de paso calculado. Las pruebas usan cuentas y datos simulados.
+
+## Compatibilidad, calidad, indicadores y experimentos
+
+- 237 pruebas automatizadas aprobadas, incluidos pares sin datos, compatibilidad condicionada, índices de proceso, OEE y efectos factoriales 2×2.
+- Dos recorridos Chromium aprobaron la regresión de herramientas compartidas y verificaron consulta de compatibilidad, índices y OEE. Se repitió el recorrido de sistemas y Preflight después de añadir el factorial y se comprobó el resultado 5, 3 y 1 mm.
+- El alcance y la forma de uso de los 53 apartados se documentan en `docs/guia-53-apartados.md`. Las pruebas usaron cuentas simuladas y no verificaron producción.

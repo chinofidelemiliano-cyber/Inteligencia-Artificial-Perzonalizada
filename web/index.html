@@ -823,6 +823,16 @@
   <p id="webSimStatus" role="status"></p>
   <div id="webSimVisual"></div>
 </details>
+<details class="card" id="compatibilityPanel">
+  <summary>Consultar compatibilidad de dos activos</summary>
+  <p>Muestra las reglas que registraste en Ingeniería. Una combinación sin regla activa queda sin información suficiente.</p>
+  <form id="compatibilityPair">
+    <label for="compatibilityLeft">Primer activo para comparar</label><select id="compatibilityLeft" name="left" required></select>
+    <label for="compatibilityRight">Segundo activo para comparar</label><select id="compatibilityRight" name="right" required></select>
+    <button>Consultar par técnico</button>
+  </form>
+  <div id="compatibilityResult" role="status"></div>
+</details>
 <details id="industrialPanel" class="card">
   <summary>Máquinas, inventario y órdenes</summary>
   <p>Registra recorridos esquemáticos según tus datos y revisa órdenes contra reglas documentadas.</p>
@@ -906,7 +916,40 @@
 <div class="academy-tabs"><button id="excelBasics" type="button" class="secondary">Referencias y operaciones</button><button id="excelInventory" type="button" class="secondary">Inventario de tintas</button><button id="excelWaste" type="button" class="secondary">Desperdicio mensual</button><button id="excelPareto" type="button" class="secondary">Pareto</button><button id="excelCsv" type="button" class="secondary">Revisar CSV</button></div>
 <div id="excelContent"></div><p id="excelStatus" role="status"></p></article>
 </section>
-<section id="work" hidden><article class="card"><small>CONOCER TU TRABAJO, SIN INVADIRLO</small><h2>¿Cómo es una buena jornada para ti?</h2><p>Cuéntame lo que quieras compartir. No hacen falta el nombre de la empresa, datos de clientes ni documentos confidenciales.</p><form id="workForm"><label for="workRole">¿Qué haces en tu trabajo?</label><input id="workRole" maxlength="200" placeholder="Puesto, oficio o actividad"><label for="workDuties">¿Qué tareas se repiten durante tu jornada?</label><textarea id="workDuties" maxlength="1500"></textarea><div class="field-grid"><div><label for="workShiftStart">¿A qué hora empiezas normalmente?</label><input id="workShiftStart" type="time" value="09:00"></div><div><label for="workShiftEnd">¿A qué hora terminas?</label><input id="workShiftEnd" type="time" value="17:00"></div></div><label for="workChallenges">¿Qué te quita más tiempo o te cuesta organizar?</label><textarea id="workChallenges" maxlength="1500"></textarea><label for="workResources">¿Qué equipos, herramientas o manuales usas?</label><textarea id="workResources" maxlength="1500" placeholder="Puedes indicar el modelo y el título de un manual público."></textarea><label for="workGoal">¿Qué te gustaría mejorar esta semana?</label><input id="workGoal" maxlength="500"><label><input id="workConsent" type="checkbox" style="width:auto"> Guardar estas respuestas en mi cuenta para organizar mi trabajo.</label><label><input id="workShare" type="checkbox" style="width:auto"> Compartir mi contexto laboral y hasta 12 tareas pendientes con la IA cuando converse.</label><p class="notice">Guardar y compartir son decisiones distintas. Sin guardar, las respuestas solo se usan durante esta sesión. El permiso para compartir con la IA se desactiva al iniciar sesión.</p><button>Aplicar contexto laboral</button><button id="forgetWork" type="button" class="secondary">Borrar contexto laboral</button><p id="workStatus" role="status"></p></form></article><article class="card"><h3>Busquemos una referencia, no una suposición</h3><p>Consulta referencias generales gratuitas. Para ajustes de equipos, contrasta con el manual del fabricante y el procedimiento de tu trabajo.</p><form id="researchForm"><label for="researchQuery">Tema o equipo que quieres investigar</label><input id="researchQuery" required maxlength="300" placeholder="Ej.: flexografía, anilox o gestión del tiempo"><button id="researchButton">Buscar referencia general</button></form><p class="notice">Al buscar, el tema se consulta en Wikipedia; no se envían tu perfil ni tus tareas. Es una referencia secundaria, no un manual técnico ni una verificación de seguridad.</p><p id="researchStatus" role="status"></p><div id="researchResults"></div><div id="researchFallback"></div></article></section>
+<section id="work" hidden>
+<details class="card" id="industrialOee">
+  <summary>Indicadores de un turno · OEE</summary>
+  <p>Usa los tiempos y el conteo de un mismo producto y turno. Introduce el ciclo ideal documentado en segundos por pieza.</p>
+  <p>Disponibilidad = minutos operativos ÷ minutos planificados. Rendimiento = segundos ideales para las piezas ÷ segundos operativos. Calidad = piezas conformes ÷ piezas fabricadas. OEE = disponibilidad × rendimiento × calidad.</p>
+  <form id="industrialOeeForm">
+    <label for="oeePlanned">Minutos planificados de producción</label><input id="oeePlanned" name="planned" inputmode="decimal" maxlength="12" required>
+    <label for="oeeStopped">Minutos de paro durante el tiempo planificado</label><input id="oeeStopped" name="stopped" inputmode="decimal" maxlength="12" required>
+    <label for="oeeCycle">Ciclo ideal documentado (s/pieza)</label><input id="oeeCycle" name="cycle" inputmode="decimal" maxlength="12" required>
+    <label for="oeePieces">Piezas fabricadas</label><input id="oeePieces" name="pieces" inputmode="numeric" maxlength="10" required>
+    <label for="oeeGood">Piezas conformes</label><input id="oeeGood" name="good" inputmode="numeric" maxlength="10" required>
+    <button>Calcular OEE del turno</button>
+  </form>
+  <p id="industrialOeeResult" role="status"></p>
+  <button id="industrialOeeNote" type="button" class="secondary" hidden>Preparar nota con indicadores</button>
+</details>
+<details class="card" id="processPerformance">
+  <summary>Capacidad y desempeño de proceso</summary>
+  <p>Introduce mediciones de una sola característica en la misma unidad. Pp y Ppk usan la desviación de la muestra. Cp y Cpk requieren una estimación separada de la variación dentro de subgrupos.</p>
+  <p>Pp o Cp = (límite superior − límite inferior) ÷ (6 × desviación). Ppk o Cpk usan la distancia menor desde la media a un límite, dividida entre 3 × desviación.</p>
+  <form id="processPerformanceForm">
+    <label for="processMeasurements">Mediciones separadas por espacios</label><textarea id="processMeasurements" name="readings" rows="3" maxlength="1500" required></textarea>
+    <div class="field-grid">
+      <div><label for="processLower">Límite inferior de especificación</label><input id="processLower" name="lower" inputmode="decimal" maxlength="20" required></div>
+      <div><label for="processUpper">Límite superior de especificación</label><input id="processUpper" name="upper" inputmode="decimal" maxlength="20" required></div>
+      <div><label for="processWithin">Desviación dentro de subgrupos (opcional)</label><input id="processWithin" name="within" inputmode="decimal" maxlength="20"></div>
+    </div>
+    <button>Calcular índices de proceso</button>
+  </form>
+  <p id="processPerformanceResult" role="status"></p>
+  <p>Un índice por sí solo no valida un proceso. Confirma el sistema de medición, el orden temporal, la estabilidad y la distribución antes de interpretar capacidad.</p>
+  <a href="https://www.itl.nist.gov/div898/handbook/pmc/section1/pmc16.htm">NIST/SEMATECH · Capacidad de proceso</a>
+</details>
+<article class="card"><small>CONOCER TU TRABAJO, SIN INVADIRLO</small><h2>¿Cómo es una buena jornada para ti?</h2><p>Cuéntame lo que quieras compartir. No hacen falta el nombre de la empresa, datos de clientes ni documentos confidenciales.</p><form id="workForm"><label for="workRole">¿Qué haces en tu trabajo?</label><input id="workRole" maxlength="200" placeholder="Puesto, oficio o actividad"><label for="workDuties">¿Qué tareas se repiten durante tu jornada?</label><textarea id="workDuties" maxlength="1500"></textarea><div class="field-grid"><div><label for="workShiftStart">¿A qué hora empiezas normalmente?</label><input id="workShiftStart" type="time" value="09:00"></div><div><label for="workShiftEnd">¿A qué hora terminas?</label><input id="workShiftEnd" type="time" value="17:00"></div></div><label for="workChallenges">¿Qué te quita más tiempo o te cuesta organizar?</label><textarea id="workChallenges" maxlength="1500"></textarea><label for="workResources">¿Qué equipos, herramientas o manuales usas?</label><textarea id="workResources" maxlength="1500" placeholder="Puedes indicar el modelo y el título de un manual público."></textarea><label for="workGoal">¿Qué te gustaría mejorar esta semana?</label><input id="workGoal" maxlength="500"><label><input id="workConsent" type="checkbox" style="width:auto"> Guardar estas respuestas en mi cuenta para organizar mi trabajo.</label><label><input id="workShare" type="checkbox" style="width:auto"> Compartir mi contexto laboral y hasta 12 tareas pendientes con la IA cuando converse.</label><p class="notice">Guardar y compartir son decisiones distintas. Sin guardar, las respuestas solo se usan durante esta sesión. El permiso para compartir con la IA se desactiva al iniciar sesión.</p><button>Aplicar contexto laboral</button><button id="forgetWork" type="button" class="secondary">Borrar contexto laboral</button><p id="workStatus" role="status"></p></form></article><article class="card"><h3>Busquemos una referencia, no una suposición</h3><p>Consulta referencias generales gratuitas. Para ajustes de equipos, contrasta con el manual del fabricante y el procedimiento de tu trabajo.</p><form id="researchForm"><label for="researchQuery">Tema o equipo que quieres investigar</label><input id="researchQuery" required maxlength="300" placeholder="Ej.: flexografía, anilox o gestión del tiempo"><button id="researchButton">Buscar referencia general</button></form><p class="notice">Al buscar, el tema se consulta en Wikipedia; no se envían tu perfil ni tus tareas. Es una referencia secundaria, no un manual técnico ni una verificación de seguridad.</p><p id="researchStatus" role="status"></p><div id="researchResults"></div><div id="researchFallback"></div></article></section>
 <section id="profile" hidden>
   <details class="card" id="wellbeingTrend">
     <summary>Resumen de bienestar por periodo</summary>
@@ -996,6 +1039,8 @@
 <script src="nexus-ui.js" defer></script>
 <script src="workspace-actions.js" defer></script>
 <script src="nexus-journal.js" defer></script>
+<script src="process-performance.js" defer></script>
+<script src="industrial-oee.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
 <script src="weighted-decisions.js" defer></script>
 <script src="scenario-projection.js" defer></script>

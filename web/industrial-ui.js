@@ -4,7 +4,7 @@
   const api=window.liftsWorkspace, core=window.liftsIndustrialCore;
   const space=()=>api.getState().industrial||core.blank();
   const form=$('industrialForm'), mode=$('industrialKind'), list=$('industrialList'), status=$('industrialStatus'), visual=$('industrialVisual');
-  const labels={machines:'Máquinas y recorridos',stock:'Inventario industrial',orders:'Órdenes internas',rules:'Reglas de incompatibilidad'};
+  const labels={machines:'Máquinas y recorridos',stock:'Inventario industrial',orders:'Órdenes internas',rules:'Matriz y reglas de compatibilidad'};
   let current='',epoch=0,busy=false;
   function node(parent,tag,text){
     const el=document.createElement(tag);if(text!==undefined)el.textContent=text;parent.append(el);return el;
@@ -77,7 +77,11 @@
       if(maintenance.length)node(visual,'h4','Historial de mantenimiento');
       for(const row of maintenance)button(visual,row.title,()=>window.liftsNexus.open({id:'journal-record',key:row.id}));
     }
-    if(kind==='rules')node(visual,'p',item.active===false?'Regla inactiva':'Regla activa');
+    if(kind==='rules'){
+      node(visual,'p',(item.active===false?'Regla inactiva':'Regla activa')+' · '+core.compatibilityStates[item.compatibility||'incompatible']);
+      if(item.compatibilitySource)node(visual,'p','Fuente: '+item.compatibilitySource);
+      if(item.conditions)node(visual,'p','Condiciones: '+item.conditions);
+    }
     if(kind!=='orders')return;
     const result=core.assess(space(),item);
     node(visual,'p',result.violations.length?'Incompatibilidades según las reglas registradas:':result.ruleCount?'Ninguna regla registrada coincide con esta combinación.':'Aún no hay reglas configuradas.');
@@ -119,6 +123,9 @@
       const subjects=options([...data.machines,...data.stock]);
       field('Primer registro','left',item?.left,subjects);field('Segundo registro','right',item?.right,subjects);
       field('Motivo o referencia de la regla','reason',item?.reason,null,'textarea');
+      field('Estado de compatibilidad','compatibility',item?.compatibility||'incompatible',Object.entries(core.compatibilityStates)).required=true;
+      field('Fuente técnica de compatibilidad','compatibilitySource',item?.compatibilitySource,null,'textarea');
+      field('Condiciones de aplicación','conditions',item?.conditions,null,'textarea');
       field('Aplicar regla a las órdenes','active',item?.active===false?'no':'yes',[['yes','Activa'],['no','Inactiva']]).required=true;
     }
     node(form,'button','Guardar registro industrial').type='submit';
@@ -143,7 +150,7 @@
     try{
       const updated=core.change(space(),mode.value,Object.fromEntries(new FormData(form)),current);
       api.getState().industrial=updated.space;
-      current=updated.item.id;render();refreshOrders();void persist();
+      current=updated.item.id;render();refreshOrders();refreshPairs();pairResult.replaceChildren();void persist();
     }catch(error){status.textContent=error.message;}
   };
   function refreshOrders(){
@@ -152,6 +159,28 @@
     choices(picker,[['','Selecciona una orden interna'],...space().orders.map(item=>[item.id,item.name])]);
     if(space().orders.some(item=>item.id===selected))picker.value=selected;
   }
+  const pairForm=$('compatibilityPair'),pairResult=$('compatibilityResult');
+  function refreshPairs(){
+    const data=space(),list=[['','Selecciona un activo'],...[...data.machines,...data.stock].map(item=>[item.id,item.name])];
+    for(const select of pairForm.querySelectorAll('select')){
+      const prior=select.value;select.replaceChildren();choices(select,list);
+      if(list.some(([key])=>key===prior))select.value=prior;
+    }
+  }
+  pairForm.onchange=()=>pairResult.replaceChildren();
+  pairForm.onsubmit=event=>{
+    event.preventDefault();pairResult.replaceChildren();
+    try{
+      const {left,right}=Object.fromEntries(new FormData(pairForm));
+      const result=core.comparePair(space(),left,right),rule=result.rule;
+      node(pairResult,'p',result.leftName+' + '+result.rightName+' · '+core.compatibilityStates[result.status]);
+      if(rule){
+        node(pairResult,'p',rule.reason);
+        if(rule.compatibilitySource)node(pairResult,'p','Fuente: '+rule.compatibilitySource);
+        if(rule.conditions)node(pairResult,'p','Condiciones: '+rule.conditions);
+      }else node(pairResult,'p','No hay una regla activa registrada para este par.');
+    }catch(error){node(pairResult,'p',error.message);}
+  };
   choices(mode,Object.entries(labels));
   mode.onchange=()=>{current='';render();};
   $('diagnosticImportOrder').onclick=()=>{
@@ -162,7 +191,7 @@
   function reset(){
     epoch++;busy=false;current='';mode.value='machines';status.textContent='';
     $('industrialRetry').hidden=true;$('industrialPanel').open=false;
-    render();refreshOrders();
+    pairForm.reset();pairResult.replaceChildren();render();refreshOrders();refreshPairs();
   }
   function openOrder(id){
     if(!space().orders.some(item=>item.id===id))return false;
@@ -183,6 +212,7 @@
   window.liftsIndustrial={reset,openOrder,openAsset};
   window.addEventListener('nexo-state',reset);
   window.addEventListener('lifts-page',event=>{
+    if(event.detail.page==='engineering')refreshPairs();
     if(event.detail.page==='engineering'&&mode.value==='orders')inspect('orders',space().orders.find(item=>item.id===current));
   });
   reset();

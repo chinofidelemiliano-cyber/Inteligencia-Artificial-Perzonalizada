@@ -19,6 +19,16 @@
   });
   const tools = Object.freeze({
     home:plainPage('Chat','Conversar con el asistente y consultar el historial','El uso remoto requiere conexión.'),
+    'process-performance':{
+      label:'Capacidad y desempeño de proceso',purpose:'Calcular Pp, Ppk, Cp y Cpk con mediciones y límites',
+      input:'Sin parámetros',output:'Índices calculados localmente',permission:'Sesión del propietario',dependency:'Trabajo',
+      limitations:'La validez de la estimación depende de los datos y la estabilidad del proceso.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('work');
+        const panel=root.document.getElementById('processPerformance');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
     work:plainPage('Trabajo y cursos breves','Consultar herramientas de trabajo y calidad','El guardado se confirma desde cada herramienta.'),
     images:plainPage('Crear imágenes','Preparar imágenes desde una descripción','La generación remota depende de la configuración del proveedor.'),
     identity:plainPage('Propuestas de logotipo','Comparar variantes de identidad visual','La elección se aplica a tu espacio.'),

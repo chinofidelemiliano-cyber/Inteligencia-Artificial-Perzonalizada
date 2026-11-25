@@ -311,6 +311,46 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     assert.equal(await page.evaluate(()=>window.saved.nexusJournal.find(record=>record.kind==='maintenance').data.asset),'machines:'+machine.id);
     await page.getByRole('button',{name:'Abrir activo del mantenimiento',exact:true}).click();
     await page.getByRole('heading',{name:'Historial de mantenimiento',exact:true}).waitFor();
+    await page.evaluate(()=>{
+      window.liftsWorkspace.getState().industrial.stock.push({id:'10000000-0000-4000-8000-000000000004',name:'Sustrato de prueba',category:'material'});
+      window.liftsWorkspace.open('engineering');
+    });
+    await page.getByText('Consultar compatibilidad de dos activos',{exact:true}).click();
+    await page.getByLabel('Primer activo para comparar').selectOption(machine.id);
+    await page.getByLabel('Segundo activo para comparar').selectOption('10000000-0000-4000-8000-000000000004');
+    await page.getByRole('button',{name:'Consultar par técnico'}).click();
+    await page.locator('#compatibilityResult').getByText(/Sin información suficiente/).waitFor();
+    await page.locator('#industrialKind').selectOption('rules');
+    await page.getByLabel('Nombre o código industrial',{exact:true}).fill('Validación de muestra');
+    await page.getByLabel('Primer registro',{exact:true}).selectOption(machine.id);
+    await page.getByLabel('Segundo registro',{exact:true}).selectOption('10000000-0000-4000-8000-000000000004');
+    await page.getByLabel('Estado de compatibilidad').selectOption('conditional');
+    await page.getByLabel('Motivo o referencia de la regla').fill('Prueba limitada');
+    await page.getByLabel('Fuente técnica de compatibilidad').fill('Acta de prueba');
+    await page.getByLabel('Condiciones de aplicación').fill('Muestra y configuración registradas');
+    await page.getByRole('button',{name:'Guardar registro industrial',exact:true}).click();
+    await page.getByText('Registro industrial guardado.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Consultar par técnico'}).click();
+    await page.locator('#compatibilityResult').getByText(/Compatibilidad condicionada/).waitFor();
+    await page.locator('#compatibilityResult').getByText('Fuente: Acta de prueba',{exact:true}).waitFor();
+    await page.evaluate(()=>window.liftsNexus.open({id:'process-performance',key:''}));
+    await page.getByLabel('Mediciones separadas por espacios',{exact:true}).fill('9 10 11');
+    await page.getByLabel('Límite inferior de especificación',{exact:true}).fill('7');
+    await page.getByLabel('Límite superior de especificación',{exact:true}).fill('13');
+    await page.getByLabel('Desviación dentro de subgrupos (opcional)',{exact:true}).fill('0,5');
+    await page.getByRole('button',{name:'Calcular índices de proceso'}).click();
+    await page.getByText(/Pp = 1 · Ppk = 1 · Cp = 2 · Cpk = 2/).waitFor();
+    await page.getByText('Indicadores de un turno · OEE',{exact:true}).click();
+    for(const [id,value] of Object.entries({oeePlanned:'100',oeeStopped:'10',oeeCycle:'6',oeePieces:'720',oeeGood:'684'})){
+      await page.locator('#'+id).fill(value);
+    }
+    await page.getByRole('button',{name:'Calcular OEE del turno'}).click();
+    await page.getByText(/OEE 68[.,]4/).waitFor();
+    await page.evaluate(()=>{window.liftsWorkspace.open('desktop');window.liftsJournal.prepareDraft('experiment',{title:'Ensayo factorial'});});
+    await page.locator('#journalEditor [name=factorial]').fill('--: 8 10\n+-: 12 14\n-+: 10 12\n++: 16 18');
+    await page.locator('#journalEditor [name=unit]').fill('mm');
+    await page.getByRole('button',{name:'Calcular efectos factoriales'}).click();
+    await page.getByText('Efecto A 5 · Efecto B 3 · Interacción 1 mm.',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

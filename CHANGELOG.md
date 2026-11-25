@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+- Guía de funcionamiento de los 53 apartados con rutas, entradas, resultados y límites.
+- Consulta de pares de activos con clasificación, justificación, fuente y condiciones.
+- Experimentos Nexus calcula efectos descriptivos de un factorial 2×2 balanceado.
+- Índices de capacidad y desempeño con variación separada, y OEE del turno con indicadores desglosados y borrador en Nexus.
+
 - Mantenimiento industrial vinculado a máquinas y artículos, con fecha, estado, comprobación, historial y señal en Radar.
 - Diagnóstico guarda vínculo a una máquina, hipótesis, evidencia y acciones en campos separados, y abre casos vinculados desde Ingeniería.
 - Simulador 2D compara tiempo de paso, repeticiones y desfase entre condiciones con velocidades constantes.

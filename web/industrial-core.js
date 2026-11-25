@@ -1,6 +1,8 @@
 'use strict';
 (function(root){
   const categories={material:'Material',ink:'Tinta',anilox:'Anilox',plate:'Placa',die:'Suaje'};
+  const compatibilityStates={confirmed:'Compatibilidad confirmada',conditional:'Compatibilidad condicionada',
+    incompatible:'Incompatibilidad documentada',unknown:'Sin información suficiente'};
   const blank=()=>({machines:[],stock:[],orders:[],rules:[]});
   const clean=(v,max=120)=>String(v??'').trim().slice(0,max);
   const machineParameters={
@@ -68,15 +70,25 @@
       if(raw.left===raw.right||!all.some(item=>item.id===raw.left)||!all.some(item=>item.id===raw.right)||!reason)throw new Error('Elige dos registros distintos y documenta el motivo.');
       if((all.find(item=>item.id===raw.left).category||'machine')===(all.find(item=>item.id===raw.right).category||'machine'))throw new Error('Una orden admite un solo registro por categoría. Elige categorías distintas.');
       if(space.rules.some(rule=>rule.id!==id&&[rule.left,rule.right].includes(raw.left)&&[rule.left,rule.right].includes(raw.right)))throw new Error('Ya existe una regla para ese par.');
-      data={left:raw.left,right:raw.right,reason,active:raw.active!=='no'};
+      const compatibility=raw.compatibility||'incompatible',source=clean(raw.compatibilitySource,500),conditions=clean(raw.conditions,500);
+      if(!Object.hasOwn(compatibilityStates,compatibility))throw new Error('Elige un estado válido.');
+      if(['confirmed','conditional'].includes(compatibility)&&!source)throw new Error('Registra la fuente o prueba de compatibilidad.');
+      if(compatibility==='conditional'&&!conditions)throw new Error('Registra las condiciones en las que aplica.');
+      data={left:raw.left,right:raw.right,reason,compatibility,compatibilitySource:source,conditions,active:raw.active!=='no'};
     }
     const item={id:id||crypto.randomUUID(),name,...data};
     return {item,space:{...space,[kind]:id?space[kind].map(current=>current.id===id?item:current):[...space[kind],item]}};
   }
+  function comparePair(space,left,right){
+    const all=new Map([...space.machines,...space.stock].map(item=>[item.id,item.name]));
+    if(left===right||!all.has(left)||!all.has(right))throw new Error('Selecciona dos activos distintos de tu cuenta.');
+    const rule=space.rules.find(item=>item.active!==false&&[item.left,item.right].includes(left)&&[item.left,item.right].includes(right));
+    return {status:rule?.compatibility||(rule?'incompatible':'unknown'),rule,leftName:all.get(left),rightName:all.get(right)};
+  }
   function assess(space,order){
     const all=new Map([...space.machines,...space.stock].map(item=>[item.id,item]));
     const chosen=new Set([order.machine,...Object.values(order.items)]);
-    const active=space.rules.filter(rule=>rule.active!==false);
+    const active=space.rules.filter(rule=>rule.active!==false&&(!rule.compatibility||rule.compatibility==='incompatible'));
     return {
       violations:active.filter(rule=>chosen.has(rule.left)&&chosen.has(rule.right)&&all.has(rule.left)&&all.has(rule.right))
         .map(rule=>({...rule,leftName:all.get(rule.left).name,rightName:all.get(rule.right).name})),
@@ -95,6 +107,6 @@
     }
     return out;
   }
-  const api={blank,categories,machineParameters,componentTypes,change,assess,trace};
+  const api={blank,categories,machineParameters,componentTypes,compatibilityStates,change,comparePair,assess,trace};
   if(typeof module==='object')module.exports=api;else root.liftsIndustrialCore=api;
 })(globalThis);

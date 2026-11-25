@@ -164,3 +164,11 @@ test('maintenance requires an asset identifier, valid date and evidence after co
   assert.throws(()=>record('maintenance',{...raw,status:'done'}),/resultado/);
   assert.equal(record('maintenance',{...raw,status:'done',result:'Acta recibida'}).status,'done');
 });
+
+test('factorial contrasts recover main and interaction effects for a balanced 2×2 design',()=>{
+  const {factorialEffects}=require('../web/nexus-journal.js');
+  const data=factorialEffects('--: 8 10\n+-: 12 14\n-+: 10 12\n++: 16 18');
+  assert.deepEqual([data.a,data.b,data.interaction],[5,3,1]);
+  assert.throws(()=>factorialEffects('--: 8 10\n+-: 12 14\n-+: 10 12\n++: 16 18 20'),/mismo número/);
+  assert.throws(()=>factorialEffects('--: 8 10\n--: 9 11'),/una línea/);
+});
