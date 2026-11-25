@@ -806,6 +806,23 @@
 <div id="identityChoices" class="academy-course-grid"></div><p id="identityStatus" role="status"></p></article>
 </section>
 <section id="engineering" hidden aria-label="Ingeniería flexográfica">
+<details id="webSim" class="card">
+  <summary>Simulador de recorrido, registro y secado</summary>
+  <p>Compara dos velocidades con la misma longitud de secado. El modelo estima tiempo de paso y desfase geométrico. El secado real depende del material, la tinta y el sistema.</p>
+  <form id="webSimForm">
+    <div class="field-grid">
+      <div><label for="webSimSpeed">Velocidad inicial (m/min)</label><input id="webSimSpeed" name="speed" inputmode="decimal" maxlength="12" value="60" required></div>
+      <div><label for="webSimAlternate">Velocidad alternativa (m/min)</label><input id="webSimAlternate" name="alternate" inputmode="decimal" maxlength="12" value="90" required></div>
+      <div><label for="webSimLength">Longitud efectiva de secado (m)</label><input id="webSimLength" name="length" inputmode="decimal" maxlength="12" value="2" required></div>
+      <div><label for="webSimPrint">Repetición de impresión (mm)</label><input id="webSimPrint" name="print" inputmode="decimal" maxlength="12" value="330" required></div>
+      <div><label for="webSimCut">Repetición de corte (mm)</label><input id="webSimCut" name="cut" inputmode="decimal" maxlength="12" value="330.1" required></div>
+      <div><label for="webSimCycles">Intervalos entre marcas</label><input id="webSimCycles" name="cycles" inputmode="numeric" maxlength="6" value="10" required></div>
+    </div>
+    <button>Comparar condiciones de banda</button>
+  </form>
+  <p id="webSimStatus" role="status"></p>
+  <div id="webSimVisual"></div>
+</details>
 <details id="industrialPanel" class="card">
   <summary>Máquinas, inventario y órdenes</summary>
   <p>Registra recorridos esquemáticos según tus datos y revisa órdenes contra reglas documentadas.</p>
@@ -862,6 +879,18 @@
 <label>Suaje utilizado<input name="die" maxlength="100"></label>
 </div></details>
 <label>Síntomas y condiciones<textarea name="symptoms" maxlength="1200" required></textarea></label>
+<label for="diagnosticMachinePick">Vincular máquina registrada</label><select id="diagnosticMachinePick"></select>
+<input type="hidden" name="machineLink">
+<button type="button" id="diagnosticOpenMachine" class="secondary" hidden>Abrir máquina vinculada</button>
+<details id="diagnosticConditions"><summary>Hipótesis y condiciones de la prueba</summary>
+  <label>Hipótesis propia (por comprobar)<textarea name="hypothesis" maxlength="600"></textarea></label>
+  <label>Cinta de montaje o stickyback<input name="tape" maxlength="100"></label>
+  <label>Velocidad registrada y unidad<input name="speed" maxlength="100"></label>
+  <label>Tensión registrada y unidad<input name="tension" maxlength="100"></label>
+  <label>Presión o ajuste registrado y unidad<input name="pressure" maxlength="100"></label>
+  <label>Contención aplicada<textarea name="containment" maxlength="500"></textarea></label>
+  <label>Acción correctiva y prevención<textarea name="correction" maxlength="700"></textarea></label>
+</details>
 <label>Mediciones y pruebas realizadas<textarea name="evidence" maxlength="1800"></textarea></label>
 <label>Causa confirmada con esas pruebas (opcional)<input name="cause" maxlength="240"></label>
 <label>Corrección y validación de una segunda muestra<textarea name="validation" maxlength="1200"></textarea></label>
@@ -982,6 +1011,7 @@
 <script src="negotiation-ui.js" defer></script>
 <script src="industrial-core.js" defer></script>
 <script src="industrial-ui.js" defer></script>
+<script src="web-simulator.js" defer></script>
 <script src="google-ui.js" defer></script>
 <dialog id="installLiftsHelp" aria-labelledby="installLiftsTitle"><form method="dialog"><h2 id="installLiftsTitle">Instalar Lifts IA</h2><h3>iPhone o iPad</h3><p>Abre Lifts en Safari. Pulsa Compartir → Añadir a pantalla de inicio. Si ves «Abrir como app web», actívalo y pulsa Añadir.</p><h3>Android</h3><p>Abre Lifts en Chrome. Pulsa ⋮ → Instalar aplicación o Añadir a pantalla de inicio.</p><p class="notice">En computadora, busca Instalar aplicación en la barra de direcciones o en el menú de Chrome o Edge.</p><button>Cerrar</button></form></dialog>
 <script src="reminders-ui.js" defer></script>

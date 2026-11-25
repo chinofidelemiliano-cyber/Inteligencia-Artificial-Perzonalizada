@@ -28,3 +28,9 @@ La prueba móvil se repitió tras incorporar las preferencias de frecuencia. Apr
 - 228 casos aprobados en `tests/*.test.cjs`. Casos nuevos de coste de crédito, variación independiente de tasa y plazo, fórmulas financieras y parámetros técnicos con referencia.
 - Dos recorridos Chromium aprobados en `tests/{systems-preflight,evolution}.browser.cjs`. Se verificó el costo con comisión, la respuesta de inflación y el guardado de 330,5 mm con referencia de prueba.
 - Los datos se probaron con cuentas simuladas. Las fichas técnicas reales quedan para carga manual y el despliegue público sigue pendiente de verificación.
+
+## Diagnóstico, simulación y mantenimiento
+
+- 231 pruebas automatizadas aprobadas. Incluyen signo del desfase, conversiones de velocidad, recorrido etiquetado y validaciones de mantenimiento.
+- Tres recorridos Chromium aprobaron la regresión de Ingeniería, Guardian, Preflight y diagnóstico. Después del mantenimiento se repitió el recorrido móvil y se verificó el activo enlazado, el retorno a su ficha y el historial.
+- El diagnóstico guardó una hipótesis separada de la causa, abrió la máquina vinculada y recuperó el caso desde su ficha. La simulación produjo la gráfica con el tiempo de paso calculado. Las pruebas usan cuentas y datos simulados.

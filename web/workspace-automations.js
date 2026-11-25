@@ -19,7 +19,11 @@
       return saved?.status!=='resolved'&&(saved?.status!=='snoozed'||saved.until<=day);
     });
     const recordKinds=new Map((state.nexusJournal||[]).map(item=>[item.id,item.kind]));
-    const event=signal=>signal.id.startsWith('record:')?recordKinds.get(signal.destination.key):signal.id.split(':')[0];
+    const event=signal=>{
+      if(!signal.id.startsWith('record:'))return signal.id.split(':')[0];
+      const kind=recordKinds.get(signal.destination.key);
+      return kind==='maintenance'?'household':kind;
+    };
     return (state.workspaceAutomations?.rules||[]).filter(rule=>!rule.paused).flatMap(rule=>signals.filter(signal=>
       rule.when===event(signal)&&(!rule.priority||rule.priority===signal.priority)&&normalize(signal.title+' '+signal.detail).includes(normalize(rule.condition))
     ).slice(0,5).map(signal=>({rule,signal})));

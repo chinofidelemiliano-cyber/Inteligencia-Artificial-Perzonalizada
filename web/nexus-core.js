@@ -151,6 +151,16 @@
     },
     tasks:plainPage('Agenda','Consultar pendientes','Los cambios de tareas se guardan desde Agenda.'),
     reminders:plainPage('Recordatorios','Consultar avisos','La entrega depende de la configuración de avisos.'),
+    'web-simulator':{
+      label:'Simulador de recorrido, registro y secado',purpose:'Comparar velocidades, tiempo en el secador y desfase entre repeticiones',
+      input:'Sin parámetros',output:'Resultados locales y gráfica 2D',permission:'Sesión del propietario',dependency:'Ingeniería',
+      limitations:'Modelo geométrico y cinemático. El tiempo de paso no certifica el secado.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('engineering');
+        const panel=root.document.getElementById('webSim');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
     engineering:plainPage('Ingeniería · Placas y distorsión','Calculadora de distorsión y fichas de ingeniería','Las entradas sin guardar requieren volver a capturarse.'),
     'engineering-record':{
       label:'Ficha de ingeniería guardada',purpose:'Recuperar una ficha y sus entradas',

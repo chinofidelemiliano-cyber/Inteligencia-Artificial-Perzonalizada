@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+- Mantenimiento industrial vinculado a máquinas y artículos, con fecha, estado, comprobación, historial y señal en Radar.
+- Diagnóstico guarda vínculo a una máquina, hipótesis, evidencia y acciones en campos separados, y abre casos vinculados desde Ingeniería.
+- Simulador 2D compara tiempo de paso, repeticiones y desfase entre condiciones con velocidades constantes.
+- El recorrido de banda acepta tipos de componente y conserva las etiquetas anteriores.
+
 - Comparador de créditos con comisiones iniciales, sensibilidad de tasa o plazo y cinco fórmulas financieras adicionales.
 - Fichas de máquina con parámetros opcionales, unidades y referencia técnica o método de medición obligatorio al capturarlos.
 - Academia financiera introductoria con seis lecciones, referencias y ejercicios con retroalimentación.

@@ -42,3 +42,10 @@ test('machine parameters preserve units and require a traceable source',()=>{
   assert.throws(()=>change(saved.space,'machines',{...raw,stations:'6.5',parameterSource:'Manual'},saved.item.id),/estaciones/);
   assert.deepEqual(change(blank(),'machines',{name:'Registro antiguo',path:'Entrada\nSalida'}).item.parameters,{});
 });
+
+test('typed machine components preserve the real band path and remain compatible with plain labels',()=>{
+  const {blank,change}=require('../web/industrial-core.js');
+  const {item}=change(blank(),'machines',{name:'Prensa',path:'[rodillo] Entrada\n[secado] Túnel\nSalida'});
+  assert.deepEqual(item.path,['Entrada','Túnel','Salida']);
+  assert.deepEqual(item.componentKinds,['rodillo','secado','']);
+});

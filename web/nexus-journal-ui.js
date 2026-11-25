@@ -19,6 +19,10 @@
     control.type='button';control.className='secondary';control.onclick=action;
     return control;
   }
+  function assetChoices(){
+    const data=api.getState().industrial||{};
+    return Object.fromEntries(['machines','stock'].flatMap(kind=>(data[kind]||[]).map(item=>[kind+':'+item.id,item.name])));
+  }
   function input(parent,label,name,value,tag='textarea') {
     const wrapper=node(parent,'label',label);
     const control=node(wrapper,tag);
@@ -109,7 +113,19 @@
     form.replaceChildren();
     node(form,'h3',item?'Editar '+item.title:'Nuevo registro');
     input(form,'Título del registro','title',item?.title||'','input').required=true;
-    for(const [key,label] of Object.entries(core.kinds[kind].fields))input(form,label,key,item?.data[key]||'');
+    for(const [key,label] of Object.entries(core.kinds[kind].fields)){
+      if(kind==='maintenance'&&key==='asset'){
+        const choices={'':'Selecciona un activo',...assetChoices()};
+        if(item?.data.asset&&!Object.hasOwn(choices,item.data.asset))choices[item.data.asset]='Activo histórico fuera del inventario';
+        select(form,label,key,choices,item?.data.asset).required=true;
+      }else input(form,label,key,item?.data[key]||'');
+    }
+    if(kind==='maintenance'&&item?.data.asset){
+      button(form,'Abrir activo del mantenimiento',()=>{
+        const [group,id]=item.data.asset.split(':');
+        if(!window.liftsIndustrial.openAsset(group,id))notice.textContent='El activo no está disponible en esta cuenta.';
+      });
+    }
     if(core.statuses[kind])select(form,'Estado','status',core.statuses[kind],item?.status);
     if(['mission','playbook','goal'].includes(kind)) {
       const checklist=node(form,'fieldset');
@@ -260,6 +276,8 @@
     try{
       const values=new FormData(form);
       const old=records().find(item=>item.id===editing);
+      if(kind==='maintenance'&&values.get('asset')!==old?.data.asset&&!Object.hasOwn(assetChoices(),values.get('asset')))
+        throw new Error('Elige un activo del inventario de tu cuenta.');
       const item=core.record(kind,{...Object.fromEntries(values),completed:values.getAll('completed')},old);
       if(old&&item===old&&!retry){notice.textContent='El registro ya está actualizado.';return;}
       commitRecord(item,old,'Registro guardado.');
@@ -396,7 +414,7 @@
     renderList();renderEditor();
     for(const key of ['title',...Object.keys(core.kinds[kind].fields)]){
       const control=form.elements.namedItem(key);
-      if(typeof values[key]==='string')control.value=values[key].slice(0,control.maxLength);
+      if(typeof values[key]==='string')control.value=control.tagName==='SELECT'?values[key]:values[key].slice(0,control.maxLength);
     }
     form.elements.namedItem('title').focus();
     return true;

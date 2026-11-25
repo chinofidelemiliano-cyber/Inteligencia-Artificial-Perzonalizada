@@ -19,6 +19,7 @@
         subscription:['Renovación',item.status==='active'?data.date:''],
         calibration:['Calibración',item.status==='active'?data.date:''],
         goal:['Objetivo',['active','paused'].includes(item.status)?data.due:''],
+        maintenance:['Mantenimiento industrial',item.status==='planned'?data.date:''],
         decision:['Revisión de decisión',data.reviewDate],
         risk:['Revisión del riesgo',item.status!=='closed'?data.reviewDate:'']
       };

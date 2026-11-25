@@ -28,13 +28,13 @@ function action(parent,text,run){
 }
 const records=()=>api.getState().diagnosticCases||[];
 const values=()=>Object.fromEntries(new FormData(form));
-const traceFields={order:'Orden de producción',material:'Material o lote',ink:'Tinta o lote',anilox:'Anilox',plate:'Placa',die:'Suaje'};
+const traceFields={order:'Orden de producción',material:'Material o lote',ink:'Tinta o lote',anilox:'Anilox',plate:'Placa',die:'Suaje',tape:'Cinta de montaje',speed:'Velocidad',tension:'Tensión',pressure:'Presión'};
 const traceLines=data=>Object.entries(traceFields).filter(([key])=>data[key]?.trim())
   .map(([key,label])=>label+': '+data[key].trim());
 const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().trim();
 function search(query){
   const term=normalize(query);
-  return records().filter(({data})=>normalize([data.name,data.machine,data.symptoms,data.cause,...traceLines(data)].join(' ')).includes(term));
+  return records().filter(({data})=>normalize([data.name,data.machine,data.symptoms,data.cause,data.hypothesis,...traceLines(data)].join(' ')).includes(term));
 }
 function sections(data){
   const route=checks[data.problem]?.[data.pattern];
@@ -46,6 +46,9 @@ function sections(data){
     {heading:'Evidencia de la operación',body:data.evidence||'Sin mediciones registradas.'},
     {heading:'Causa y validación',body:'Causa confirmada por quien registra: '+(data.cause||'Pendiente de confirmar')+'\n'+(data.validation||'Sin validación registrada.')}
   ];
+  if(data.hypothesis?.trim())report.push({heading:'Hipótesis registrada (por comprobar)',body:data.hypothesis});
+  if(data.containment?.trim()||data.correction?.trim())report.push({heading:'Contención, corrección y prevención',
+    body:(data.containment||'Sin contención registrada')+'\n'+(data.correction||'Sin acción correctiva registrada')});
   const trace=traceLines(data);
   if(trace.length)report.push({heading:'Trazabilidad',body:trace.join('\n')});
   return report;
@@ -58,12 +61,32 @@ function update(){
   node(guide,'p','Conserva la muestra inicial, modifica una condición a la vez y compara antes y después. Para inspección de partes móviles, aplica el procedimiento autorizado de aislamiento.');
 }
 form.onchange=update;
+const machinePicker=$('diagnosticMachinePick');
+const machineField=form.elements.namedItem('machineLink');
+const machineRecords=()=>api.getState().industrial?.machines||[];
+function updateMachineLink(){
+  machinePicker.replaceChildren(new Option('Sin máquina vinculada',''));
+  for(const machine of machineRecords())machinePicker.append(new Option(machine.name,machine.id));
+  machinePicker.value=machineRecords().some(machine=>machine.id===machineField.value)?machineField.value:'';
+  $('diagnosticOpenMachine').hidden=!machinePicker.value;
+}
+machinePicker.onchange=()=>{
+  const linked=machineRecords().find(machine=>machine.id===machinePicker.value);
+  machineField.value=linked?.id||'';
+  if(linked)form.elements.namedItem('machine').value=[linked.name,linked.model].filter(Boolean).join(' · ').slice(0,100);
+  updateMachineLink();
+};
+form.elements.namedItem('machine').addEventListener('input',()=>{machineField.value='';updateMachineLink();});
+$('diagnosticOpenMachine').onclick=()=>{
+  if(!window.liftsIndustrial?.openAsset('machines',machineField.value))status.textContent='La máquina vinculada no está disponible en esta cuenta.';
+};
 function load(record){
   form.reset();
   id=record.id;
   for(const [key,value] of Object.entries(record.data))if(form.elements.namedItem(key))form.elements.namedItem(key).value=value;
   $('diagnosticTrace').open=traceLines(record.data).length>0;
-  updateOrderLink();
+  updateOrderLink();updateMachineLink();
+  $('diagnosticConditions').open=Boolean(record.data.hypothesis||record.data.tape||record.data.speed||record.data.tension||record.data.pressure||record.data.containment||record.data.correction);
   update();status.textContent='Caso cargado. Al guardar se actualizará este registro.';
   window.liftsNexus?.checkpoint('diagnostic-record',record.id,record.data.name);
   form.scrollIntoView({block:'start'});
@@ -86,7 +109,7 @@ function applyOrder(source){
   if(Object.keys(source).some(key=>key!=='orderLink'&&current[key]&&current[key]!==source[key])&&
     !confirm('¿Reemplazar los datos de trazabilidad del caso con los de esta orden?'))return;
   for(const [key,value] of Object.entries(source))form.elements.namedItem(key).value=value;
-  updateOrderLink();
+  machineField.value='';updateMachineLink();updateOrderLink();
   status.textContent='Datos copiados al borrador. Guarda el caso para registrar el vínculo.';
 }
 form.elements.namedItem('order').addEventListener('input',()=>{
@@ -115,6 +138,7 @@ form.onsubmit=async event=>{
   event.preventDefault();
   if(busy)return;
   const data=values();
+  if(!machineRecords().some(machine=>machine.id===data.machineLink))data.machineLink='';
   if(!data.name.trim()||!data.symptoms.trim()){status.textContent='Escribe el nombre y los síntomas.';return;}
   if(data.cause.trim()&&!data.evidence.trim()){status.textContent='Registra la prueba antes de guardar una causa confirmada.';return;}
   busy=true;
@@ -207,11 +231,11 @@ function clearPhotos(){
   }
   $('diagnosticPhotoStatus').textContent='';
 }
-form.onreset=()=>{id='';status.textContent='';$('diagnosticTrace').open=false;$('diagnosticOpenOrder').hidden=true;$('diagnosticOrderPick').value='';clearPhotos();queueMicrotask(update);};
+form.onreset=()=>{id='';status.textContent='';$('diagnosticTrace').open=false;$('diagnosticOpenOrder').hidden=true;$('diagnosticOrderPick').value='';clearPhotos();$('diagnosticConditions').open=false;queueMicrotask(()=>{updateMachineLink();update();});};
 function reset(){
   version++;busy=false;form.reset();$('diagnosticSearch').value='';
   renderHistory();
 }
-window.addEventListener('lifts-page',event=>{if(event.detail?.page==='diagnostics'){update();renderHistory();}});
+window.addEventListener('lifts-page',event=>{if(event.detail?.page==='diagnostics'){updateMachineLink();update();renderHistory();}});
 window.addEventListener('nexo-state',reset);
-window.liftsDiagnostics={reset,openSaved,search,applyOrder,casesForOrder:id=>records().filter(item=>item.data.orderLink===id)};
+window.liftsDiagnostics={reset,openSaved,search,applyOrder,casesForMachine:id=>records().filter(item=>item.data.machineLink===id),casesForOrder:id=>records().filter(item=>item.data.orderLink===id)};

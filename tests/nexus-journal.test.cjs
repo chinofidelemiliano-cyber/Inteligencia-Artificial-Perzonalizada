@@ -155,3 +155,12 @@ test('decision reviews compare recorded expectations with later observations wit
   assert.deepEqual(decisionReviews(item).map(entry=>[entry.expected,entry.actual]),[['Reducir retrabajo','Sin cambio'],['Reducir retrabajo','Aumentó']]);
   assert.throws(()=>record('decision',{title:'Prueba',reviewDate:'2026-02-30'}),/fecha de revisión/);
 });
+
+test('maintenance requires an asset identifier, valid date and evidence after completion',()=>{
+  const {record}=require('../web/nexus-journal.js');
+  const raw={title:'Revisión',asset:'machines:10000000-0000-4000-8000-000000000001',date:'2026-11-25',task:'Inspección'};
+  assert.equal(record('maintenance',raw).status,'planned');
+  assert.throws(()=>record('maintenance',{...raw,asset:'orders:unknown'}),/activo/);
+  assert.throws(()=>record('maintenance',{...raw,status:'done'}),/resultado/);
+  assert.equal(record('maintenance',{...raw,status:'done',result:'Acta recibida'}).status,'done');
+});

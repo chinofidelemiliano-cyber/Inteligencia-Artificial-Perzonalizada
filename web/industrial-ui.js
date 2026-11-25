@@ -43,7 +43,10 @@
     const detail=node(visual,'p','Selecciona un paso para ver el nombre completo.');
     detail.setAttribute('role','status');
     const actions=node(visual,'div');actions.className='evolution-controls';
-    machine.path.forEach((name,index)=>button(actions,'Paso '+(index+1),()=>{detail.textContent=(index+1)+'. '+name;}));
+    machine.path.forEach((name,index)=>button(actions,'Paso '+(index+1),()=>{
+      const type=core.componentTypes[machine.componentKinds?.[index]];
+      detail.textContent=(index+1)+'. '+name+(type?' · '+type:'');
+    }));
     if(machine.source)node(visual,'p','Referencia registrada: '+machine.source);
   }
   function inspect(kind,item){
@@ -60,7 +63,20 @@
         node(visual,'p','Referencia de parámetros: '+item.parameterSource);
       }
     }
-    if(['machines','stock'].includes(kind))button(visual,'Preparar QR privado',()=>window.liftsFieldLinks.prepare(kind,item.id));
+    if(kind==='machines'){
+      const cases=window.liftsDiagnostics?.casesForMachine(item.id)||[];
+      if(cases.length)node(visual,'h4','Diagnósticos vinculados a la máquina');
+      for(const linked of cases)button(visual,linked.data.name,()=>window.liftsNexus.open({id:'diagnostic-record',key:linked.id}));
+    }
+    if(['machines','stock'].includes(kind)){
+      button(visual,'Preparar QR privado',()=>window.liftsFieldLinks.prepare(kind,item.id));
+      button(visual,'Preparar mantenimiento',()=>window.liftsJournal.prepareDraft('maintenance',{
+        title:('Mantenimiento de '+item.name).slice(0,100),asset:kind+':'+item.id
+      }));
+      const maintenance=(api.getState().nexusJournal||[]).filter(row=>row.kind==='maintenance'&&row.data.asset===kind+':'+item.id);
+      if(maintenance.length)node(visual,'h4','Historial de mantenimiento');
+      for(const row of maintenance)button(visual,row.title,()=>window.liftsNexus.open({id:'journal-record',key:row.id}));
+    }
     if(kind==='rules')node(visual,'p',item.active===false?'Regla inactiva':'Regla activa');
     if(kind!=='orders')return;
     const result=core.assess(space(),item);
@@ -85,7 +101,11 @@
         field(label,key,item?.parameters?.[key]).inputMode=key==='stations'?'numeric':'decimal';
       }
       field('Referencia o método de medición de los parámetros','parameterSource',item?.parameterSource,null,'textarea');
-      field('Componentes en orden (uno por línea)','path',item?.path.join('\n'),null,'textarea');
+      const typed=item?.path.map((name,index)=>item.componentKinds?.[index]?'['+item.componentKinds[index]+'] '+name:name);
+      const path=field('Componentes en orden (uno por línea)','path',typed?.join('\n'),null,'textarea');
+      path.maxLength=3000;
+      node(form,'p','Tipos opcionales: [estacion], [rodillo], [anilox], [cilindro], [engrane], [suaje], [yunque], [secado] y [servicio]. Ejemplo: [rodillo] Entrada.');
+
     }else if(kind==='stock'){
       field('Categoría industrial','category',item?.category,Object.entries(core.categories));
       field('Cantidad disponible','quantity',item?.quantity);
