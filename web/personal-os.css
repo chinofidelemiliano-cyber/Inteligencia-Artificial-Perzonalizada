@@ -99,18 +99,8 @@
   clip-path:polygon(0 30%,7% 11%,23% 2%,53% 2%,75% 6%,92% 15%,100% 34%,96% 56%,83% 64%,92% 84%,100% 95%,91% 100%,0 100%,0 73%,15% 77%,16% 63%,28% 54%,4% 44%);
 }
 
-#osWelcomeRobot,#evolutionRobot,.os-character-card {position:relative;}
-.os-character-view {position:absolute;inset:0;width:100%;height:100%;visibility:hidden;background:transparent;--poster-color:transparent;}
-[data-character3d="ready"] > .os-character-view {visibility:visible;}
-[data-character3d="ready"] > :not(.os-character-view) {visibility:hidden;}
 #osWelcomePet {aspect-ratio:111/165;clip-path:none;}
 #osWelcomePet > svg {display:block;width:100%;height:100%;clip-path:polygon(0 30%,7% 11%,23% 2%,53% 2%,75% 6%,92% 15%,100% 34%,96% 56%,83% 64%,92% 84%,100% 95%,91% 100%,0 100%,0 73%,15% 77%,16% 63%,28% 54%,4% 44%);}
-#osWelcomePet[data-character3d="ready"] {width:clamp(4rem,15vw,10rem);mix-blend-mode:normal;}
-.os-character-gallery {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
-.os-character-gallery figure {margin:0;min-width:0;}
-.os-character-card {aspect-ratio:1;background:linear-gradient(120deg,#18264f,#103349);border:1px solid #476983;border-radius:1rem;display:grid;place-items:center;}
-.os-character-card > img,.os-character-card > svg {width:65%;max-height:75%;object-fit:contain;}
-.os-character-gallery figcaption {margin-top:.45rem;font-weight:700;}
 #systemsDiagram svg {display:block;width:100%;height:auto;min-width:0;}
 #systemsComponents li,#systemsLinks li {margin-block:.5rem;overflow-wrap:anywhere;}
 .os-overflow {overflow-x:auto;}
@@ -129,3 +119,87 @@
   margin-block-start: .65rem;
 }
 #mindAdvice:empty { display: none; }
+
+/* The sidebar uses the corporate palette and the existing page routes. */
+#workspaceNavigation {
+  background: #111927;
+}
+#workspaceSections {
+  display: grid;
+  gap: .35rem;
+  margin-block: 1rem;
+}
+#workspaceSections details {
+  border-block-end: 1px solid #344355;
+  padding-block: .2rem;
+}
+#workspaceSections summary {
+  cursor: pointer;
+  padding: .35rem;
+  font-weight: 650;
+  font-size: .88rem;
+  color: #edf5ff;
+}
+#workspaceSections button {
+  display: block;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: .38rem .5rem;
+  margin: .12rem 0;
+  text-align: start;
+  border: 1px solid transparent;
+  color: #c5d6ea;
+  background: transparent;
+  box-shadow: none;
+}
+#workspaceSections button:hover, #workspaceSections button[aria-current="true"] {
+  color: #fff;
+  background: #095499;
+}
+#workspaceSections details:has([aria-current="true"]) > summary {
+  border-inline-start: .18rem solid #e01d25;
+}
+#workspaceMobileMenu { display: none; }
+#workspaceShortcuts .evolution-controls { margin-block: .38rem; }
+@media (max-width: 800px) {
+  #workspaceNavigation { flex-wrap: wrap; }
+  #workspaceMobileMenu { display: inline-block; padding: .4rem .6rem; }
+  #workspaceSections {
+    position: static;
+    flex: 1 0 100%;
+    max-height: 29vh;
+    overflow: auto;
+    margin: 0;
+    padding: .2rem;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    border: 0;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    align-items: start;
+  }
+  #workspaceSections.mobile-closed { display: none; }
+  #workspaceSections .nav-icon, #workspaceSections .nav-label { display: inline; font-size: inherit; }
+  #workspaceSections .nav-icon { margin-inline-end: .35rem; }
+}
+#workspace main > header { padding-block-end: .8rem; border-block-end: 1px solid var(--border); }
+#workspace main button:not(.secondary):not(.companion-character):not(.companion-dock-avatar) {
+  background: #095499;
+  color: #fff;
+  box-shadow: none;
+}
+#workspace .evolution-hero, #workspace .intro {
+  background: #142338;
+  border-color: #38506a;
+  box-shadow: none;
+}
+#workspace .intro::before, #workspace .intro::after { content: none; }
+:root[data-lifts-theme="light"] #workspace .evolution-hero,
+:root[data-lifts-theme="light"] #workspace .intro {
+  background: #edf3f9;
+  border-color: #c3d0dd;
+  color: #182536;
+}
+@media (prefers-reduced-motion: reduce) {
+  #workspaceSections button { transition: none; }
+}

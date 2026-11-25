@@ -5,7 +5,7 @@ const {readFile}=require('node:fs/promises');
 const path=require('node:path');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 
-test('Chrome renders the supplied models, saves a systems map and downloads a preflight report',async()=>{
+test('The 2D workspace saves a systems map and downloads a preflight report',async()=>{
   const server=createServer(async(req,res)=>{
     try{
       const file=new URL(req.url,'http://localhost').pathname.replace(/^\//,'')||'index.html';
@@ -14,7 +14,7 @@ test('Chrome renders the supplied models, saves a systems map and downloads a pr
     }catch{res.writeHead(404);res.end();}
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']});
+  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
   try{
     const page=await browser.newPage({viewport:{width:1200,height:900}});
     const errors=[],badUrls=[];
@@ -27,25 +27,8 @@ test('Chrome renders the supplied models, saves a systems map and downloads a pr
       window.loginFixture=()=>{document.querySelector('#workspace').hidden=false;document.querySelector('#authPanel').hidden=true;
       window.dispatchEvent(new CustomEvent('nexo-state',{detail:{profile:{name:'Cuenta A'},tasks:[],messages:[],onboardingCompleted:true}}));};`}));
     await page.goto(base+'/');
-    await page.waitForFunction(()=>document.querySelector('#osWelcomeRobot model-viewer')?.loaded&&document.querySelector('#osWelcomePet model-viewer')?.loaded);
-    assert.equal(await page.locator('#osWelcomeRobot').getAttribute('data-character3d'),'ready');
-    if(process.env.LIFTS_CAPTURE_3D){
-      await page.evaluate(()=>document.fonts.ready);
-      await page.locator('.os-welcome').screenshot({path:process.env.LIFTS_CAPTURE_3D,animations:'disabled'});
-    }
-    await page.evaluate(()=>{window.loginFixture();window.liftsWorkspace.open('characters');});
-    await page.waitForFunction(()=>document.querySelector('#characterStudioRobot model-viewer')?.loaded&&document.querySelector('#characterStudioPet model-viewer')?.loaded);
-    await page.getByLabel('Expresión para los dos personajes').selectOption('guino');
-    await page.waitForFunction(()=>{
-      const robot=document.querySelector('#characterStudioRobot model-viewer');
-      const pet=document.querySelector('#characterStudioPet model-viewer');
-      return robot?.loaded&&pet?.loaded&&robot.getAttribute('src').endsWith('lifts_guino.glb')&&pet.getAttribute('src').endsWith('perro_guino.glb');
-    });
-    await page.emulateMedia({reducedMotion:'reduce'});
-    await page.getByText('Mostrando ilustraciones.',{exact:true}).waitFor();
-    assert.equal(await page.locator('#characters model-viewer').count(),0);
-    await page.getByLabel('Presentación durante esta sesión').selectOption('3d');
-    await page.waitForFunction(()=>document.querySelector('#characterStudioRobot model-viewer')?.loaded);
+    assert.equal(await page.locator('model-viewer').count(),0);
+    await page.evaluate(()=>window.loginFixture());
     await page.evaluate(()=>window.liftsWorkspace.open('systems'));
     await page.getByLabel('Título del mapa').fill('Prueba de circulación');
     for(const title of ['Flujo','Temperatura']){
@@ -89,6 +72,25 @@ test('Chrome renders the supplied models, saves a systems map and downloads a pr
     const report=await PDFDocument.load(await readFile(await download.path()));
     assert.ok(report.getPageCount()>0);
     assert.deepEqual(badUrls,[]);
+    await page.evaluate(()=>window.liftsWorkspace.open('home'));
+    await page.getByText('Atajos y navegación',{exact:true}).click();
+    await page.getByLabel('Herramienta para agregar a favoritos').selectOption('systems');
+    await page.getByRole('button',{name:'Agregar a favoritos',exact:true}).click();
+    await page.getByText('Favorito guardado.',{exact:true}).waitFor();
+    await page.getByLabel('Mostrar Vida personal y finanzas',{exact:true}).uncheck();
+    await page.getByRole('button',{name:'Subir Herramientas',exact:true}).click();
+    await page.getByRole('button',{name:'Guardar menú',exact:true}).click();
+    await page.getByText('Menú guardado.',{exact:true}).waitFor();
+    const saved=await page.evaluate(()=>window.saved);
+    await page.evaluate(data=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:data})),saved);
+    assert.deepEqual(saved.workspaceNavigation.favorites,['systems']);
+    assert.equal(await page.locator('[data-nav-group="personal"]').getAttribute('hidden'),'');
+    assert.deepEqual(await page.locator('#workspaceSections > details').evaluateAll(groups=>groups.map(group=>group.dataset.navGroup)),saved.workspaceNavigation.order);
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('#workspaceMobileMenu').click();
+    assert.equal(await page.locator('#workspaceSections').isVisible(),false);
+    await page.locator('#workspaceMobileMenu').click();
+    assert.equal(await page.locator('#workspaceSections').isVisible(),true);
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

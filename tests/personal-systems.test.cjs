@@ -1,21 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {readFile}=require('node:fs/promises');
 const {addNode,addEdge,cycles,downstream}=require('../web/personal-systems.js');
-
-test('all twenty provided poses are complete local GLBs',async()=>{
-  for(const character of ['lifts','perro']){
-    for(const pose of ['feliz','risa','sorpresa','amor','guino','triste','enojo','duda','sueno','concentrado']){
-      const file=await readFile('web/assets/characters/'+character+'_'+pose+'.glb');
-      assert.equal(file.toString('ascii',0,4),'glTF');
-      assert.equal(file.readUInt32LE(4),2);
-      assert.equal(file.readUInt32LE(8),file.length);
-      const json=JSON.parse(file.toString('utf8',20,20+file.readUInt32LE(12)));
-      assert.ok(json.meshes.length>0);
-      assert.ok([...json.buffers,...(json.images||[])].every(item=>!item.uri));
-    }
-  }
-});
 
 test('system routes preserve uncertainty and avoid looping through cycles',()=>{
   const start={nodes:[],edges:[]};
