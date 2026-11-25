@@ -51,6 +51,7 @@
         if(course&&!course.closest('[hidden]')){course.open=true;course.scrollIntoView({block:'start'});}
       }
     },
+    mind:plainPage('Lifts Mind · Dominio personal','Intervención inmediata, autorregulación y concentración','Los registros de Mind se guardan en tu espacio. Las herramientas educativas funcionan sin IA.'),
     guardian:plainPage('Lifts Guardian','Preparar la jornada y dar seguimiento a compromisos','El resumen se calcula al abrir la vista con tus registros guardados.'),
     radar:plainPage('Lifts Radar','Revisar alertas y pendientes de tus registros','Las comprobaciones se realizan al abrir esta vista.'),
     'builder-record':{

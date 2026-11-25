@@ -58,7 +58,7 @@
   </div>
 </section><section class="companion-card" aria-label="Acompañamiento de tu asistente"><button id="companionButton" type="button" class="companion-character" aria-label="Ver mi siguiente pendiente"><span class="character-antenna"></span><span class="character-face"><span class="character-eye"></span><span class="character-eye"></span><span class="character-smile"></span></span><span class="character-body"></span></button><div><small>TU COMPAÑÍA DE TRABAJO</small><h2 id="companionName">Lifts te acompaña</h2><p id="companionMessage">Vamos a elegir lo importante para hoy.</p><div class="companion-actions"><button id="goAgenda" class="secondary">Ver mi jornada</button><button id="goWork" class="secondary">Contarte mi trabajo</button><button id="checkIn" class="secondary">Hacer una pausa</button></div></div></section><header><div><small>TU ESPACIO PERSONAL</small><h2 id="greeting">Todo empieza con un buen plan.</h2></div><div class="workspace-actions">
 <button id="workspaceSearch" type="button" class="secondary">Buscar</button>
-<button id="workspaceAlerts" type="button" class="secondary">Notificaciones</button>
+<button data-page="mind" type="button" class="secondary">Estoy procrastinando</button><button id="workspaceAlerts" type="button" class="secondary">Notificaciones</button>
 <button id="workspaceTheme" type="button" class="secondary" aria-pressed="false">Tema claro</button>
 <button id="workspaceSidebar" type="button" class="secondary" aria-controls="workspaceNavigation" aria-expanded="true">Plegar menú</button>
 </div></header>
@@ -270,6 +270,79 @@
   <article class="card"><h2 id="personalModelsTitle">Modelos mentales</h2>
     <label for="personalModelsSearch">Buscar un modelo mental</label><input id="personalModelsSearch" type="search" maxlength="120">
   </article><div id="personalModelsList"></div>
+</section>
+<section id="mind" hidden aria-labelledby="mindTitle">
+  <article class="card mind-intro">
+    <h2 id="mindTitle">Lifts Mind <span>Dominio personal</span></h2>
+    <p>Entiende qué dificulta empezar, prueba una estrategia y revisa el resultado.</p>
+    <p class="notice">Este espacio es educativo. Si las dificultades son persistentes y afectan tu vida diaria, considera una evaluación profesional. Las notas se guardan en tu espacio de cuenta y quedan fuera de las consultas automáticas al chat. El equipo que administra la base de datos puede tener acceso técnico al almacenamiento.</p>
+    <div class="evolution-controls">
+      <button id="mindQuick" type="button">Empezar cinco minutos</button>
+      <button id="mindFocus" type="button" class="secondary">Abrir concentración de Agenda</button>
+      <button id="mindReminder" type="button" class="secondary">Preparar recordatorio</button>
+    </div>
+  </article>
+  <article class="card">
+    <h3>Intervención inmediata</h3>
+    <form id="mindIntervention">
+      <label for="mindTask">Actividad que cuesta comenzar</label><input id="mindTask" name="task" maxlength="160" required>
+      <label for="mindEmotion">Qué estoy sintiendo (opcional)</label><input id="mindEmotion" name="emotion" maxlength="80">
+      <label for="mindBarrier">Qué dificulta empezar</label><select id="mindBarrier" name="barrier"></select>
+      <button>Elegir una estrategia</button>
+    </form>
+    <div id="mindAdvice" aria-live="polite"></div>
+    <form id="mindOutcome" hidden>
+      <label for="mindAction">Acción pequeña que voy a probar</label><input id="mindAction" name="action" maxlength="200" required>
+      <label for="mindResult">Resultado observado</label><select id="mindResult" name="result">
+        <option value="pending">Todavía por probar</option><option value="helped">Me ayudó a avanzar</option><option value="partial">Ayudó en parte</option><option value="none">No me ayudó</option>
+      </select>
+      <button>Guardar intervención</button>
+    </form>
+    <p id="mindStatus" role="status"></p>
+  </article>
+  <details class="card" id="mindReview"><summary>Mi mente y evolución</summary>
+    <p>Revisión de hábitos propia. Los factores se basan en lo que registras y pueden coexistir.</p>
+    <div id="mindSummary"></div><div id="mindAgendaSignals"></div><div id="mindHistory"></div>
+  </details>
+  <details class="card" id="mindThoughts"><summary>Laboratorio de pensamientos</summary>
+    <form id="mindThoughtForm"><div id="mindThoughtFields"></div><button>Guardar reflexión privada</button></form>
+    <div id="mindThoughtList"></div>
+  </details>
+  <details class="card" id="mindPlanning"><summary>Plan si–entonces y WOOP</summary>
+    <form id="mindPlanForm"><div id="mindPlanFields"></div><button>Preparar plan en Agenda</button></form>
+  </details>
+  <details class="card"><summary>Calculadora de motivación temporal</summary>
+    <p>Modelo teórico de Steel y König. Usa escalas comparables entre ejemplos. El resultado no es una puntuación clínica.</p>
+    <p>Motivación = (expectativa × valor) ÷ (1 + impulsividad × demora).</p>
+    <form id="mindMotivation"><div id="mindMotivationFields"></div><button>Calcular motivación teórica</button></form>
+    <p id="mindMotivationResult" role="status"></p>
+    <a href="https://doi.org/10.5465/amr.2006.22527462">Steel y König, Integrating Theories of Motivation (2006)</a>
+  </details>
+  <details class="card"><summary>Academia y ejercicios</summary><div id="mindLessons"></div>
+    <button type="button" data-page="guardian" class="secondary">Abrir filosofía práctica en Guardian</button>
+  </details>
+  <details class="card"><summary>Diario y experimentos</summary>
+    <p>Usa la revisión personal de Lifts para registrar descanso y energía. En Nexus puedes comparar una línea base con lo observado tras un cambio.</p>
+    <button type="button" data-page="routines" class="secondary">Abrir hábitos y revisión personal</button>
+    <button id="mindExperiment" type="button" class="secondary">Preparar experimento en Nexus</button>
+  </details>
+  <details class="card" id="mindTraining"><summary>Programa progresivo</summary>
+    <p>Practica a tu ritmo. Cada sesión requiere que registres una observación antes de marcarla como realizada.</p>
+    <form id="mindTrainingStart">
+      <label for="mindTrainingDays">Sesiones de práctica (30 por defecto)</label><input id="mindTrainingDays" type="number" min="4" max="60" value="30" required>
+      <label for="mindTrainingBaseline">Punto de partida y objetivo</label><input id="mindTrainingBaseline" maxlength="200" required>
+      <button>Iniciar programa</button>
+    </form>
+    <div id="mindTrainingProgress"></div>
+    <form id="mindTrainingStep" hidden>
+      <label for="mindTrainingNote">Observación de la práctica</label><textarea id="mindTrainingNote" maxlength="400" required></textarea>
+      <button>Registrar la sesión</button>
+    </form>
+  </details>
+  <details class="card" id="mindSettings"><summary>Privacidad y datos</summary>
+    <p>La copia incluye intervenciones y reflexiones. Elimina registros individuales desde su lista.</p>
+    <button id="mindExport" type="button">Descargar datos de Mind</button>
+  </details>
 </section>
 <section id="guardian" hidden aria-labelledby="guardianTitle">
   <article class="card">
@@ -682,6 +755,9 @@
 <script src="guardian-calculator.js" defer></script>
 <script src="guardian-formulas.js" defer></script>
 <script src="guardian.js" defer></script>
+<script src="mind-core.js" defer></script>
+<script src="mind-ui.js" defer></script>
+<script src="mind-lessons.js" defer></script>
 <script src="guardian-field.js" defer></script>
 <script src="guardian-field-audio.js" defer></script>
 <script src="guided-routines.js" defer></script>

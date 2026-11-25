@@ -114,3 +114,18 @@
 #systemsDiagram svg {display:block;width:100%;height:auto;min-width:0;}
 #systemsComponents li,#systemsLinks li {margin-block:.5rem;overflow-wrap:anywhere;}
 .os-overflow {overflow-x:auto;}
+#mind .mind-intro {
+  border-inline-start: .25rem solid #8055ff;
+}
+#mind .mind-intro h2 span {
+  display: block;
+  font-size: .58em;
+  font-weight: 600;
+  margin-block-start: .25rem;
+}
+#mindHistory > article, #mindThoughtList > details, #mindLessons > details {
+  border-block-start: 1px solid currentColor;
+  padding-block: .65rem;
+  margin-block-start: .65rem;
+}
+#mindAdvice:empty { display: none; }
