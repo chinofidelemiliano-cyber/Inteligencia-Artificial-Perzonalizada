@@ -119,6 +119,20 @@
     <div id="desktopFavorites" class="evolution-controls"></div>
     <button id="desktopManage" type="button" class="secondary">Configurar favoritos y navegación</button>
   </article>
+  <article class="card">
+    <h3>Atajos de acción</h3><div id="desktopActions"></div>
+    <details><summary>Personalizar atajos de acción</summary>
+      <form id="desktopActionForm">
+        <label for="desktopActionTarget">Acción del atajo</label><select id="desktopActionTarget" name="target"></select>
+        <label for="desktopActionName">Nombre visible (opcional)</label><input id="desktopActionName" name="name" maxlength="60">
+        <label for="desktopActionGroup">Carpeta (opcional)</label><input id="desktopActionGroup" name="group" maxlength="40">
+        <label for="desktopActionIcon">Icono del atajo</label><select id="desktopActionIcon" name="icon"><option value="">Sin icono</option><option>＋</option><option>◇</option><option>✓</option><option>▤</option></select>
+        <button>Agregar a mis atajos</button>
+      </form>
+      <div id="desktopActionSettings"></div>
+    </details>
+    <p id="desktopActionStatus" role="status"></p>
+  </article>
   <div class="evolution-panels">
     <article class="card">
       <h3>Agenda de hoy</h3><ul id="desktopTasks"></ul>
@@ -127,6 +141,10 @@
     <article class="card">
       <h3>Avisos pendientes</h3><ul id="desktopAlerts"></ul>
       <button type="button" data-page="reminders" class="secondary">Ver todos los avisos</button>
+    </article>
+    <article class="card">
+      <h3>Reglas con coincidencias</h3><p id="desktopAutomation"></p>
+      <button id="desktopOpenAutomation" type="button" class="secondary">Abrir automatizaciones</button>
     </article>
     <article class="card">
       <h3>Próxima acción</h3><p id="desktopNext"></p>
@@ -569,6 +587,26 @@
   </div>
 </section>
 <section id="operations" hidden aria-labelledby="nexusOperationsTitle">
+  <details class="card" id="automationPanel">
+    <summary>Automatizaciones personales</summary>
+    <p>Las reglas consultan los datos de tu cuenta al abrir el Escritorio o al revisar aquí. Puedes abrir el registro o preparar un recordatorio. El guardado del aviso se confirma en su editor.</p>
+    <form id="automationForm">
+      <label for="automationName">Nombre de la regla</label><input id="automationName" name="name" maxlength="80" required>
+      <label for="automationWhen">Cuando ocurra</label><select id="automationWhen" name="when">
+        <option value="task">Tarea vencida</option><option value="calibration">Calibración próxima</option><option value="budget">Presupuesto mensual excedido</option><option value="review">Repaso previsto</option>
+      </select>
+      <label for="automationCondition">Si coincide con (opcional)</label><input id="automationCondition" name="condition" maxlength="80">
+      <label for="automationThen">Entonces ofrecer</label><select id="automationThen" name="then">
+        <option value="open">Abrir el origen</option><option value="reminder">Preparar un recordatorio</option>
+      </select>
+      <button>Guardar regla</button>
+    </form>
+    <div id="automationRules"></div>
+    <button id="automationRun" type="button">Revisar reglas y guardar en historial</button>
+    <p id="automationStatus" role="status"></p>
+    <div id="automationMatches"></div>
+    <details><summary>Historial de revisiones</summary><ul id="automationHistory"></ul></details>
+  </details>
   <article class="card">
     <h2 id="nexusOperationsTitle">Estado y permisos de Nexus</h2>
     <dl>
@@ -755,6 +793,7 @@
 <script src="app.js" defer></script>
 <script src="workspace-navigation.js" defer></script>
 <script src="workspace-desktop.js" defer></script>
+<script src="workspace-actions.js" defer></script>
 <script src="images.js" defer></script>
 <script src="work-ui.js" defer></script>
 <script src="coaching-ui.js" defer></script>
@@ -778,6 +817,7 @@
 <script src="personal-builder-core.js" defer></script>
 <script src="personal-builder-ui.js" defer></script>
 <script src="personal-radar.js" defer></script>
+<script src="workspace-automations.js" defer></script>
 <script src="guardian-reference.js" defer></script>
 <script src="guardian-philosophy.js" defer></script>
 <script src="guardian-calculator.js" defer></script>

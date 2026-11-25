@@ -108,6 +108,36 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.getByRole('button',{name:'Manual del rebobinador · Recuerdo privado',exact:true}).click();
     await page.locator('#privacy').waitFor();
     assert.equal(await page.locator('#memorySearch').inputValue(),'Manual del rebobinador');
+    await page.evaluate(()=>{
+      const space=window.liftsWorkspace.getState();
+      space.tasks.push({id:'late',title:'Ajustar presión',date:'2000-01-01'});
+      window.liftsWorkspace.open('desktop');
+    });
+    await page.getByText('Personalizar atajos de acción',{exact:true}).click();
+    await page.getByLabel('Acción del atajo').selectOption('reminder');
+    await page.getByLabel('Nombre visible (opcional)').fill('Aviso de prueba');
+    await page.getByLabel('Carpeta (opcional)').fill('Personal');
+    await page.getByRole('button',{name:'Agregar a mis atajos'}).click();
+    await page.getByText('Atajo guardado.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Editar atajo Aviso de prueba',exact:true}).click();
+    await page.getByLabel('Nombre visible (opcional)').fill('Capturar aviso');
+    await page.getByRole('button',{name:'Guardar cambios del atajo',exact:true}).click();
+    await page.getByText('Atajo guardado.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Capturar aviso',exact:true}).click();
+    await page.locator('#reminders').waitFor();
+    await page.evaluate(()=>window.liftsWorkspace.open('desktop'));
+    await page.getByRole('button',{name:'Abrir automatizaciones',exact:true}).click();
+    await page.getByLabel('Nombre de la regla').fill('Seguir presión');
+    await page.getByLabel('Si coincide con (opcional)').fill('presion');
+    await page.getByLabel('Entonces ofrecer').selectOption('reminder');
+    await page.getByRole('button',{name:'Guardar regla',exact:true}).click();
+    await page.getByText('Regla guardada.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Revisar reglas y guardar en historial'}).click();
+    await page.getByText('Revisión guardada.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saved.workspaceAutomations.history[0].total),1);
+    await page.getByRole('button',{name:'Preparar un recordatorio',exact:true}).click();
+    assert.equal(await page.locator('#reminderTitle').inputValue(),'Ajustar presión');
+    assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().tasks.length),2);
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });
