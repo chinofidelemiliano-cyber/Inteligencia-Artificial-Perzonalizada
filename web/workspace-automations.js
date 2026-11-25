@@ -28,7 +28,18 @@
   const $=id=>document.getElementById(id),app=root.liftsWorkspace,form=$('automationForm'),status=$('automationStatus');
   const state=()=>app.getState().workspaceAutomations||{rules:[],history:[]};
   const localDay=()=>root.liftsWork.localDate(new Date());
-  let busy=false,editing=null;
+  let busy=false,editing=null,monitor=null;
+  const frequency=$('automationFrequency'),interval=$('automationInterval');
+  const frequencies=[0,5,15,30];
+  function monitorDesktop(){
+    clearInterval(monitor);monitor=null;
+    const minutes=state().minutes;
+    if(!frequencies.includes(minutes)||!minutes||$('desktop').hidden||document.hidden)return;
+    monitor=setInterval(()=>{
+      if(document.hidden||$('desktop').hidden||busy)return;
+      render();
+    },minutes*60000);
+  }
   const submit=form.querySelector('button'),cancel=$('automationCancelEdit');
   function clearEditor(){
     editing=null;form.reset();submit.textContent='Guardar regla';cancel.hidden=true;
@@ -43,7 +54,7 @@
   function render(){
     const {rules,history}=state(),host=$('automationRules'),matches=$('automationMatches'),log=$('automationHistory');
     host.replaceChildren();matches.replaceChildren();log.replaceChildren();
-    submit.disabled=busy;cancel.disabled=busy;$('automationRun').disabled=busy||rules.every(item=>item.paused);
+    submit.disabled=busy;cancel.disabled=busy;frequency.querySelector('button').disabled=busy;$('automationRun').disabled=busy||rules.every(item=>item.paused);
     if(!rules.length)node(host,'p','Todavía no tienes reglas.');
     for(const rule of rules){
       const row=node(host,'div');
@@ -76,7 +87,16 @@
       });
     }
     if(!found.length)node(matches,'p','Sin coincidencias ahora.');
-    for(const item of history)node(log,'li',new Intl.DateTimeFormat('es-MX',{dateStyle:'short',timeStyle:'short'}).format(item.at)+' · '+item.total+' coincidencias en '+item.rules+' reglas activas');
+    const time=new Intl.DateTimeFormat('es-MX',{dateStyle:'short',timeStyle:'short'});
+    const names=new Map(rules.map(rule=>[rule.id,rule.name]));
+    const titles=new Map(radar.signals(app.getState(),localDay()).map(signal=>[signal.id,signal.title]));
+    for(const item of history){
+      const entry=node(log,'li',time.format(item.at)+' · '+item.total+' coincidencias en '+item.rules+' reglas activas');
+      if(!item.matched?.length)continue;
+      const detail=node(entry,'details');
+      node(detail,'summary','Ver coincidencias de esta revisión');
+      for(const match of item.matched)node(detail,'p',(names.get(match.rule)||'Regla retirada')+' · '+(titles.get(match.event)||match.event));
+    }
   }
   async function save(value,message){
     if(busy)return false;
@@ -88,7 +108,7 @@
     }catch{
       if(app.getState()===owner){owner.workspaceAutomations=previous;status.textContent='No se pudo guardar. Intenta de nuevo.';}
     }finally{
-      if(app.getState()===owner){busy=false;render();}
+      if(app.getState()===owner){busy=false;render();monitorDesktop();}
     }
     return false;
   }
@@ -108,12 +128,25 @@
     const item={at:Date.now(),total:matches.length,rules:current.rules.filter(rule=>!rule.paused).length,matched:matches.map(({rule,signal})=>({rule:rule.id,event:signal.id}))};
     void save({...current,history:[item,...current.history].slice(0,50)},'Revisión guardada.');
   };
+  frequency.onsubmit=async event=>{
+    event.preventDefault();
+    const minutes=Number(interval.value);
+    if(!frequencies.includes(minutes))return;
+    if(!await save({...state(),minutes},'Frecuencia guardada.'))interval.value=String(state().minutes||0);
+  };
   $('desktopOpenAutomation').onclick=()=>{
     app.open('operations');$('automationPanel').open=true;$('automationPanel').querySelector('summary').focus();
   };
-  function reset(){busy=false;clearEditor();status.textContent='';$('automationPanel').open=false;render();}
+  function reset(){busy=false;clearEditor();interval.value=String(state().minutes||0);status.textContent='';$('automationPanel').open=false;render();monitorDesktop();}
   root.addEventListener('nexo-state',reset);
-  root.addEventListener('lifts-page',event=>{if(['operations','desktop'].includes(event.detail.page))render();});
+  root.addEventListener('lifts-page',event=>{
+    if(['operations','desktop'].includes(event.detail.page)){interval.value=String(state().minutes||0);render();}
+    monitorDesktop();
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&!$('desktop').hidden)render();
+    monitorDesktop();
+  });
   root.liftsAutomations={reset};
   render();
 })(globalThis);

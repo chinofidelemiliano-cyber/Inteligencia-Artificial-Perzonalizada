@@ -624,6 +624,10 @@
     <button id="automationRun" type="button">Revisar reglas y guardar en historial</button>
     <p id="automationStatus" role="status"></p>
     <div id="automationMatches"></div>
+    <form id="automationFrequency">
+      <label for="automationInterval">Frecuencia mientras el Escritorio está visible</label><select id="automationInterval" name="minutes"><option value="0">Solo al abrir o revisar</option><option value="5">Cada 5 minutos</option><option value="15">Cada 15 minutos</option><option value="30">Cada 30 minutos</option></select>
+      <button>Guardar frecuencia</button>
+    </form>
     <details><summary>Historial de revisiones</summary><ul id="automationHistory"></ul></details>
   </details>
   <article class="card">

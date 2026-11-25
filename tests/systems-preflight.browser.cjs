@@ -138,6 +138,13 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.getByText('Regla guardada.',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Revisar reglas y guardar en historial'}).click();
     await page.getByText('Revisión guardada.',{exact:true}).waitFor();
+    await page.getByLabel('Frecuencia mientras el Escritorio está visible').selectOption('5');
+    await page.getByRole('button',{name:'Guardar frecuencia',exact:true}).click();
+    await page.getByText('Frecuencia guardada.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saved.workspaceAutomations.minutes),5);
+    await page.getByText('Historial de revisiones',{exact:true}).click();
+    await page.getByText('Ver coincidencias de esta revisión',{exact:true}).click();
+    await page.locator('#automationHistory').getByText('Seguir presión · Ajustar presión',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>window.saved.workspaceAutomations.history[0].total),1);
     await page.getByRole('button',{name:'Preparar un recordatorio',exact:true}).click();
     assert.equal(await page.locator('#reminderTitle').inputValue(),'Ajustar presión');

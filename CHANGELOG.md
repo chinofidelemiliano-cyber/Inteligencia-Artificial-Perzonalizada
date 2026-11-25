@@ -9,6 +9,7 @@
 - La paleta y los atajos usan cinco acciones registradas en Nexus para abrir borradores o herramientas.
 - Las reglas personales se pueden editar y filtrar por prioridad, e incorporan mantenimientos y seguimientos de Guardian. El historial registra identificadores de coincidencias.
 - Tabla de amortización de préstamos con cuota, interés, capital, saldo y CSV completo.
+- El Escritorio puede actualizar coincidencias de reglas cada 5, 15 o 30 minutos mientras está visible. El historial muestra el detalle de coincidencias guardadas.
 - Registro de alcance de los 53 apartados, criterios, dependencias y evidencia de referencia.
 
 ## Entregas anteriores

@@ -13,3 +13,5 @@
 Entorno de navegador: `PLAYWRIGHT_MODULE=/workspace/.lifts-tools/node_modules/playwright CHROMIUM_PATH=/usr/bin/chromium`. Las pruebas de interfaz simulan la autenticación. La suite SQL usa bases locales. La verificación en Cloudflare, cuentas reales y teléfonos físicos queda pendiente según lo acordado.
 
 Se corrigieron la carga del módulo de atajos después del registro Nexus, una coincidencia incompleta para «calculadora de distorsión» y un fallo de compatibilidad con las pruebas del formulario al registrar la vista previa de memoria.
+
+La prueba móvil se repitió tras incorporar las preferencias de frecuencia. Aprobó el guardado de 5 minutos y la apertura del detalle de una coincidencia. El intervalo se ejecuta solo con el Escritorio y la pestaña visibles. No se verificó una ejecución en segundo plano.
