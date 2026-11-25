@@ -171,6 +171,7 @@
         if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
       }
     },
+    inkLab:plainPage('Laboratorio Químico Flexográfico','Dosificar tintas, escalar recetas y comparar pruebas de aditivos','Usa fichas verificadas para las dosis. Los registros son privados.'),
     engineering:plainPage('Ingeniería · Placas y distorsión','Calculadora de distorsión y fichas de ingeniería','Las entradas sin guardar requieren volver a capturarse.'),
     'engineering-record':{
       label:'Ficha de ingeniería guardada',purpose:'Recuperar una ficha y sus entradas',

@@ -10,3 +10,7 @@ Después:
 4. Apartados 41–46. Aislamiento, compatibilidad sin conexión, privacidad y validación final. Los manuales técnicos se cargarán manualmente. Órdenes aplazadas. Integraciones nuevas sujetas a permisos. El sitio y los dispositivos físicos se corroborarán al final con el usuario.
 
 Para retomar, ejecuta `git status -sb && git log -5 --oneline` desde este repositorio, lee [la matriz](IMPLEMENTATION_STATUS.md) y continúa en el apartado 34. La [especificación completa](docs/lifts-especificacion-53.md) se conserva en el repositorio.
+
+## Laboratorio Químico Flexográfico
+
+Para ampliar el catálogo hace falta incorporar fichas y recetas de proveedores autorizadas. Pendientes de desarrollo: extracción estructurada de fichas con revisión antes de publicar, archivo privado de fotografías y PDF, vínculos de ensayos a calidad e igualación, y comparaciones de ajustes por condiciones equivalentes. Se mantiene el aplazamiento de las órdenes de producción.

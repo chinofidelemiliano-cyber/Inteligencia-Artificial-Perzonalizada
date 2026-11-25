@@ -111,7 +111,7 @@
       node(form,'p','Tipos opcionales: [estacion], [rodillo], [anilox], [cilindro], [engrane], [suaje], [yunque], [secado] y [servicio]. Ejemplo: [rodillo] Entrada.');
 
     }else if(kind==='stock'){
-      field('Categoría industrial','category',item?.category,Object.entries(core.categories));
+      field('Categoría industrial','category',item?.category,Object.entries(core.stockCategories));
       field('Cantidad disponible','quantity',item?.quantity);
       field('Unidad de inventario','unit',item?.unit);
       field('Lote de inventario','lot',item?.lot);

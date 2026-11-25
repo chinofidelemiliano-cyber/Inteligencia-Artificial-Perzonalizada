@@ -1,6 +1,7 @@
 'use strict';
 (function(root){
   const categories={material:'Material',ink:'Tinta',anilox:'Anilox',plate:'Placa',die:'Suaje'};
+  const stockCategories={...categories,additive:'Aditivo'};
   const compatibilityStates={confirmed:'Compatibilidad confirmada',conditional:'Compatibilidad condicionada',
     incompatible:'Incompatibilidad documentada',unknown:'Sin información suficiente'};
   const blank=()=>({machines:[],stock:[],orders:[],rules:[]});
@@ -51,7 +52,8 @@
       data={...machinePath(raw.path),model:clean(raw.model),source:clean(raw.source,500),...machineSpecs(raw)};
     }else if(kind==='stock'){
       const amount=clean(raw.quantity),unit=clean(raw.unit,40);
-      if(!Object.hasOwn(categories,raw.category)||amount&&(!/^\d{1,12}(?:[.,]\d{1,4})?$/.test(amount)||!unit)){
+      const validQuantity=raw.category==='additive'?/^\d{1,12}(?:[.,]\d{1,9})?$/:/^\d{1,12}(?:[.,]\d{1,4})?$/;
+      if(!Object.hasOwn(stockCategories,raw.category)||amount&&(!validQuantity.test(amount)||!unit)){
         throw new Error('Elige la categoría. Para registrar cantidad, indica un número no negativo y su unidad.');
       }
       if(prior&&prior.category!==raw.category&&space.orders.some(order=>Object.values(order.items).includes(id)))throw new Error('Este artículo ya se usa en órdenes. Conserva su categoría.');
@@ -107,6 +109,6 @@
     }
     return out;
   }
-  const api={blank,categories,machineParameters,componentTypes,compatibilityStates,change,comparePair,assess,trace};
+  const api={blank,categories,stockCategories,machineParameters,componentTypes,compatibilityStates,change,comparePair,assess,trace};
   if(typeof module==='object')module.exports=api;else root.liftsIndustrialCore=api;
 })(globalThis);

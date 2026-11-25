@@ -363,6 +363,44 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.locator('#journalEditor [name=unit]').fill('mm');
     await page.getByRole('button',{name:'Calcular efectos factoriales'}).click();
     await page.getByText('Efecto A 5 · Efecto B 3 · Interacción 1 mm.',{exact:true}).waitFor();
+    await page.evaluate(()=>window.liftsNexus.open({id:'inkLab',key:''}));
+    await page.getByText('Dosificación en charola o depósito',{exact:true}).click();
+    const tray=page.locator('#dose');
+    for(const [name,value] of Object.entries({ink:'Base agua de prueba',product:'Auxiliar documentado',source:'Ficha de ensayo p. 2',mass:'2',min:'0,1',nominal:'0,5',max:'0,8',target:'0,5',previous:'0'})){
+      await tray.locator('[name="'+name+'"]').fill(value);
+    }
+    await tray.getByRole('button',{name:'Calcular dosificación'}).click();
+    await tray.getByText('10 g · 0.01 kg',{exact:true}).waitFor();
+    await page.getByText('Fichas técnicas y hojas de seguridad',{exact:true}).click();
+    const fiche=page.locator('#sheets');
+    for(const [name,value] of Object.entries({name:'Ficha de prueba',date:'2026-11-25',source:'Proveedor ficticio, p. 2',properties:'Información de prueba',instructions:'Solo para pruebas automatizadas'})){
+      await fiche.locator('[name="'+name+'"]').fill(value);
+    }
+    await fiche.getByRole('button',{name:'Guardar referencia de ficha'}).click();
+    await fiche.getByText('Guardado en tu cuenta.',{exact:true}).waitFor();
+    const labState=await page.evaluate(()=>window.saved);
+    assert.equal(labState.inkLabRecords[0].type,'Ficha');
+    await page.evaluate(()=>window.loginFixture());
+    await page.evaluate(()=>window.liftsWorkspace.open('inkLab'));
+    assert.equal(await fiche.locator('[name="name"]').inputValue(),'');
+    assert.equal(await page.getByText('0 registros · 0 ajustes efectuados').count(),1);
+    await page.evaluate(()=>{
+      window.liftsWorkspace.getState().industrial={machines:[],stock:[{id:'test-additive',category:'additive',name:'Auxiliar A',quantity:1,unit:'kg'}],orders:[],rules:[]};
+      window.liftsWorkspace.open('inkLab');
+    });
+    const inkHistory=page.locator('#inkHistory');
+    await inkHistory.locator('summary').first().click();
+    for(const [name,value] of Object.entries({name:'Ajuste de ensayo',product:'Auxiliar A',grams:'10',source:'Ficha p. 2',conclusion:'Resultado documentado'})){
+      await inkHistory.locator('[name="'+name+'"]').fill(value);
+    }
+    await inkHistory.locator('[name="stock"]').selectOption('test-additive');
+    page.once('dialog',dialog=>dialog.accept());
+    await inkHistory.getByRole('button',{name:'Guardar ajuste realizado'}).click();
+    await inkHistory.getByText('Guardado en tu cuenta.',{exact:true}).waitFor();
+    const inventoryState=await page.evaluate(()=>window.saved);
+    assert.equal(inventoryState.industrial.stock[0].quantity,0.99);
+    assert.equal(inventoryState.inkLabRecords[0].grams,10);
+
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

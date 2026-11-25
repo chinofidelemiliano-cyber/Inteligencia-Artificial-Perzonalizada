@@ -138,6 +138,12 @@ En Academia → Competencias y evidencias, vincula la práctica y sus resultados
 
 En Herramientas → Calculadoras → Calculadoras de flexografía, elige una operación y escribe las medidas con coma o punto decimal. El resultado aparece al completar los datos. Consulta la fórmula y la descripción para distinguir la circunferencia primitiva del desarrollo efectivo impreso. Para distorsión usa las medidas de una prueba representativa y verifica la compensación con una nueva impresión. En Ingeniería flexográfica puedes hacer un análisis geométrico más detallado y en Builder puedes crear una herramienta.
 
+### Laboratorio Químico Flexográfico
+
+Abre **Ingeniería y calidad → Laboratorio químico**. El recetario escala porcentajes de una fórmula capturada en g o ml. La calculadora de charola comprueba la dosis seleccionada contra el rango autorizado para la tinta y el aditivo. Introduce la cantidad ya incorporada para calcular la diferencia. La conversión a volumen requiere densidad del producto. La dilución hidroalcohólica calcula la cantidad de un solo alcohol y el volumen final de referencia.
+
+En **Laboratorio experimental**, compara patrón y modificación, y guarda las mediciones y condiciones. En **Historial y estadísticas**, registra lo que realmente utilizaste. Seleccionar un aditivo del inventario y confirmar la operación descuenta el consumo en g o kg en el mismo guardado. El historial puede exportarse como JSON. Las fichas se consultan en el extractor local de PDF y se registran con fuente y página tras revisión humana.
+
 ## 35. Simulador de conversaciones
 
 En Simulador de conversación, elige una respuesta en cada tramo. El escenario cambia con la elección y permite guardar una práctica.

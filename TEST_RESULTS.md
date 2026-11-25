@@ -1,5 +1,11 @@
 # Resultados de pruebas
 
+## Laboratorio Químico Flexográfico
+
+- 244 pruebas de Node aprobadas. Cobertura nueva de cálculos, validación, colorimetría y consumo de inventario. Se repitieron las 7 pruebas focalizadas tras ajustar la precisión de saldos.
+- Chromium verificó dosis de 10 g, guardado de una ficha, separación del historial al cambiar de cuenta y consumo confirmado de 10 g sobre un saldo de 1 kg. Autenticación y guardado simulados.
+- Compilación local del Worker de Cloudflare aprobada.
+
 ## Academia de historia, competencias y calculadoras flexográficas
 
 | Verificación | Resultado | Evidencia |

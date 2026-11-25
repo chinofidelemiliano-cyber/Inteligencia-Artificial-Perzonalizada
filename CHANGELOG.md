@@ -2,6 +2,8 @@
 
 ## 2026-11-25
 
+- Laboratorio Químico Flexográfico con recetario, dilución, dosificación documentada, diagnóstico guiado, interacciones, comparación LAB, fichas e historial por cuenta. Los consumos confirmados descuentan aditivos del inventario.
+
 - El centro de calculadoras incorpora 14 operaciones flexográficas con actualización automática, unidades y supuestos. La distorsión empírica reutiliza el motor de Ingeniería.
 
 - Academia incorpora seis cursos y 29 lecciones de historia, del universo temprano a la actualidad, con buscador, cronología, repaso y progreso privado.
