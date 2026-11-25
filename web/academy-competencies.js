@@ -5,6 +5,15 @@ export const evidenceTypes = {
   evaluacion:'Evaluación'
 };
 
+export const evidenceRoles={
+  prensa:'Operación de prensa',preprensa:'Preprensa',calidad:'Calidad',
+  tintas:'Tintas y color',montaje:'Montaje y acabado',mantenimiento:'Mantenimiento'
+};
+
+export function evidenceForRole(items=[],role=''){
+  return role?items.filter(item=>item.role===role):items;
+}
+
 export const criteria = {
   control:'Registra una condición de impresión, la variable observada y cómo comprobaste que se mantuvo estable.',
   color:'Documenta el método de medición, el ajuste de tinta y la comparación con la muestra objetivo.',
@@ -24,5 +33,6 @@ export function validateEvidence(input,route){
   if(!Object.hasOwn(evidenceTypes,input.type))throw new Error('Selecciona el tipo de evidencia.');
   if(!Number.isInteger(input.level)||input.level<1||input.level>=levels.length)throw new Error('Selecciona el nivel que respalda la evidencia.');
   if(input.lesson&&!route.includes(input.lesson))throw new Error('Elige una lección de esta ruta.');
-  return {description,type:input.type,level:input.level,lesson:input.lesson};
+  if(input.role&&!Object.hasOwn(evidenceRoles,input.role))throw new Error('Selecciona un rol válido.');
+  return {description,type:input.type,level:input.level,lesson:input.lesson,...(input.role?{role:input.role}:{})};
 }

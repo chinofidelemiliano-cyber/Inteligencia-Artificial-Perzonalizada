@@ -6,8 +6,8 @@
   const status=$('academyStatus');
   const empty=()=>({done:{},favorites:[],notes:{},history:[],last:''});
   const progress=()=>api.getState().academyProgress || empty();
-  let modules,loading,current='',view='catalog',generation=0,tutor;
-  let filter='',level='',showFavorites=false;
+  let historyModule,modules,loading,current='',view='catalog',generation=0,tutor;
+  let filter='',level='',evidenceRole='',showFavorites=false;
   let saving=false;
   const lessonKey=(course,lesson)=>course.id+'/'+lesson.id;
   const catalogKeys=()=>modules.data.courses.flatMap(course=>course.lessons.map(lesson=>lessonKey(course,lesson)));
@@ -48,16 +48,17 @@
     status.textContent=modules?'':'Cargando la Academia…';
     try {
       await load();
+      if(next==='history')historyModule??=await import('./history-curriculum.js');
       if(version!==generation||request!==navigation||$('academy').hidden)return;
       if(next==='lesson'&&!find(key)){
         status.textContent='No se encontró la lección guardada.';
         return;
       }
       tutor?.abort();
-      view=next;current=key;
+      view=next;current=next==='history'?(historyModule.timeline.some(item=>item.id===key)?key:progress().historyLast||historyModule.timeline[0].id):key;
       status.textContent='';
       render();
-      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',competencies:'competencies',teach:'teach',lesson:'lesson'};
+      const ids={catalog:'academy',tools:'simulators',library:'library',paths:'study-paths',competencies:'competencies',teach:'teach',lesson:'lesson',history:'history-academy'};
       window.liftsNexus?.checkpoint(ids[next],next==='lesson'?key:'',next==='lesson'?find(key).lesson.title:'');
     } catch {
       if(version!==generation||request!==navigation)return;
@@ -109,7 +110,7 @@
   function render() {
     updateProgress();
     shell.replaceChildren();
-    for(const [id,name] of [['academyCatalogButton','catalog'],['academyToolsButton','tools'],['academyLibraryButton','library'],['academyPathsButton','paths']]) {
+    for(const [id,name] of [['academyCatalogButton','catalog'],['academyToolsButton','tools'],['academyLibraryButton','library'],['academyPathsButton','paths'],['academyHistoryButton','history']]) {
       $(id).setAttribute('aria-pressed',String(view===name));
     }
     if(view==='lesson'&&find(current))renderLesson(find(current));
@@ -118,16 +119,82 @@
     else if(view==='paths')renderPaths();
     else if(view==='competencies')renderCompetencies();
     else if(view==='teach')renderTeach();
+    else if(view==='history')renderHistoryCourse();
     else renderCatalog();
+  }
+  $('academyHistoryButton').onclick=()=>open('history');
+  function renderHistoryCourse(){
+    const {eras,timeline}=historyModule;
+    const selected=timeline.find(item=>item.id===current)||timeline.find(item=>item.id===progress().historyLast)||timeline[0];
+    const era=eras.find(item=>item.id===selected.era);
+    const [id,date,title,theory,practice,prompt,answer]=era.lessons.find(item=>item[0]===selected.id);
+    const done=progress().historyDone||{};
+    const card=node(shell,'article',undefined,'card');
+    heading(card,'Historia y línea del tiempo');
+    node(card,'p','Del universo temprano a los desafíos actuales. Las fechas se refieren a hitos o comienzos aproximados; las etapas pueden superponerse entre regiones.');
+    const count=timeline.filter(item=>done[item.id]).length;
+    const bar=node(card,'progress');bar.max=timeline.length;bar.value=count;bar.setAttribute('aria-label','Progreso en historia');
+    node(card,'p',count+' de '+timeline.length+' lecciones de historia completadas');
+    const course=document.createElement('select');course.setAttribute('aria-label','Curso de historia');
+    for(const entry of eras)node(course,'option',entry.title).value=entry.id;
+    course.value=era.id;field('Curso de historia',course,card);
+    course.onchange=()=>open('history',eras.find(entry=>entry.id===course.value).lessons[0][0]);
+    const picker=document.createElement('select');picker.setAttribute('aria-label','Lección de historia');
+    for(const entry of era.lessons)node(picker,'option',entry[1]+' · '+entry[2]).value=entry[0];
+    picker.value=id;field('Lección de historia',picker,card);picker.onchange=()=>open('history',picker.value);
+    const timelinePanel=node(card,'details');node(timelinePanel,'summary','Ver línea del tiempo completa');
+    const list=node(timelinePanel,'ol');
+    for(const entry of timeline){
+      const row=node(list,'li');
+      const link=button(row,entry.date+' · '+entry.title,()=>open('history',entry.id));
+      if(entry.id===id)link.setAttribute('aria-current','step');
+    }
+    const lesson=node(card,'section');
+    heading(lesson,title);node(lesson,'p',date);node(lesson,'p',theory);node(lesson,'p',practice);
+    const sources=node(lesson,'details');node(sources,'summary','Fuentes para profundizar en este curso');
+    const sourceList=node(sources,'ul');
+    for(const [label,url] of era.sources){
+      const link=node(node(sourceList,'li'),'a',label);link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+    }
+    const review=node(lesson,'details');node(review,'summary','Repasar esta lección');
+    const explanation=document.createElement('textarea');explanation.maxLength=800;
+    field(prompt,explanation,review);
+    const feedback=node(review,'p');feedback.setAttribute('role','status');
+    button(review,'Comparar mi explicación',()=>{
+      feedback.textContent=explanation.value.trim()?answer:'Escribe una explicación breve antes de consultar la referencia.';
+    });
+    const index=timeline.indexOf(selected);
+    const actions=node(lesson,'div',undefined,'evolution-controls');
+    if(index>0)button(actions,'Lección anterior',()=>open('history',timeline[index-1].id));
+    button(actions,done[id]?'Lección de historia completada':'Marcar lección de historia completada',async()=>{
+      if(done[id])return;
+      if(await save({historyDone:{...done,[id]:true},historyLast:id},'Avance de historia guardado.')&&view==='history'&&current===selected.id)render();
+    }).disabled=Boolean(done[id]);
+    if(index+1<timeline.length)button(actions,'Siguiente lección',()=>open('history',timeline[index+1].id));
+    const order=node(card,'details');node(order,'summary','Repaso de la cronología');
+    const pairs=[['big-bang','tierra'],['dinosaurios','humanos'],['agricultura','ciudades'],['imprenta','digital']];
+    const [early,later]=pairs[eras.indexOf(era)%pairs.length].map(key=>timeline.find(entry=>entry.id===key));
+    node(order,'p','¿Cuál de estos dos acontecimientos ocurrió antes?');
+    const result=node(order,'p');result.setAttribute('role','status');
+    for(const entry of [later,early])button(order,entry.title,()=>{
+      result.textContent=(entry===early?'Correcto. ':'Revisa el orden. ')+early.title+' · '+early.date+'; después, '+later.title+' · '+later.date+'.';
+    });
   }
   function renderCompetencies(){
     const card=node(shell,'article',undefined,'card');
     const {goals,routeTo}=modules.paths;
-    const {levels,evidenceTypes,criteria,validateEvidence,levelFromEvidence}=modules.competencies;
+    const {levels,evidenceTypes,evidenceRoles,evidenceForRole,criteria,validateEvidence,levelFromEvidence}=modules.competencies;
     const valid=new Set(catalogKeys());
     heading(card,'Matriz de competencias');
     node(card,'p','Registra prácticas, experiencias o evaluaciones. El nivel mostrado resume las evidencias que tú registras. Las lecturas y los repasos conservan su propio progreso.');
     button(card,'Volver a rutas y repasos',()=>open('paths'));
+    const roleFilter=document.createElement('select');roleFilter.setAttribute('aria-label','Filtrar evidencias por rol');
+    node(roleFilter,'option','Todos los roles').value='';
+    for(const [key,name] of Object.entries(evidenceRoles))node(roleFilter,'option',name).value=key;
+    roleFilter.value=evidenceRole;field('Filtrar evidencias por rol',roleFilter,card);
+    roleFilter.onchange=()=>{evidenceRole=roleFilter.value;render();};
+    if(evidenceRole)node(card,'p','El nivel mostrado solo usa evidencias del rol seleccionado. La meta sigue siendo general para la competencia.');
+
 
     const table=node(card,'table',undefined,'academy-competency-table');
     node(table,'caption','Nivel registrado y meta por competencia');
@@ -139,7 +206,7 @@
       const row=node(body,'tr');
       const title=node(row,'th');title.scope='row';
       button(title,goal.label,()=>open('competencies',id));
-      node(row,'td',levels[levelFromEvidence(record?.evidence)]);
+      node(row,'td',levels[levelFromEvidence(evidenceForRole(record?.evidence,evidenceRole))]);
       node(row,'td',levels[record?.target]||levels[3]);
       const remaining=routeTo(goal.target,valid).filter(key=>!progress().done[key]).length;
       node(row,'td',remaining?remaining+' por leer':'Lecturas completadas');
@@ -175,6 +242,11 @@
     const type=document.createElement('select');type.setAttribute('aria-label','Tipo de evidencia');
     for(const [key,label] of Object.entries(evidenceTypes))node(type,'option',label).value=key;
     field('Tipo de evidencia',type,detail);
+    const role=document.createElement('select');role.setAttribute('aria-label','Rol de la evidencia');
+    node(role,'option','Sin rol especificado').value='';
+    for(const [key,name] of Object.entries(evidenceRoles))node(role,'option',name).value=key;
+    role.value=evidenceRole;field('Rol de la evidencia',role,detail);
+
     const level=document.createElement('select');level.setAttribute('aria-label','Nivel respaldado por la evidencia');
     levelOptions(level);field('Nivel respaldado por la evidencia',level,detail);
     const lesson=document.createElement('select');lesson.setAttribute('aria-label','Lección vinculada a la evidencia');
@@ -185,18 +257,19 @@
     field('Trabajo realizado y resultado observado',description,detail);
     button(detail,'Guardar evidencia',async()=>{
       try{
-        const evidence=validateEvidence({description:description.value,type:type.value,level:Number(level.value),lesson:lesson.value},route);
+        const evidence=validateEvidence({description:description.value,type:type.value,level:Number(level.value),lesson:lesson.value,role:role.value},route);
         const existing=progress().competencies?.[selected]?.evidence||[];
         await update({evidence:[{...evidence,id:crypto.randomUUID(),at:new Date().toISOString()},...existing]},'Evidencia de competencia guardada.');
       }catch(error){status.textContent=error.message;}
     });
     heading(detail,'Evidencias registradas');
-    if(!record?.evidence?.length)node(detail,'p','Todavía no hay evidencias para esta competencia.');
+    const shownEvidence=evidenceForRole(record?.evidence,evidenceRole);
+    if(!shownEvidence.length)node(detail,'p',evidenceRole?'Todavía no hay evidencias para esta competencia con el filtro actual.':'Todavía no hay evidencias para esta competencia.');
     else{
       const entries=node(detail,'ul',undefined,'academy-competency-evidence');
-      for(const item of record.evidence){
+      for(const item of shownEvidence){
         const entry=node(entries,'li');
-        node(entry,'strong',evidenceTypes[item.type]+' · '+levels[item.level]);
+        node(entry,'strong',evidenceTypes[item.type]+' · '+levels[item.level]+(Object.hasOwn(evidenceRoles,item.role)?' · '+evidenceRoles[item.role]:''));
         if(item.at)node(entry,'p',new Date(item.at).toLocaleDateString('es-MX'));
         node(entry,'p',item.description);
         if(item.lesson&&find(item.lesson))button(entry,find(item.lesson).lesson.title,()=>open('lesson',item.lesson));
@@ -774,7 +847,7 @@
   }
   function reset() {
     generation++;saving=false;tutor?.abort();tutor=null;
-    current='';view='catalog';filter='';level='';showFavorites=false;
+    current='';view='catalog';filter='';level='';evidenceRole='';showFavorites=false;
     status.textContent='';shell.replaceChildren();
   }
   $('academyCatalogButton').onclick=()=>open();

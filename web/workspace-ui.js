@@ -89,8 +89,14 @@
       }
     }
     try {
-      const lessons=await window.liftsAcademy.search(window.liftsNexusCore.queryTerms(value).join(' ')||value);
+      const [lessons,history]=await Promise.all([
+        window.liftsAcademy.search(window.liftsNexusCore.queryTerms(value).join(' ')||value),
+        import('./history-curriculum.js').catch(()=>null)
+      ]);
       if(version!==searchVersion||!dialog.open)return;
+      for(const item of (history?.timeline||[]).filter(item=>match(item.title,item.date,'curso historia')).slice(0,5)){
+        add(item.title+' · Historia',()=>window.liftsNexus.open({id:'history-record',key:item.id}));
+      }
       for(const lesson of lessons)add(lesson.label,()=>window.liftsNexus.open({id:'lesson',key:lesson.key}));
       if(!results.children.length)results.textContent='Sin coincidencias.';
     } catch {

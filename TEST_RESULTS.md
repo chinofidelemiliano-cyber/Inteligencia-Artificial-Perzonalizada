@@ -1,5 +1,15 @@
 # Resultados de pruebas
 
+## Academia de historia, competencias y calculadoras flexográficas
+
+| Verificación | Resultado | Evidencia |
+| --- | --- | --- |
+| `NODE_PATH=/workspace/.lifts-tools/node_modules node --test tests/*.test.cjs` | 241 aprobadas | Catálogo de historia, competencias por rol y cálculos con datos conocidos y entradas rechazadas. |
+| `node --test --test-concurrency=2 tests/academy.browser.cjs tests/systems-preflight.browser.cjs` con Playwright y Chromium | 2 aprobadas | Cronología, repaso, progreso, filtro por rol y cálculo en vivo con recuperación tras entradas inválidas o incompletas. |
+| `wrangler pages functions build --outdir /tmp/lifts-flexo-build` | Compilación correcta | Worker compilado con el directorio de configuración de Wrangler en `/tmp`. |
+
+La comprobación del navegador usa autenticación simulada. La edición también se comprueba con `git diff --cached --check`.
+
 ## Corte del 25 de noviembre de 2026
 
 | Verificación | Resultado | Evidencia |

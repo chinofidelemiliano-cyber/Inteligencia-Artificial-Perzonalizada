@@ -52,7 +52,7 @@ En Misiones y conocimiento, guarda notas y conceptos. Relaciona registros y aña
 
 ## 13. Sistema avanzado de aprendizaje
 
-En Academia, elige una ruta por rol, abre una lección y registra el progreso. Los repasos previstos aparecen en Rutas y repasos.
+En Academia, elige una ruta por rol, abre una lección y registra el progreso. En Historia y línea del tiempo, selecciona uno de seis cursos, abre un hito y utiliza el repaso con respuesta de referencia. El avance de historia se guarda por separado. Los repasos previstos aparecen en Rutas y repasos.
 
 ## 14. Academia de pensamiento avanzado
 
@@ -132,11 +132,11 @@ En Misiones y conocimiento → Experimentos, guarda hipótesis y mediciones. ANO
 
 ## 33. Matriz de competencias
 
-En Academia → Competencias y evidencias, vincula la práctica y sus resultados con competencias. La cobertura ampliada por rol sigue pendiente.
+En Academia → Competencias y evidencias, vincula la práctica y sus resultados con competencias. Puedes registrar el rol de una evidencia y filtrar el nivel por rol. Las metas siguen siendo generales para cada competencia.
 
 ## 34. Biblioteca de calculadoras
 
-En Calculadoras elige una fórmula o usa Builder para crear una herramienta. Las entradas, unidades y restricciones se muestran en cada cálculo.
+En Herramientas → Calculadoras → Calculadoras de flexografía, elige una operación y escribe las medidas con coma o punto decimal. El resultado aparece al completar los datos. Consulta la fórmula y la descripción para distinguir la circunferencia primitiva del desarrollo efectivo impreso. Para distorsión usa las medidas de una prueba representativa y verifica la compensación con una nueva impresión. En Ingeniería flexográfica puedes hacer un análisis geométrico más detallado y en Builder puedes crear una herramienta.
 
 ## 35. Simulador de conversaciones
 

@@ -138,11 +138,18 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     await page.getByText(/Describe qué hiciste y qué resultado/).waitFor();
     await page.getByRole('combobox',{name:'Nivel respaldado por la evidencia',exact:true}).selectOption('2');
     await page.getByRole('combobox',{name:'Lección vinculada a la evidencia',exact:true}).selectOption('preprensa/fingerprint-data');
+    await page.getByLabel('Rol de la evidencia',{exact:true}).selectOption('calidad');
     await page.getByLabel('Trabajo realizado y resultado observado').fill('Medí dos muestras y comprobé que la curva produjo el tono esperado.');
     await page.getByRole('button',{name:'Guardar evidencia',exact:true}).click();
     await page.getByText('Evidencia de competencia guardada.',{exact:true}).waitFor();
     assert.match(await fingerprint.textContent(),/Aplicación con apoyo/);
     assert.equal(await page.evaluate(()=>window.saves.at(-1).academyProgress.competencies.fingerprint.evidence[0].level),2);
+    assert.equal(await page.evaluate(()=>window.saves.at(-1).academyProgress.competencies.fingerprint.evidence[0].role),'calidad');
+    await page.getByLabel('Filtrar evidencias por rol',{exact:true}).selectOption('preprensa');
+    assert.match(await fingerprint.textContent(),/Sin evidencia registrada/);
+    await page.getByLabel('Filtrar evidencias por rol',{exact:true}).selectOption('calidad');
+    assert.match(await fingerprint.textContent(),/Aplicación con apoyo/);
+
 
 
     await page.getByRole('button',{name:'Plegar menú',exact:true}).click();
@@ -172,6 +179,24 @@ test('academy saves learning, runs its tools and tutor, and works across viewpor
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
 
 
+    await page.getByRole('button',{name:'Historia y línea del tiempo',exact:true}).click();
+    await page.getByRole('heading',{name:'El universo caliente y denso',exact:true}).waitFor();
+    await page.getByText('Repaso de la cronología',{exact:true}).click();
+    await page.getByRole('button',{name:'El universo caliente y denso',exact:true}).click();
+    await page.getByText(/^Correcto. El universo caliente/).waitFor();
+    await page.getByRole('button',{name:'Marcar lección de historia completada'}).click();
+    await page.getByText('1 de 29 lecciones de historia completadas',{exact:true}).waitFor();
+    await page.getByRole('combobox',{name:'Curso de historia',exact:true}).selectOption('prehistoria');
+    await page.getByRole('heading',{name:'Dinosaurios y ecosistemas mesozoicos',exact:true}).waitFor();
+    await page.getByText('Repasar esta lección',{exact:true}).click();
+    await page.getByLabel(/Por qué un pterosaurio/).fill('Son ramas distintas');
+    await page.getByRole('button',{name:'Comparar mi explicación'}).click();
+    await page.getByText(/La clasificación se basa en parentesco/).waitFor();
+    const savedHistory=await page.evaluate(()=>window.saves.at(-1));
+    await page.evaluate(saved=>window.dispatchEvent(new CustomEvent('nexo-state',{detail:saved})),savedHistory);
+    await page.getByRole('button',{name:'Academia',exact:true}).click();
+    await page.getByRole('button',{name:'Historia y línea del tiempo',exact:true}).click();
+    await page.getByText('1 de 29 lecciones de historia completadas',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

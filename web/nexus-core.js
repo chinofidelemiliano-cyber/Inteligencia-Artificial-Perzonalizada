@@ -196,6 +196,13 @@
       open:(_workspace,_id,key)=>root.liftsDiagnostics.openSaved(key)
     },
     academy:academyView('Academia de flexografía','catalog'),
+    'history-academy':academyView('Historia y línea del tiempo','history'),
+    'history-record':{
+      label:'Lección de historia',purpose:'Abrir una lección de la línea del tiempo',
+      input:'Clave de lección',output:'Lector histórico',permission:'Sesión del propietario',dependency:'Academia',
+      limitations:'La colección se amplía por etapas.',
+      validate:key=>/^[a-z0-9-]{1,40}$/.test(key),open:(_workspace,_id,key)=>root.liftsAcademy.open('history',key)
+    },
     library:academyView('Biblioteca técnica','library'),
     teach:academyView('Lifts Teach · Preparar capacitación','teach'),
     competencies:academyView('Competencias y evidencias','competencies'),

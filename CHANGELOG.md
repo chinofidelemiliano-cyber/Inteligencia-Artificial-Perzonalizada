@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+- El centro de calculadoras incorpora 14 operaciones flexográficas con actualización automática, unidades y supuestos. La distorsión empírica reutiliza el motor de Ingeniería.
+
+- Academia incorpora seis cursos y 29 lecciones de historia, del universo temprano a la actualidad, con buscador, cronología, repaso y progreso privado.
+- La matriz de competencias permite etiquetar evidencias por rol y filtrar el nivel respaldado sin mover la meta general.
+
 - Guía de funcionamiento de los 53 apartados con rutas, entradas, resultados y límites.
 - Consulta de pares de activos con clasificación, justificación, fuente y condiciones.
 - Experimentos Nexus calcula efectos descriptivos de un factorial 2×2 balanceado.

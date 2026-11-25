@@ -256,6 +256,18 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     assert.equal(await page.evaluate(()=>window.saved.financePlan[0].current),25000);
     await page.getByText(/Avance de la meta 25 %/).waitFor();
     await page.evaluate(()=>window.liftsWorkspace.open('calculatorHub'));
+    await page.getByLabel('Cálculo de flexografía').selectOption('cylinder');
+    await page.getByLabel('Diámetro de la superficie (mm)').fill('100');
+    await page.locator('#flexoQuickResult').filter({hasText:/314[.,]159/}).waitFor();
+    await page.getByLabel('Diámetro de la superficie (mm)').fill('0');
+    await page.locator('#flexoQuickResult').filter({hasText:'mayor a cero'}).waitFor();
+    await page.getByLabel('Cálculo de flexografía').selectOption('distortion');
+    await page.getByLabel('Longitud en el archivo de prueba (mm)').fill('250');
+    await page.getByLabel('Longitud medida en la impresión (mm)').fill('252');
+    await page.getByLabel('Longitud impresa objetivo (mm)').fill('300');
+    await page.locator('#flexoQuickResult').filter({hasText:/297[.,]619/}).waitFor();
+    await page.getByLabel('Longitud impresa objetivo (mm)').fill('');
+    await page.locator('#flexoQuickResult').filter({hasText:'Completa las medidas'}).waitFor();
     await page.getByText('Comparar créditos y sensibilidad',{exact:true}).click();
     for(const [id,value] of Object.entries({loanAmount:'10000',loanRateA:'1',loanMonthsA:'12',loanRateB:'0',loanMonthsB:'10',loanFeeB:'50'})){
       await page.locator('#'+id).fill(value);

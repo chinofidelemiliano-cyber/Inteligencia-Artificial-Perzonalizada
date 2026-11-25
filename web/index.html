@@ -254,9 +254,9 @@
 <p id="moneyStatus" role="status"></p><h3>Movimientos del mes</h3><div id="moneyEntries"></div>
 </article>
 </section>
-<section id="academy" hidden aria-label="Academia de flexografía">
+<section id="academy" hidden aria-label="Academia de Lifts">
 <div class="academy-hero"><div><p class="academy-kicker">Academia profesional</p><h2>Flexografía</h2><p>Estudia el proceso completo, practica con datos y diagnostica defectos con evidencia.</p>
-<div class="academy-tabs"><button type="button" id="academyCatalogButton">Explorar cursos</button><button type="button" id="academyToolsButton" class="secondary">Simuladores</button><button type="button" id="academyLibraryButton" class="secondary">Biblioteca</button><button type="button" id="academyPathsButton" class="secondary">Rutas y repasos</button></div>
+<div class="academy-tabs"><button type="button" id="academyCatalogButton">Explorar cursos</button><button type="button" id="academyHistoryButton" class="secondary">Historia y línea del tiempo</button><button type="button" id="academyToolsButton" class="secondary">Simuladores</button><button type="button" id="academyLibraryButton" class="secondary">Biblioteca</button><button type="button" id="academyPathsButton" class="secondary">Rutas y repasos</button></div>
 </div><div class="academy-progress"><label for="academyProgress">Progreso general</label><progress id="academyProgress" value="0" max="1"></progress><p id="academyProgressText"></p><button type="button" class="secondary" id="academyContinue" hidden>Continuar estudiando</button></div></div>
 <p id="academyStatus" role="status"></p><div id="academyContent"></div>
 </section>
@@ -514,6 +514,16 @@
       <button type="button" data-page="routines" class="secondary">Presupuesto y gastos</button>
     </div>
   </article>
+  <details class="card" id="flexoQuick" open>
+    <summary><strong>Calculadoras de flexografía</strong></summary>
+    <p>Elige una fórmula y captura tus medidas. El resultado se actualiza automáticamente.</p>
+    <label for="flexoQuickPick">Cálculo de flexografía</label>
+    <select id="flexoQuickPick"><option value="">Selecciona un cálculo</option></select>
+    <p id="flexoQuickExpression"></p>
+    <p id="flexoQuickDescription"></p>
+    <div id="flexoQuickFields" class="field-grid"></div>
+    <p id="flexoQuickResult" role="status" aria-atomic="true"></p>
+  </details>
   <article class="card">
     <h3>Conversión de unidades</h3>
     <p>Convierte longitudes, masas, duraciones o presiones en la misma magnitud. Ejemplo, usa mm y pulgadas al comprobar una medida de un plano.</p>
@@ -1024,6 +1034,7 @@
 <script src="guardian-philosophy.js" defer></script>
 <script src="guardian-calculator.js" defer></script>
 <script src="guardian-formulas.js" defer></script>
+<script type="module" src="flexo-calculator.js"></script>
 <script src="finance-amortization.js" defer></script>
 <script src="finance-comparison.js" defer></script>
 <script src="guardian.js" defer></script>
