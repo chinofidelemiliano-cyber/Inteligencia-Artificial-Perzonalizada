@@ -91,6 +91,23 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     assert.equal(await page.locator('#workspaceSections').isVisible(),false);
     await page.locator('#workspaceMobileMenu').click();
     assert.equal(await page.locator('#workspaceSections').isVisible(),true);
+    await page.evaluate(()=>{
+      const space=window.liftsWorkspace.getState();
+      space.tasks=[{id:'daily-test',title:'Revisar rodillo de prueba',date:window.liftsWork.localDate(new Date())}];
+      space.nexusContext={next:'Documentar el resultado'};
+      space.privateMemories=[{id:'memory-test',title:'Manual del rebobinador',text:'Carpeta del taller'}];
+    });
+    await page.getByRole('button',{name:'Escritorio',exact:true}).click();
+    await page.getByRole('heading',{name:'Escritorio',exact:true}).waitFor();
+    await page.getByText('Revisar rodillo de prueba',{exact:true}).waitFor();
+    await page.getByText('Documentar el resultado',{exact:true}).waitFor();
+    await page.locator('#desktopFavorites').getByRole('button',{name:'Mapas de sistemas',exact:true}).click();
+    await page.locator('#systems').waitFor();
+    await page.keyboard.press('Control+k');
+    await page.locator('#workspaceQuery').fill('carpeta del taller');
+    await page.getByRole('button',{name:'Manual del rebobinador · Recuerdo privado',exact:true}).click();
+    await page.locator('#privacy').waitFor();
+    assert.equal(await page.locator('#memorySearch').inputValue(),'Manual del rebobinador');
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

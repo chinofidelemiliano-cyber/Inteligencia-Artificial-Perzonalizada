@@ -92,6 +92,6 @@
     if(id==='home'||!tools.has(id))return;
     recent=[id,...recent.filter(item=>item!==id)].slice(0,6);shortcuts();
   });
-  window.liftsNavigation={reset};
+  window.liftsNavigation={reset,tools};
   reset();
 })();

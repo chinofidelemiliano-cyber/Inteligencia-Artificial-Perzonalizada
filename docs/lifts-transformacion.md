@@ -17,4 +17,12 @@ La prueba `tests/systems-preflight.browser.cjs` conserva el recorrido técnico y
 
 ## Alcance pendiente
 
-La auditoría, el retiro decorativo 3D, la base de navegación y los favoritos cubren parte de los apartados 1–8 y 48–53 de la especificación. Quedan pendientes el escritorio independiente y sus widgets adicionales, atajos de acciones y atajos de teclado configurables, búsqueda de todas las colecciones y la ampliación de memoria y automatizaciones. Los módulos ya existentes de los apartados 9–47 permanecen disponibles. Queda por ampliar cada requisito solicitado en esos apartados, incluidos los espacios independientes, funcionamiento sin conexión, integraciones y revisión científica. No se contrataron servicios. Las integraciones futuras pueden requerir permisos y cuotas de proveedores. La publicación pública y las pruebas en teléfonos físicos están pendientes de comprobación.
+La auditoría, el retiro decorativo 3D, la base de navegación y los favoritos cubren parte de los apartados 1–8 y 48–53 de la especificación. Quedan pendientes los widgets adicionales del escritorio, atajos de acciones y atajos de teclado configurables, búsqueda de todas las colecciones y la ampliación de memoria y automatizaciones. Los módulos ya existentes de los apartados 9–47 permanecen disponibles. Queda por ampliar cada requisito solicitado en esos apartados, incluidos los espacios independientes, funcionamiento sin conexión, integraciones y revisión científica. No se contrataron servicios. Las integraciones futuras pueden requerir permisos y cuotas de proveedores. La publicación pública y las pruebas en teléfonos físicos están pendientes de comprobación.
+
+## Escritorio y búsqueda de registros
+
+**Inicio y asistente → Escritorio** abre una pantalla independiente del chat. Muestra los favoritos de la cuenta, hasta seis tareas previstas para hoy, hasta seis avisos pendientes y la próxima acción guardada en Nexus. Las listas se calculan cuando se abre el escritorio. El acceso **Configurar favoritos y navegación** abre las preferencias existentes.
+
+El buscador también encuentra recuerdos activos por título, contenido y contexto, seguimientos y fichas del inventario industrial. Los resultados se construyen localmente con la cuenta cargada. Se reutilizan las vistas de memoria privada, Guardian e Ingeniería para abrirlos.
+
+Archivos: `web/workspace-desktop.js`, `web/workspace-navigation.js`, `web/workspace-ui.js`, `web/index.html`, `web/app.js` y `web/nexus-core.js`. Sin migraciones. Pendientes widgets reordenables del nuevo escritorio, atajos configurables de acciones y búsqueda de las colecciones restantes.
