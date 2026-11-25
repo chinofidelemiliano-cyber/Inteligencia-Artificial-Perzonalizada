@@ -142,3 +142,16 @@ test('active reading records the exact fragment and validates a page reference',
   assert.equal(item.data.excerpt,'Medir y repetir');
   assert.equal(item.data.question,'¿Cuántas muestras?');
 });
+
+test('decision reviews compare recorded expectations with later observations without duplicates',()=>{
+  const {decisionReviews,record}=require('../web/nexus-journal.js');
+  const item={kind:'decision',updatedAt:'2026-11-25T00:00:00Z',
+    data:{expected:'Reducir retrabajo',actual:'Sin cambio',evidence:'Mediciones'},
+    history:[
+      {at:'2026-11-24T00:00:00Z',data:{expected:'Reducir retrabajo',actual:'Sin cambio',evidence:'Mediciones'}},
+      {at:'2026-11-23T00:00:00Z',data:{expected:'Reducir retrabajo',actual:'Aumentó'}},
+      {at:'2026-11-22T00:00:00Z',data:{expected:'Reducir retrabajo'}}
+    ]};
+  assert.deepEqual(decisionReviews(item).map(entry=>[entry.expected,entry.actual]),[['Reducir retrabajo','Sin cambio'],['Reducir retrabajo','Aumentó']]);
+  assert.throws(()=>record('decision',{title:'Prueba',reviewDate:'2026-02-30'}),/fecha de revisión/);
+});

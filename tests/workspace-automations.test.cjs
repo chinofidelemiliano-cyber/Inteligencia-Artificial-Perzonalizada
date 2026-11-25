@@ -32,5 +32,5 @@ test('rules detect due follow-ups and maintenance and ignore closed follow-ups',
       {id:'done',next:day,subject:'Cerrado',closed:true}],
     nexusJournal:[{id:'asset',kind:'household',title:'Equipo con servicio',data:{date:day}}]
   };
-  assert.deepEqual(evaluate(state,day).map(({signal})=>signal.destination.id),['guardian','journal-record']);
+  assert.deepEqual(evaluate(state,day).map(({signal})=>signal.destination.id),['guardian-followup-record','journal-record']);
 });

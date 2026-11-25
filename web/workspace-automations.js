@@ -28,6 +28,18 @@
   const $=id=>document.getElementById(id),app=root.liftsWorkspace,form=$('automationForm'),status=$('automationStatus');
   const state=()=>app.getState().workspaceAutomations||{rules:[],history:[]};
   const localDay=()=>root.liftsWork.localDate(new Date());
+  function destination(signal){
+    const target=signal?.destination;
+    return root.liftsNexusCore.location(target?.id,target?.key)||
+      (target?.id==='task-record'?root.liftsNexusCore.location('tasks'):null);
+  }
+  function available(target){
+    const owner=app.getState();
+    if(target.id==='task-record')return owner.tasks.some(item=>item.id===target.key&&!item.archived&&item.kind!=='reminder');
+    if(target.id==='guardian-followup-record')return (owner.guardianFollowups||[]).some(item=>item.id===target.key);
+    if(target.id==='journal-record')return (owner.nexusJournal||[]).some(item=>item.id===target.key);
+    return true;
+  }
   let busy=false,editing=null,monitor=null;
   const frequency=$('automationFrequency'),interval=$('automationInterval');
   const frequencies=[0,5,15,30];
@@ -82,20 +94,31 @@
       node(row,'p',signal.detail);
       button(row,actions[rule.then],()=>{
         if(rule.then==='reminder')root.liftsReminders.open(signal.title.slice(0,240));
-        else if(signal.destination.page)app.open(signal.destination.id);
-        else root.liftsNexus.open(signal.destination);
+        else{
+          const target=destination(signal);
+          if(target&&available(target))root.liftsNexus.open(target);
+          else status.textContent='El origen no está disponible en esta cuenta.';
+        }
       });
     }
     if(!found.length)node(matches,'p','Sin coincidencias ahora.');
     const time=new Intl.DateTimeFormat('es-MX',{dateStyle:'short',timeStyle:'short'});
     const names=new Map(rules.map(rule=>[rule.id,rule.name]));
-    const titles=new Map(radar.signals(app.getState(),localDay()).map(signal=>[signal.id,signal.title]));
+    const signals=new Map(radar.signals(app.getState(),localDay()).map(signal=>[signal.id,signal]));
     for(const item of history){
       const entry=node(log,'li',time.format(item.at)+' · '+item.total+' coincidencias en '+item.rules+' reglas activas');
       if(!item.matched?.length)continue;
       const detail=node(entry,'details');
       node(detail,'summary','Ver coincidencias de esta revisión');
-      for(const match of item.matched)node(detail,'p',(names.get(match.rule)||'Regla retirada')+' · '+(titles.get(match.event)||match.event));
+      for(const match of item.matched){
+        const signal=signals.get(match.event);
+        node(detail,'p',(names.get(match.rule)||'Regla retirada')+' · '+(signal?.title||match.title||match.event));
+        const target=destination(signal)||root.liftsNexusCore.location(match.target?.id,match.target?.key);
+        if(target&&available(target))button(detail,'Abrir registro de origen',()=>{
+          if(available(target))root.liftsNexus.open(target);
+          else status.textContent='El origen no está disponible en esta cuenta.';
+        });
+      }
     }
   }
   async function save(value,message){
@@ -125,7 +148,7 @@
   };
   $('automationRun').onclick=()=>{
     const current=state(),matches=evaluate(app.getState(),localDay());
-    const item={at:Date.now(),total:matches.length,rules:current.rules.filter(rule=>!rule.paused).length,matched:matches.map(({rule,signal})=>({rule:rule.id,event:signal.id}))};
+    const item={at:Date.now(),total:matches.length,rules:current.rules.filter(rule=>!rule.paused).length,matched:matches.map(({rule,signal})=>({rule:rule.id,event:signal.id,title:signal.title,target:destination(signal)}))};
     void save({...current,history:[item,...current.history].slice(0,50)},'Revisión guardada.');
   };
   frequency.onsubmit=async event=>{

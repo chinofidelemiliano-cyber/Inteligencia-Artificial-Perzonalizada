@@ -226,6 +226,13 @@
   window.liftsWorkUI={render,addTask,captureTask:work.captureTask,context,reviewDay,preparePlan(date,reorganize){
     api.open('tasks');$('planDate').value=date;$('planReorganize').checked=reorganize;
     $('suggestSchedule').click();$('schedulePreview').scrollIntoView({block:'center'});
+  },openTask(id){
+    const task=state().tasks.find(item=>item.id===id&&item.kind!=='reminder'&&!item.archived);
+    if(!task)return false;
+    api.open('tasks');
+    if($('tasks').hidden)return false;
+    editTask(task);
+    return true;
   },openReminder(taskId){
     if(state().tasks.some(t=>t.id===taskId&&t.kind==='day-review')){
       api.open('tasks');$('planDate').value=today();reviewDay(today());

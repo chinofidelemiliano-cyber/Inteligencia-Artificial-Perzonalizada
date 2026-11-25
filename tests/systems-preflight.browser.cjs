@@ -110,7 +110,7 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     assert.equal(await page.locator('#memorySearch').inputValue(),'Manual del rebobinador');
     await page.evaluate(()=>{
       const space=window.liftsWorkspace.getState();
-      space.tasks.push({id:'late',title:'Ajustar presión',date:'2000-01-01'});
+      space.tasks.push({id:'10000000-0000-4000-8000-000000000003',title:'Ajustar presión',date:'2000-01-01'});
       window.liftsWorkspace.open('desktop');
     });
     await page.getByText('Personalizar atajos de acción',{exact:true}).click();
@@ -149,6 +149,16 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.getByRole('button',{name:'Preparar un recordatorio',exact:true}).click();
     assert.equal(await page.locator('#reminderTitle').inputValue(),'Ajustar presión');
     assert.equal(await page.evaluate(()=>window.liftsWorkspace.getState().tasks.length),2);
+    await page.evaluate(()=>{
+      const task=window.liftsWorkspace.getState().tasks.find(item=>item.title==='Ajustar presión');
+      task.done=true;
+      window.liftsWorkspace.open('operations');
+    });
+    const history=page.locator('#automationHistory');
+    await history.getByText('Ver coincidencias de esta revisión',{exact:true}).click();
+    await history.getByRole('button',{name:'Abrir registro de origen',exact:true}).click();
+    assert.equal(await page.locator('#taskTitle').inputValue(),'Ajustar presión');
+
     await page.evaluate(()=>{
       const space=window.liftsWorkspace.getState();
       space.savedConversations=[{id:'query-test',title:'Apuntes de turno',messages:[{role:'user',text:'Revisar teoría del color'}]}];
@@ -194,6 +204,57 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
       page.waitForEvent('download'),page.getByRole('button',{name:'Descargar amortización CSV'}).click()
     ]);
     assert.match(await readFile(await amortization.path(),'utf8'),/12,100.00,0.00,100.00,0.00/);
+    await page.evaluate(()=>window.liftsNexus.open({id:'weighted-decision',key:''}));
+    await page.getByLabel('Decisión por tomar').fill('Elegir material');
+    await page.getByLabel('Criterios y pesos, uno por línea').fill('Costo | 3\nTiempo | 2');
+    await page.getByLabel('Alternativas y puntuaciones en el orden de los criterios').fill('A | 8 | 5\nB | 6 | 9');
+    await page.getByRole('button',{name:'Comparar alternativas'}).click();
+    await page.getByText('Mayor puntuación con tus criterios. B.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Preparar decisión en Nexus'}).click();
+    assert.equal(await page.locator('#journal [name=title]').inputValue(),'Elegir material');
+    assert.match(await page.locator('#journal [name=alternatives]').inputValue(),/B.*7[.,]2/);
+    await page.locator('#journalEditor [name=expected]').fill('Reducir retrabajos');
+    await page.locator('#journalEditor [name=actual]').fill('Se mantiene la frecuencia');
+    await page.locator('#journalEditor [name=evidence]').fill('Registro de dos semanas');
+    await page.locator('#journalEditor').getByRole('button',{name:'Guardar registro',exact:true}).click();
+    await page.getByText('Cronología de revisión de la decisión',{exact:true}).click();
+    await page.getByText('Resultado esperado: Reducir retrabajos',{exact:true}).waitFor();
+    await page.getByText('Resultado observado: Se mantiene la frecuencia',{exact:true}).waitFor();
+    await page.getByText('Proyección de escenarios',{exact:true}).click();
+    await page.getByLabel('Decisión o proyecto a proyectar').fill('Reserva de tiempo');
+    await page.getByLabel('Unidad del escenario').fill('horas');
+    await page.getByLabel('Saldo inicial común').fill('100');
+    await page.getByLabel('Cambio mensual adverso').fill('-25');
+    await page.getByLabel('Cambio mensual base').fill('0');
+    await page.getByLabel('Cambio mensual favorable').fill('50');
+    await page.getByLabel('Supuestos del escenario').fill('Cambios mensuales constantes');
+    await page.getByRole('button',{name:'Comparar escenarios'}).click();
+    assert.deepEqual(await page.locator('#scenarioProjectionResult tbody tr').first().locator('td').allTextContents(),['25','100','250','3']);
+    page.once('dialog',dialog=>dialog.accept());
+    await page.getByRole('button',{name:'Preparar nota con la proyección'}).click();
+    assert.match(await page.locator('#journal [name=content]').inputValue(),/3 meses: 25 \/ 100 \/ 250/);
+    await page.evaluate(()=>{
+      const state=window.liftsWorkspace.getState(),day=window.liftsWork.localDate(new Date());
+      state.personalConsent=true;
+      state.personalCheckins=[{day,sleepHours:8},{day:window.liftsWork.localDate(new Date(Date.now()-86400000)),sleepHours:6}];
+      window.liftsWorkspace.open('profile');
+    });
+    await page.getByText('Resumen de bienestar por periodo',{exact:true}).click();
+    await page.getByText('Horas de sueño · 7 de promedio, 2 registros',{exact:true}).waitFor();
+    await page.getByText('Calculadoras orientativas de bienestar',{exact:true}).click();
+    await page.getByLabel('Peso (kg)',{exact:true}).fill('81');
+    await page.getByLabel('Estatura (cm)',{exact:true}).fill('180');
+    await page.getByRole('button',{name:'Calcular IMC',exact:true}).click();
+    assert.match(await page.locator('#wellbeingBmiResult').innerText(),/= 25 kg/);
+    await page.evaluate(()=>window.liftsWorkspace.open('routines'));
+    await page.getByText('Metas de ahorro y saldos de deuda',{exact:true}).click();
+    await page.getByLabel('Nombre de la meta o deuda').fill('Fondo de prueba');
+    await page.getByLabel('Monto meta (MXN)').fill('1000');
+    await page.getByLabel('Ahorro actual (MXN)').fill('250');
+    await page.getByRole('button',{name:'Guardar ficha financiera'}).click();
+    await page.getByText('Ficha financiera guardada.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saved.financePlan[0].current),25000);
+    await page.getByText(/Avance de la meta 25 %/).waitFor();
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

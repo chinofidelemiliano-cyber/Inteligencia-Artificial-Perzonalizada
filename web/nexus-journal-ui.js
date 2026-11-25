@@ -130,6 +130,22 @@
     }
     const saveButton=node(form,'button','Guardar registro');saveButton.type='submit';
     if(kind==='reading')button(form,'Subrayar un PDF en Utilidades',()=>window.liftsNexus.open({id:'pdf-markup',key:''}));
+    if(kind==='decision'&&item){
+      const history=node(form,'details');
+      node(history,'summary','Cronología de revisión de la decisión');
+      const entries=core.decisionReviews(item);
+      if(!entries.length)node(history,'p','Todavía no hay resultados o evidencias de revisión.');
+      const dates=new Intl.DateTimeFormat('es-MX',{dateStyle:'medium',timeStyle:'short'});
+      for(const entry of entries){
+        const card=node(history,'article');
+        const time=Date.parse(entry.at);
+        node(card,'h4',Number.isFinite(time)?dates.format(time):'Revisión registrada');
+        node(card,'p','Resultado esperado: '+(entry.expected||'Por registrar'));
+        node(card,'p','Resultado observado: '+(entry.actual||'Por registrar'));
+        if(entry.evidence)node(card,'p','Evidencia: '+entry.evidence);
+        if(entry.lesson)node(card,'p','Aprendizaje: '+entry.lesson);
+      }
+    }
     if(kind==='scenario') {
       const result=node(form,'div');
       const calculate=()=>{

@@ -190,6 +190,19 @@
   function resetForm(){
     editing=null;form.reset();$('guardianCancel').hidden=true;
   }
+  function openFollowup(id){
+    const record=records().find(item=>item.id===id);
+    if(!record||busy)return false;
+    if((editing!==record.id||$('guardian').hidden)&&(editing||form.elements.subject.value)&&
+      !confirm('¿Reemplazar el borrador de seguimiento abierto?'))return false;
+    app.open('guardian');
+    if($('guardian').hidden)return false;
+    editing=record.id;
+    for(const key of ['subject','person','promise','kind','next','time','priority'])form.elements[key].value=record[key]||'';
+    $('guardianCancel').hidden=false;form.elements.subject.focus();
+    return true;
+  }
+  root.liftsGuardian={openFollowup};
   function renderRecords(){
     const container=$('guardianRecords');container.replaceChildren();
     for(const record of records()){
@@ -200,12 +213,7 @@
       element(entry,'p','Creado el '+record.created+' · Próximo seguimiento el '+record.next);
       if(record.promise)element(entry,'p',record.promise);
       const actions=element(entry,'div','');actions.className='evolution-controls';
-      button(actions,'Editar seguimiento',()=>{
-        if(busy)return;
-        editing=record.id;
-        for(const key of ['subject','person','promise','kind','next','time','priority'])form.elements[key].value=record[key]||'';
-        $('guardianCancel').hidden=false;form.elements.subject.focus();
-      });
+      button(actions,'Editar seguimiento',()=>openFollowup(record.id));
       button(actions,record.closed?'Reabrir':'Cerrar seguimiento',()=>save('guardianFollowups',
         records().map(item=>item.id===record.id?{...item,closed:!item.closed}:item),record.closed?'Seguimiento reabierto.':'Seguimiento cerrado.'));
       if(!record.closed)button(actions,'Preparar recordatorio',()=>{

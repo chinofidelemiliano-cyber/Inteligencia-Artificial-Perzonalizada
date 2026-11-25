@@ -97,6 +97,26 @@
       validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
       open:(_workspace,_id,key)=>root.liftsFeedback.openRecord(key)
     },
+    'scenario-projection':{
+      label:'Proyección de escenarios',purpose:'Comparar cambios mensuales y sensibilidad por horizonte',
+      input:'Sin parámetros',output:'Tabla local y borrador de nota',permission:'Sesión del propietario',dependency:'Nexus',
+      limitations:'Supone un cambio mensual constante por escenario.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('journal');
+        const panel=root.document.getElementById('scenarioProjection');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
+    'weighted-decision':{
+      label:'Matriz de decisión ponderada',purpose:'Comparar alternativas mediante criterios y pesos',
+      input:'Sin parámetros',output:'Tabla local y borrador de decisión',permission:'Sesión del propietario',dependency:'Nexus',
+      limitations:'Las puntuaciones dependen de los criterios elegidos y de las valoraciones introducidas.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('journal');
+        const panel=root.document.getElementById('weightedDecision');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
     journal:plainPage('Misiones y conocimiento','Abrir decisiones, lecciones, experimentos y revisión crítica','Los registros se sincronizan al pulsar Guardar registro.'),
     'journal-record':{
       label:'Registro de Nexus',purpose:'Retomar una misión o un registro de trabajo',
@@ -104,6 +124,20 @@
       dependency:'Misiones y conocimiento',limitations:'Solo recupera la última versión guardada.',
       validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
       open:(_workspace,_id,key)=>root.liftsJournal.openRecord(key)
+    },
+    'task-record':{
+      label:'Tarea guardada',purpose:'Abrir una tarea de la cuenta',input:'Identificador de tarea',
+      output:'Editor de Agenda',permission:'Sesión del propietario',dependency:'Agenda',
+      limitations:'La tarea debe seguir en la cuenta.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsWorkUI.openTask(key)
+    },
+    'guardian-followup-record':{
+      label:'Seguimiento guardado',purpose:'Abrir un compromiso de Guardian',input:'Identificador de seguimiento',
+      output:'Editor de Guardian',permission:'Sesión del propietario',dependency:'Guardian',
+      limitations:'El seguimiento debe seguir en la cuenta.',
+      validate:key=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(key),
+      open:(_workspace,_id,key)=>root.liftsGuardian.openFollowup(key)
     },
     tasks:plainPage('Agenda','Consultar pendientes','Los cambios de tareas se guardan desde Agenda.'),
     reminders:plainPage('Recordatorios','Consultar avisos','La entrega depende de la configuración de avisos.'),

@@ -8,7 +8,7 @@
     const push=(id,title,detail,destination,priority='media')=>output.push({id,title,detail,destination,priority});
     for(const task of state.tasks||[]){
       if(!task.done&&!task.archived&&task.kind!=='reminder'&&date(task.date)&&task.date<day){
-        push('task:'+task.id+':'+task.date,task.title,'Tarea con fecha objetivo '+task.date+'. Revisa la próxima acción.',{id:'tasks'},'alta');
+        push('task:'+task.id+':'+task.date,task.title,'Tarea con fecha objetivo '+task.date+'. Revisa la próxima acción.',{id:'task-record',key:task.id},'alta');
       }
     }
     const records=state.nexusJournal||[];
@@ -19,6 +19,7 @@
         subscription:['Renovación',item.status==='active'?data.date:''],
         calibration:['Calibración',item.status==='active'?data.date:''],
         goal:['Objetivo',['active','paused'].includes(item.status)?data.due:''],
+        decision:['Revisión de decisión',data.reviewDate],
         risk:['Revisión del riesgo',item.status!=='closed'?data.reviewDate:'']
       };
       if(!Object.hasOwn(upcoming,item.kind))continue;
@@ -30,7 +31,7 @@
     for(const followup of state.guardianFollowups||[]){
       if(!followup.closed&&date(followup.next)&&followup.next<=day){
         push('followup:'+followup.id+':'+followup.next,followup.subject,
-          'Seguimiento registrado para '+followup.next+'.',{id:'guardian'},followup.priority==='high'?'alta':'media');
+          'Seguimiento registrado para '+followup.next+'.',{id:'guardian-followup-record',key:followup.id},followup.priority==='high'?'alta':'media');
       }
     }
     const reviews=Object.entries(state.academyProgress?.reviews||{}).filter(([,review])=>date(review?.due)&&review.due<=day);

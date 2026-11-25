@@ -181,6 +181,20 @@
 <h3>Tus avisos</h3><div id="reminderItems"></div>
 </article><article class="card"><h3>Recordatorios que tú controlas</h3><button id="enableNotifications">Activar notificaciones</button><button id="testNotification" class="secondary">Probar aviso en pantalla</button><div class="companion-actions"><button id="enablePush" type="button">Activar avisos en segundo plano</button><button id="checkPush" type="button" class="secondary">Comprobar último envío</button><button id="disablePush" type="button" class="secondary">Desactivar en este dispositivo</button></div><p id="pushStatus" role="status"></p><button id="exportCalendar" class="secondary">Exportar al calendario</button><label><input id="notificationDetails" type="checkbox" style="width:auto"> Mostrar el título del pendiente en la notificación.</label><p class="notice">Esta opción se guarda en tu cuenta. El título podría verse en la pantalla bloqueada de tus dispositivos.</p><p id="notificationStatus" role="status"></p><p class="notice">Los avisos en segundo plano requieren permiso, un servidor de avisos activo y un dispositivo compatible. Puedes usar Google Calendar o exportar los bloques a un calendario y comprobar sus alertas. El archivo puede incluir títulos de trabajo: guárdalo en un calendario privado.</p><div id="dueReminders" aria-live="polite"></div></article></section>
 <section id="routines" hidden>
+<details class="card" id="financePlan">
+  <summary>Metas de ahorro y saldos de deuda</summary>
+  <p>Registra montos en MXN y actualízalos cuando cambien. Estas fichas complementan tu presupuesto mensual.</p>
+  <form id="financePlanForm">
+    <label for="financePlanName">Nombre de la meta o deuda</label><input id="financePlanName" name="name" maxlength="80" required>
+    <label for="financePlanType">Tipo de ficha financiera</label><select id="financePlanType" name="kind"><option value="saving">Meta de ahorro</option><option value="debt">Saldo de deuda</option></select>
+    <label for="financePlanTarget" id="financePlanTargetLabel">Monto meta (MXN)</label><input id="financePlanTarget" name="target" inputmode="decimal" maxlength="16" required>
+    <label for="financePlanCurrent" id="financePlanCurrentLabel">Ahorro actual (MXN)</label><input id="financePlanCurrent" name="current" inputmode="decimal" maxlength="16" required>
+    <button>Guardar ficha financiera</button><button id="financePlanCancel" type="button" class="secondary" hidden>Cancelar edición financiera</button>
+  </form>
+  <p id="financePlanStatus" role="status"></p>
+  <div id="financePlanRecords"></div>
+</details>
+
 <details id="guidedRoutines" class="card">
   <summary>Rutinas guiadas</summary>
   <label for="guidedTemplate">Plantilla de rutina</label><select id="guidedTemplate"></select>
@@ -209,7 +223,7 @@
 </div>
 <div id="moneySummary" class="planner-summary" aria-live="polite"></div>
 <details id="moneyReport"><summary>Reporte mensual y sugerencias de ahorro</summary>
-<div id="moneyReportBody"></div><button id="moneyReportPdf" class="secondary" type="button">Descargar reporte en PDF</button>
+<div id="moneyReportBody"></div><button id="financeOpenPlan" type="button" class="secondary">Abrir metas y deudas</button><button id="moneyReportPdf" class="secondary" type="button">Descargar reporte en PDF</button>
 </details>
 <details><summary>Agregar un gasto con Atajos de iPhone</summary>
 <ol><li>En Atajos, pulsa + y nombra el atajo «Agregar gasto en Lifts».</li>
@@ -677,6 +691,40 @@
   </details>
 </section>
 <section id="journal" hidden aria-labelledby="journalTitle">
+  <details class="card" id="scenarioProjection">
+    <summary>Proyección de escenarios</summary>
+    <p>Compara resultados mensuales constantes durante tres horizontes. Usa la misma unidad para el saldo inicial y los cambios mensuales. Ejemplos de unidades son pesos, horas o piezas.</p>
+    <form id="scenarioProjectionForm">
+      <label for="scenarioTitle">Decisión o proyecto a proyectar</label><input id="scenarioTitle" name="scenario_title" required maxlength="120">
+      <label for="scenarioUnit">Unidad del escenario</label><input id="scenarioUnit" name="scenario_unit" required maxlength="20" placeholder="MXN">
+      <label for="scenarioStart">Saldo inicial común</label><input id="scenarioStart" name="scenario_start" inputmode="decimal" maxlength="16" required>
+      <div class="field-grid">
+        <div><label for="scenarioAdverse">Cambio mensual adverso</label><input id="scenarioAdverse" name="scenario_adverse" inputmode="decimal" maxlength="16" required></div>
+        <div><label for="scenarioBase">Cambio mensual base</label><input id="scenarioBase" name="scenario_base" inputmode="decimal" maxlength="16" required></div>
+        <div><label for="scenarioFavorable">Cambio mensual favorable</label><input id="scenarioFavorable" name="scenario_favorable" inputmode="decimal" maxlength="16" required></div>
+      </div>
+      <label for="scenarioMonths">Tres horizontes en meses separados por espacios</label><input id="scenarioMonths" name="scenario_months" value="3 12 36" maxlength="12" required>
+      <label for="scenarioAssumptions">Supuestos del escenario</label><textarea id="scenarioAssumptions" name="scenario_assumptions" rows="2" maxlength="380" required></textarea>
+      <button>Comparar escenarios</button>
+    </form>
+    <p id="scenarioProjectionStatus" role="status"></p>
+    <div id="scenarioProjectionResult" class="os-overflow"></div>
+    <button id="scenarioProjectionDraft" type="button" class="secondary" hidden>Preparar nota con la proyección</button>
+  </details>
+  <details class="card" id="weightedDecision">
+    <summary>Matriz de decisión ponderada</summary>
+    <p>Define los criterios, asigna pesos y puntúa cada alternativa del 0 al 10. Usa 10 para el mejor resultado en cada criterio. El resultado resume tus valoraciones.</p>
+    <form id="weightedDecisionForm">
+      <label for="decisionProblem">Decisión por tomar</label><input id="decisionProblem" name="matrix_problem" maxlength="120" required>
+      <label for="decisionCriteria">Criterios y pesos, uno por línea</label><textarea id="decisionCriteria" name="matrix_criteria" maxlength="800" rows="3" placeholder="Costo | 3&#10;Tiempo | 2" required></textarea>
+      <label for="decisionOptions">Alternativas y puntuaciones en el orden de los criterios</label><textarea id="decisionOptions" name="matrix_options" maxlength="1500" rows="4" placeholder="Opción A | 8 | 5&#10;Opción B | 6 | 9" required></textarea>
+      <button>Comparar alternativas</button>
+    </form>
+    <p id="decisionMatrixStatus" role="status"></p>
+    <div id="decisionMatrixResult" class="os-overflow"></div>
+    <button id="decisionDraft" type="button" class="secondary" hidden>Preparar decisión en Nexus</button>
+  </details>
+
   <article class="card">
     <h2 id="journalTitle">Misiones y conocimiento</h2>
     <p>Registros privados de Nexus. Guarda evidencia para respaldar lo que das por verificado.</p>
@@ -798,7 +846,34 @@
 <div id="excelContent"></div><p id="excelStatus" role="status"></p></article>
 </section>
 <section id="work" hidden><article class="card"><small>CONOCER TU TRABAJO, SIN INVADIRLO</small><h2>¿Cómo es una buena jornada para ti?</h2><p>Cuéntame lo que quieras compartir. No hacen falta el nombre de la empresa, datos de clientes ni documentos confidenciales.</p><form id="workForm"><label for="workRole">¿Qué haces en tu trabajo?</label><input id="workRole" maxlength="200" placeholder="Puesto, oficio o actividad"><label for="workDuties">¿Qué tareas se repiten durante tu jornada?</label><textarea id="workDuties" maxlength="1500"></textarea><div class="field-grid"><div><label for="workShiftStart">¿A qué hora empiezas normalmente?</label><input id="workShiftStart" type="time" value="09:00"></div><div><label for="workShiftEnd">¿A qué hora terminas?</label><input id="workShiftEnd" type="time" value="17:00"></div></div><label for="workChallenges">¿Qué te quita más tiempo o te cuesta organizar?</label><textarea id="workChallenges" maxlength="1500"></textarea><label for="workResources">¿Qué equipos, herramientas o manuales usas?</label><textarea id="workResources" maxlength="1500" placeholder="Puedes indicar el modelo y el título de un manual público."></textarea><label for="workGoal">¿Qué te gustaría mejorar esta semana?</label><input id="workGoal" maxlength="500"><label><input id="workConsent" type="checkbox" style="width:auto"> Guardar estas respuestas en mi cuenta para organizar mi trabajo.</label><label><input id="workShare" type="checkbox" style="width:auto"> Compartir mi contexto laboral y hasta 12 tareas pendientes con la IA cuando converse.</label><p class="notice">Guardar y compartir son decisiones distintas. Sin guardar, las respuestas solo se usan durante esta sesión. El permiso para compartir con la IA se desactiva al iniciar sesión.</p><button>Aplicar contexto laboral</button><button id="forgetWork" type="button" class="secondary">Borrar contexto laboral</button><p id="workStatus" role="status"></p></form></article><article class="card"><h3>Busquemos una referencia, no una suposición</h3><p>Consulta referencias generales gratuitas. Para ajustes de equipos, contrasta con el manual del fabricante y el procedimiento de tu trabajo.</p><form id="researchForm"><label for="researchQuery">Tema o equipo que quieres investigar</label><input id="researchQuery" required maxlength="300" placeholder="Ej.: flexografía, anilox o gestión del tiempo"><button id="researchButton">Buscar referencia general</button></form><p class="notice">Al buscar, el tema se consulta en Wikipedia; no se envían tu perfil ni tus tareas. Es una referencia secundaria, no un manual técnico ni una verificación de seguridad.</p><p id="researchStatus" role="status"></p><div id="researchResults"></div><div id="researchFallback"></div></article></section>
-<section id="profile" hidden><button type="button" class="secondary" data-page="identity">Comparar propuestas de logotipo</button><article class="card"><h3>Lifts en tu iPhone</h3><p>Abre el chat con un dictado usando Siri o el botón de acción.</p><a href="/iphone.html">Configurar Hablar con Lifts en iPhone →</a></article><article class="card"><h3>Un nombre y una voz a tu gusto</h3><p>Puedes elegir cómo llamar a tu asistente. El nombre se guarda en tu cuenta y se envía al modelo para que lo use al responder. La marca de la app seguirá siendo Lifts.</p><form id="assistantForm"><label for="assistantName">Nombre de tu asistente</label><input id="assistantName" maxlength="32" placeholder="Ej.: Luna, Atlas o Lifts" autocomplete="off"><label for="assistantPresentation">Trato del personaje</label><select id="assistantPresentation"><option value="neutral" selected>Neutro · aquí para ayudarte</option><option value="feminine">Femenino · lista para ayudarte</option><option value="masculine">Masculino · listo para ayudarte</option></select><p class="notice">Elige el trato que prefieras para el personaje. No deducimos género a partir del nombre. Lifts sigue siendo un asistente virtual.</p><label for="voiceSelect">Voz para leer respuestas</label><select id="voiceSelect"></select><button id="previewVoice" type="button" class="secondary">▷ Voz de muestra</button><button id="stopVoiceSample" type="button" class="secondary">◼ Detener muestra</button><p id="voiceSampleStatus" role="status" aria-live="polite"></p><label for="voiceRate">Velocidad de lectura</label><select id="voiceRate"><option value="0.85">Pausada</option><option value="1" selected>Normal</option><option value="1.15">Ágil</option></select><p class="notice">En el chat escrito, pulsa Escuchar; en conversación hablada, las respuestas se leen automáticamente. Las voces dependen del navegador y del dispositivo; algunas necesitan conexión. El navegador o sistema gestiona la síntesis de voz. El modo de conversación usa el micrófono con tu permiso.</p><button>Guardar nombre y voz</button><p id="assistantSettingsStatus" role="status" aria-live="polite"></p></form></article><article class="card"><h3>Un asistente que empieza por conocerte</h3><p class="notice">Tu perfil, tareas y consultas se guardan en tu cuenta. No escribas contraseñas en el chat.</p><details><summary>Privacidad del chat</summary><p>El proveedor de IA procesa tus preguntas y un historial breve para responder, aunque la conversación sea temporal. Temporal significa que Lifts no la guarda en tu cuenta hasta que pulses Guardar conversación; no implica eliminar datos que pueda retener el proveedor conforme a sus condiciones.</p><label><input id="shareProfile" type="checkbox" style="width:auto"> Usar mi perfil para personalizar las respuestas de IA durante esta sesión.</label><p>Es opcional y está desactivado al iniciar sesión. Las tareas y el correo no se adjuntan.</p></details><form id="profileForm"><label for="name">Tu nombre</label><input id="name" maxlength="80"><label for="interests">Tus gustos e intereses (separados por comas)</label><input id="interests" maxlength="500"><label for="tone">¿Cómo prefieres las respuestas?</label><input id="tone" maxlength="160" placeholder="Ej.: breves, paso a paso, con ejemplos"><label for="role">Tu trabajo, estudios o actividad (opcional)</label><input id="role" maxlength="160"><label for="specialty">Especialidad</label><input id="specialty" maxlength="160"><label for="equipment">Herramientas, equipos o materiales (opcional)</label><input id="equipment" maxlength="240"><label for="goals">¿Qué quieres mejorar?</label><textarea id="goals" maxlength="2000"></textarea><label><input id="profileConsent" type="checkbox" style="width:auto"> Quiero guardar mis respuestas para personalizar futuras sesiones.</label><p class="notice">Sin esta autorización, tu perfil se usa solo en esta sesión de la app. Si antes lo guardaste, al aplicar los cambios sin marcar la casilla se vaciará el perfil almacenado. Tus tareas y consultas se conservan.</p><button>Aplicar preferencias</button><button id="forgetProfile" type="button" class="secondary">Borrar solo mi perfil</button><p id="saved" role="status"></p></form></article><article class="card"><h3>Control de tus datos</h3><p>Elimina el perfil, las consultas y las tareas de tu cuenta. Esta acción no elimina tu cuenta de acceso.</p><button id="erase" class="secondary">Borrar mis datos</button></article></section>
+<section id="profile" hidden>
+  <details class="card" id="wellbeingTrend">
+    <summary>Resumen de bienestar por periodo</summary>
+    <label for="wellbeingTrendPeriod">Días de bienestar</label><select id="wellbeingTrendPeriod"><option value="7">7 días</option><option value="14">14 días</option></select>
+    <p>Promedios de revisiones guardadas voluntariamente. El sueño, el estrés y la energía se resumen por separado.</p>
+    <ul id="wellbeingTrendResult" aria-live="polite"></ul>
+  </details>
+  <details class="card">
+    <summary>Calculadoras orientativas de bienestar</summary>
+    <h3>Índice de masa corporal en adultos</h3>
+    <p>El IMC es peso dividido entre estatura al cuadrado. Por sí solo no distingue composición corporal ni estado de salud. <a href="https://www.cdc.gov/bmi/adult-calculator/index.html">Referencia del IMC para adultos del CDC</a>.</p>
+    <form id="wellbeingBmi">
+      <label for="wellbeingWeight">Peso (kg)</label><input name="weight" id="wellbeingWeight" type="number" min="1" max="700" step="any" required>
+      <label for="wellbeingHeight">Estatura (cm)</label><input name="height" id="wellbeingHeight" type="number" min="50" max="300" step="any" required>
+      <button>Calcular IMC</button>
+    </form>
+    <p id="wellbeingBmiResult" role="status"></p>
+    <h3>Tiempo entre acostarte y despertar</h3>
+    <p>Calcula el intervalo de reloj en días consecutivos. No mide el tiempo realmente dormido ni ajustes por cambio de hora.</p>
+    <form id="wellbeingSleep">
+      <label for="wellbeingBedtime">Hora de acostarte</label><input name="start" id="wellbeingBedtime" type="time" required>
+      <label for="wellbeingWake">Hora de despertar</label><input name="end" id="wellbeingWake" type="time" required>
+      <label><input name="overnight" type="checkbox" checked> Desperté al día siguiente</label>
+      <button>Calcular intervalo</button>
+    </form>
+    <p id="wellbeingSleepResult" role="status"></p>
+  </details>
+<button type="button" class="secondary" data-page="identity">Comparar propuestas de logotipo</button><article class="card"><h3>Lifts en tu iPhone</h3><p>Abre el chat con un dictado usando Siri o el botón de acción.</p><a href="/iphone.html">Configurar Hablar con Lifts en iPhone →</a></article><article class="card"><h3>Un nombre y una voz a tu gusto</h3><p>Puedes elegir cómo llamar a tu asistente. El nombre se guarda en tu cuenta y se envía al modelo para que lo use al responder. La marca de la app seguirá siendo Lifts.</p><form id="assistantForm"><label for="assistantName">Nombre de tu asistente</label><input id="assistantName" maxlength="32" placeholder="Ej.: Luna, Atlas o Lifts" autocomplete="off"><label for="assistantPresentation">Trato del personaje</label><select id="assistantPresentation"><option value="neutral" selected>Neutro · aquí para ayudarte</option><option value="feminine">Femenino · lista para ayudarte</option><option value="masculine">Masculino · listo para ayudarte</option></select><p class="notice">Elige el trato que prefieras para el personaje. No deducimos género a partir del nombre. Lifts sigue siendo un asistente virtual.</p><label for="voiceSelect">Voz para leer respuestas</label><select id="voiceSelect"></select><button id="previewVoice" type="button" class="secondary">▷ Voz de muestra</button><button id="stopVoiceSample" type="button" class="secondary">◼ Detener muestra</button><p id="voiceSampleStatus" role="status" aria-live="polite"></p><label for="voiceRate">Velocidad de lectura</label><select id="voiceRate"><option value="0.85">Pausada</option><option value="1" selected>Normal</option><option value="1.15">Ágil</option></select><p class="notice">En el chat escrito, pulsa Escuchar; en conversación hablada, las respuestas se leen automáticamente. Las voces dependen del navegador y del dispositivo; algunas necesitan conexión. El navegador o sistema gestiona la síntesis de voz. El modo de conversación usa el micrófono con tu permiso.</p><button>Guardar nombre y voz</button><p id="assistantSettingsStatus" role="status" aria-live="polite"></p></form></article><article class="card"><h3>Un asistente que empieza por conocerte</h3><p class="notice">Tu perfil, tareas y consultas se guardan en tu cuenta. No escribas contraseñas en el chat.</p><details><summary>Privacidad del chat</summary><p>El proveedor de IA procesa tus preguntas y un historial breve para responder, aunque la conversación sea temporal. Temporal significa que Lifts no la guarda en tu cuenta hasta que pulses Guardar conversación; no implica eliminar datos que pueda retener el proveedor conforme a sus condiciones.</p><label><input id="shareProfile" type="checkbox" style="width:auto"> Usar mi perfil para personalizar las respuestas de IA durante esta sesión.</label><p>Es opcional y está desactivado al iniciar sesión. Las tareas y el correo no se adjuntan.</p></details><form id="profileForm"><label for="name">Tu nombre</label><input id="name" maxlength="80"><label for="interests">Tus gustos e intereses (separados por comas)</label><input id="interests" maxlength="500"><label for="tone">¿Cómo prefieres las respuestas?</label><input id="tone" maxlength="160" placeholder="Ej.: breves, paso a paso, con ejemplos"><label for="role">Tu trabajo, estudios o actividad (opcional)</label><input id="role" maxlength="160"><label for="specialty">Especialidad</label><input id="specialty" maxlength="160"><label for="equipment">Herramientas, equipos o materiales (opcional)</label><input id="equipment" maxlength="240"><label for="goals">¿Qué quieres mejorar?</label><textarea id="goals" maxlength="2000"></textarea><label><input id="profileConsent" type="checkbox" style="width:auto"> Quiero guardar mis respuestas para personalizar futuras sesiones.</label><p class="notice">Sin esta autorización, tu perfil se usa solo en esta sesión de la app. Si antes lo guardaste, al aplicar los cambios sin marcar la casilla se vaciará el perfil almacenado. Tus tareas y consultas se conservan.</p><button>Aplicar preferencias</button><button id="forgetProfile" type="button" class="secondary">Borrar solo mi perfil</button><p id="saved" role="status"></p></form></article><article class="card"><h3>Control de tus datos</h3><p>Elimina el perfil, las consultas y las tareas de tu cuenta. Esta acción no elimina tu cuenta de acceso.</p><button id="erase" class="secondary">Borrar mis datos</button></article></section>
 <footer>Lifts Asistente Virtual · Respuestas generadas por IA. Sin integraciones de API de pago.</footer></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js" integrity="sha384-l7yJnh/cWKcqeTC5adHUdc5b+J4Kb2QTGRSkCQehn1YT5xEFlrgwnXOYuvrtI1F6" crossorigin="anonymous" defer></script>
 <dialog id="workspaceSearchDialog" aria-labelledby="workspaceSearchTitle"><form method="dialog"><button type="submit" class="secondary">Cerrar</button></form><h2 id="workspaceSearchTitle">Buscar en Lifts</h2><label for="workspaceQuery">Secciones, tareas o lecciones</label><input id="workspaceQuery" type="search" maxlength="100" autocomplete="off"><div id="workspaceSearchResults" aria-live="polite"></div></dialog>
@@ -823,6 +898,7 @@
 <script src="shortcut.js" defer></script>
 <script src="conversation-ui.js" defer></script>
 <script src="wellbeing-ui.js" defer></script>
+<script src="wellbeing-insights.js" defer></script>
 <script src="learning-ui.js" defer></script>
 <script src="academy-ui.js" defer></script>
 <script src="workspace-ui.js" defer></script>
@@ -859,6 +935,8 @@
 <script src="workspace-actions.js" defer></script>
 <script src="nexus-journal.js" defer></script>
 <script src="nexus-journal-ui.js" defer></script>
+<script src="weighted-decisions.js" defer></script>
+<script src="scenario-projection.js" defer></script>
 <script src="nexus-backup.js" defer></script>
 <script src="nexus-operations-ui.js" defer></script>
 <script src="nexus-feedback.js" defer></script>
@@ -876,6 +954,7 @@
 <script src="reminders-ui.js" defer></script>
 <script src="inbox.js" defer></script>
 <script src="finance-report.js" defer></script>
+<script src="finance-plan.js" defer></script>
 <script src="routines-ui.js" defer></script>
 <script src="push-ui.js" defer></script>
 <script src="robot.js" defer></script>

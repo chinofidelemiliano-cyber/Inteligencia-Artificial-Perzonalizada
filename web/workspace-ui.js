@@ -45,7 +45,7 @@
     }
     if(!term)return;
     for(const task of api.getState().tasks.filter(task=>!task.archived && match(task.title,task.date,'tareas agenda eventos')).slice(0,5)){
-      add(task.title+' · '+(task.kind==='reminder'?'Recordatorios':'Agenda'),()=>api.open(task.kind==='reminder'?'reminders':'tasks'));
+      add(task.title+' · '+(task.kind==='reminder'?'Recordatorios':'Agenda'),()=>task.kind==='reminder'?api.open('reminders'):api.getState().tasks.some(item=>item.id===task.id)&&window.liftsWorkUI.openTask(task.id));
     }
     for(const item of (api.getState().engineeringRecords||[]).filter(item=>match(item.data.name,item.data.model,'ingenieria flexografia')).slice(0,4)){
       add(item.data.name+' · Ficha de ingeniería',()=>window.liftsNexus.open({id:'engineering-record',key:item.id}));
@@ -81,7 +81,7 @@
       });
     }
     for(const item of (state.guardianFollowups||[]).filter(item=>match(item.subject,item.person,item.promise)).slice(0,4)){
-      add(item.subject+' · Seguimiento',()=>api.open('guardian'));
+      add(item.subject+' · Seguimiento',()=>window.liftsGuardian.openFollowup(item.id));
     }
     for(const kind of ['machines','stock']){
       for(const item of (state.industrial?.[kind]||[]).filter(item=>match(item.name,item.model,item.lot)).slice(0,4)){

@@ -15,3 +15,10 @@ Entorno de navegador: `PLAYWRIGHT_MODULE=/workspace/.lifts-tools/node_modules/pl
 Se corrigieron la carga del módulo de atajos después del registro Nexus, una coincidencia incompleta para «calculadora de distorsión» y un fallo de compatibilidad con las pruebas del formulario al registrar la vista previa de memoria.
 
 La prueba móvil se repitió tras incorporar las preferencias de frecuencia. Aprobó el guardado de 5 minutos y la apertura del detalle de una coincidencia. El intervalo se ejecuta solo con el Escritorio y la pestaña visibles. No se verificó una ejecución en segundo plano.
+
+## Integración de reglas, decisiones, bienestar y finanzas
+
+- 224 pruebas automatizadas aprobadas en la suite `tests/*.test.cjs`.
+- Cuatro recorridos en Chromium aprobados para Ingeniería y Preflight, Guardian, evolución y revisión personal. Se corrigió la duplicación de nombres de campos entre los formularios de simulación y los editores de Nexus.
+- Se repitió el recorrido móvil tras incorporar fichas financieras. Comprobó el vínculo histórico de una tarea completada, el borrador de decisión, la cronología observada, la proyección, el promedio de sueño, el IMC y el guardado en centavos de una meta de ahorro.
+- Compilación local de Cloudflare correcta durante la integración de decisiones. La comprobación del sitio publicado y de dispositivos físicos sigue pendiente.

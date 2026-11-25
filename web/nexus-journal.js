@@ -2,7 +2,7 @@
 (function (root) {
   const kinds={
     mission:{label:'Misiones',fields:{area:'Área de vida o trabajo',objective:'Objetivo',scope:'Alcance',deliverable:'Entregable esperado',available:'Información disponible',missing:'Información faltante',constraints:'Restricciones',stages:'Etapas (una por línea)',tools:'Herramientas',dependencies:'Dependencias',risks:'Riesgos y prevención',acceptance:'Criterios de aceptación',evidence:'Evidencia de entrega y verificación',next:'Próxima acción'}},
-    decision:{label:'Decisiones',fields:{problem:'Problema',alternatives:'Alternativas',information:'Información disponible',criteria:'Criterios',argumentsFor:'A favor',argumentsAgainst:'En contra',choice:'Decisión',expected:'Resultado esperado',actual:'Resultado real',lesson:'Aprendizaje'}},
+    decision:{label:'Decisiones',fields:{problem:'Problema',alternatives:'Alternativas',information:'Información disponible',criteria:'Criterios',argumentsFor:'A favor',argumentsAgainst:'En contra',choice:'Decisión',expected:'Resultado esperado',actual:'Resultado real',lesson:'Aprendizaje',reviewDate:'Próxima revisión (AAAA-MM-DD)',evidence:'Evidencia de la revisión'}},
     knowledge:{label:'Conocimiento',fields:{summary:'Conocimiento',source:'Fuente',author:'Autor',date:'Fecha de la fuente',version:'Versión',evidence:'Evidencia',applicability:'Aplicabilidad',limitations:'Limitaciones',conflicts:'Fuentes contradictorias'}},
     lesson:{label:'Lecciones aprendidas',fields:{situation:'Situación',cause:'Causa y cómo se confirmó',action:'Acción',result:'Resultado',evidence:'Evidencia',lesson:'Aprendizaje',prevention:'Prevención'}},
     review:{label:'Revisión crítica',fields:{claim:'Idea a evaluar',facts:'Hechos y fuentes',hypotheses:'Hipótesis y opiniones',assumptions:'Suposiciones',contradictions:'Contradicciones o sesgos',counterarguments:'Argumentos y explicaciones alternativas',risks:'Riesgos y premortem',tests:'Evidencia pendiente y prueba de descarte'}},
@@ -117,6 +117,7 @@
     }
     if(['household','vehicle','subscription','calibration'].includes(kind)&&data.date&&!dateKey(data.date))throw new Error('Indica una fecha de aviso válida en formato AAAA-MM-DD.');
     if(status==='verified'&&(!data.source||!data.evidence))throw new Error('Agrega la fuente y la evidencia antes de marcar el conocimiento como verificado.');
+    if(kind==='decision'&&data.reviewDate&&!dateKey(data.reviewDate))throw new Error('Indica una fecha de revisión válida en formato AAAA-MM-DD.');
     if(kind==='scenario')compareCosts(data);
     if(kind==='risk'){
       riskScore(data);
@@ -132,6 +133,19 @@
       createdAt:previous?.createdAt||now,updatedAt:now},previous);
   }
 
+  function decisionReviews(item){
+    if(item?.kind!=='decision')return [];
+    const snapshots=[{at:item.updatedAt,data:item.data},...(item.history||[])];
+    const entries=[];
+    for(const {at,data} of snapshots){
+      const review={at,expected:data?.expected||'',actual:data?.actual||'',evidence:data?.evidence||'',lesson:data?.lesson||''};
+      if(!review.actual&&!review.evidence&&!review.lesson)continue;
+      const previous=entries.at(-1);
+      if(previous&&['expected','actual','evidence','lesson'].every(key=>previous[key]===review[key]))continue;
+      entries.push(review);
+    }
+    return entries;
+  }
   function restoreRecord(previous,versionId) {
     const version=previous.history?.find(item=>item.id===versionId);
     if(!version)throw new Error('Esta versión ya no está disponible.');
@@ -254,7 +268,7 @@
     const dfBetween=groups.length-1,dfWithin=count-groups.length;
     return {groups,dfBetween,dfWithin,between,within,f:(between/dfBetween)/(within/dfWithin)};
   }
-  const api={kinds,statuses,relationStates,steps,record,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,riskScore,oneWayAnova,graphNodes,graphView,linkedCases};
+  const api={kinds,statuses,relationStates,steps,record,decisionReviews,restoreRecord,historyLimit,relation,compareCosts,timeline,measurementSummary,dateKey,lifeMap,qualityCosts,riskScore,oneWayAnova,graphNodes,graphView,linkedCases};
   if(typeof module==='object')module.exports=api;
   else root.liftsNexusJournal=api;
 })(globalThis);
