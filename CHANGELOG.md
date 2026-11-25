@@ -2,6 +2,10 @@
 
 ## 2026-11-25
 
+- Comparador de créditos con comisiones iniciales, sensibilidad de tasa o plazo y cinco fórmulas financieras adicionales.
+- Fichas de máquina con parámetros opcionales, unidades y referencia técnica o método de medición obligatorio al capturarlos.
+- Academia financiera introductoria con seis lecciones, referencias y ejercicios con retroalimentación.
+
 - Radar y el historial de automatizaciones enlazan tareas y seguimientos a su registro exacto; se puede recuperar la tarea aunque ya se haya completado.
 - Fichas financieras privadas para metas de ahorro y saldos de deuda, editables desde Hábitos y finanzas y accesibles desde el reporte mensual.
 - Resumen de bienestar por periodos de 7 y 14 días, con IMC adulto e intervalo nocturno calculados localmente.

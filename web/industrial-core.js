@@ -3,6 +3,26 @@
   const categories={material:'Material',ink:'Tinta',anilox:'Anilox',plate:'Placa',die:'Suaje'};
   const blank=()=>({machines:[],stock:[],orders:[],rules:[]});
   const clean=(v,max=120)=>String(v??'').trim().slice(0,max);
+  const machineParameters={
+    webWidth:'Ancho útil de banda (mm)',
+    maxSpeed:'Velocidad máxima documentada (m/min)',
+    stations:'Estaciones de impresión'
+  };
+  function machineSpecs(raw){
+    const output={};
+    for(const [key,label] of Object.entries(machineParameters)){
+      const text=clean(raw[key],24);
+      if(!text)continue;
+      const value=Number(text.replace(',','.'));
+      if(!/^\d{1,6}(?:[.,]\d{1,3})?$/.test(text)||value<=0||key==='stations'&&!Number.isInteger(value)){
+        throw new Error('Revisa '+label.toLowerCase()+'. Introduce un valor positivo con la unidad indicada.');
+      }
+      output[key]=value;
+    }
+    const reference=clean(raw.parameterSource,500);
+    if(Object.keys(output).length&&!reference)throw new Error('Indica la referencia técnica o el método de medición de los parámetros.');
+    return {parameters:output,parameterSource:reference};
+  }
   function change(space,kind,raw,id){
     if(!Object.hasOwn(blank(),kind))throw new Error('Categoría de registro inválida.');
     const name=clean(raw.name);
@@ -14,7 +34,7 @@
     if(kind==='machines'){
       const path=clean(raw.path,2400).split(/\r?\n/).map(line=>clean(line,100)).filter(Boolean);
       if(path.length<2||path.length>24)throw new Error('Registra de 2 a 24 componentes, uno por línea.');
-      data={path,model:clean(raw.model),source:clean(raw.source,500)};
+      data={path,model:clean(raw.model),source:clean(raw.source,500),...machineSpecs(raw)};
     }else if(kind==='stock'){
       const amount=clean(raw.quantity),unit=clean(raw.unit,40);
       if(!Object.hasOwn(categories,raw.category)||amount&&(!/^\d{1,12}(?:[.,]\d{1,4})?$/.test(amount)||!unit)){
@@ -63,6 +83,6 @@
     }
     return out;
   }
-  const api={blank,categories,change,assess,trace};
+  const api={blank,categories,machineParameters,change,assess,trace};
   if(typeof module==='object')module.exports=api;else root.liftsIndustrialCore=api;
 })(globalThis);

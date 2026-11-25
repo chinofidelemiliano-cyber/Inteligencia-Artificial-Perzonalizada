@@ -50,7 +50,16 @@
     visual.replaceChildren();
     if(!item)return;
     node(visual,'h4',item.name);
-    if(kind==='machines')draw(item);
+    if(kind==='machines'){
+      draw(item);
+      const specs=Object.entries(core.machineParameters).filter(([key])=>Number.isFinite(item.parameters?.[key]));
+      if(specs.length){
+        const list=node(visual,'dl');
+        const format=new Intl.NumberFormat('es-MX',{maximumFractionDigits:3});
+        for(const [key,label] of specs){node(list,'dt',label);node(list,'dd',format.format(item.parameters[key]));}
+        node(visual,'p','Referencia de parámetros: '+item.parameterSource);
+      }
+    }
     if(['machines','stock'].includes(kind))button(visual,'Preparar QR privado',()=>window.liftsFieldLinks.prepare(kind,item.id));
     if(kind==='rules')node(visual,'p',item.active===false?'Regla inactiva':'Regla activa');
     if(kind!=='orders')return;
@@ -72,6 +81,10 @@
     if(kind==='machines'){
       field('Modelo de máquina','model',item?.model);
       field('Referencia del recorrido','source',item?.source);
+      for(const [key,label] of Object.entries(core.machineParameters)){
+        field(label,key,item?.parameters?.[key]).inputMode=key==='stations'?'numeric':'decimal';
+      }
+      field('Referencia o método de medición de los parámetros','parameterSource',item?.parameterSource,null,'textarea');
       field('Componentes en orden (uno por línea)','path',item?.path.join('\n'),null,'textarea');
     }else if(kind==='stock'){
       field('Categoría industrial','category',item?.category,Object.entries(core.categories));

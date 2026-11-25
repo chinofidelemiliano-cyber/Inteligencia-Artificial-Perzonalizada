@@ -24,6 +24,16 @@
     identity:plainPage('Propuestas de logotipo','Comparar variantes de identidad visual','La elección se aplica a tu espacio.'),
     profile:plainPage('Mi perfil','Consultar preferencias y ajustes de cuenta','Las preferencias se guardan por cuenta.'),
     routines:plainPage('Hábitos y dinero','Consultar presupuesto, gastos y rutinas','Los datos se guardan por cuenta.'),
+    'finance-academy':{
+      label:'Academia financiera',purpose:'Aprender presupuesto, inflación, tasas, crédito y diversificación',
+      input:'Sin parámetros',output:'Curso educativo local',permission:'Sesión del propietario',dependency:'Hábitos y dinero',
+      limitations:'Ejercicios sin recomendaciones de inversión personalizadas.',
+      validate:key=>key==='',open:workspace=>{
+        workspace.open('routines');
+        const panel=root.document.getElementById('financeAcademy');
+        if(panel&&!panel.closest('[hidden]')){panel.open=true;panel.scrollIntoView({block:'start'});}
+      }
+    },
     'draft-task':draftAction('Preparar una tarea','Crear pendiente y abrir un borrador','Agenda',()=>root.liftsWorkUI.prepareTask('')),
     'draft-reminder':draftAction('Crear recordatorio','Programar aviso desde un borrador','Recordatorios',()=>root.liftsReminders.open()),
     'draft-idea':draftAction('Registrar una idea','Preparar una nota privada','Nexus',()=>root.liftsJournal.prepareDraft('note')),

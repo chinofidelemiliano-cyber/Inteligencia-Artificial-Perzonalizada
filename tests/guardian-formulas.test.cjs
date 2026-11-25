@@ -23,3 +23,13 @@ test('formula inputs reject zero denominators, out-of-range values and unsupport
     ['bcm',[0,4]],['percent',['',10]],['constructor',[5,10]]
   ])assert.throws(()=>calculate(id,values),Error,id);
 });
+
+test('expanded finance formulas match known examples and validate bounds',()=>{
+  const {calculate}=require('../web/guardian-formulas.js');
+  assert.equal(calculate('simpleInterest',[1000,5,3]).result,150);
+  assert.ok(Math.abs(calculate('presentValue',[1210,10,2]).result-1000)<1e-9);
+  assert.ok(Math.abs(calculate('realReturn',[5,4]).result-0.96153846)<1e-8);
+  assert.equal(calculate('breakEven',[1000,70,40]).result,34);
+  assert.equal(calculate('workHours',[600,120]).result,5);
+  assert.throws(()=>calculate('breakEven',[1000,40,40]),/mayor/);
+});

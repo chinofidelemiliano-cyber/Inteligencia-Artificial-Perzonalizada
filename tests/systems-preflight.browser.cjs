@@ -255,6 +255,28 @@ test('The 2D workspace saves a systems map and downloads a preflight report',asy
     await page.getByText('Ficha financiera guardada.',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>window.saved.financePlan[0].current),25000);
     await page.getByText(/Avance de la meta 25 %/).waitFor();
+    await page.evaluate(()=>window.liftsWorkspace.open('calculatorHub'));
+    await page.getByText('Comparar créditos y sensibilidad',{exact:true}).click();
+    for(const [id,value] of Object.entries({loanAmount:'10000',loanRateA:'1',loanMonthsA:'12',loanRateB:'0',loanMonthsB:'10',loanFeeB:'50'})){
+      await page.locator('#'+id).fill(value);
+    }
+    await page.getByRole('button',{name:'Comparar créditos',exact:true}).click();
+    await page.getByRole('rowheader',{name:'A con tasa modificada'}).waitFor();
+    assert.match(await page.getByRole('row').filter({has:page.getByRole('rowheader',{name:'Crédito B',exact:true})}).innerText(),/10,050/);
+    await page.evaluate(()=>window.liftsNexus.open({id:'finance-academy',key:''}));
+    await page.getByLabel('Lección financiera').selectOption('1');
+    await page.getByLabel('Corresponder al mismo periodo.').check();
+    await page.getByRole('button',{name:'Comprobar respuesta financiera'}).click();
+    await page.getByText(/^Correcto. El cociente/).waitFor();
+    await page.evaluate(()=>window.liftsWorkspace.open('engineering'));
+    await page.getByText('Máquinas, inventario y órdenes',{exact:true}).click();
+    await page.getByLabel('Nombre o código industrial',{exact:true}).fill('Prensa con medidas');
+    await page.getByLabel('Componentes en orden (uno por línea)',{exact:true}).fill('Entrada\nSalida');
+    await page.getByLabel('Ancho útil de banda (mm)',{exact:true}).fill('330,5');
+    await page.getByLabel('Referencia o método de medición de los parámetros',{exact:true}).fill('Medición de prueba');
+    await page.getByRole('button',{name:'Guardar registro industrial',exact:true}).click();
+    await page.getByText('Registro industrial guardado.',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.saved.industrial.machines[0].parameters.webWidth),330.5);
     assert.deepEqual(errors,[]);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

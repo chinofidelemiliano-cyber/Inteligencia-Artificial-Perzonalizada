@@ -1,6 +1,6 @@
 # Continuación de Lifts
 
-Siguiente apartado: **22, simuladores financieros**. Añadir sensibilidad a tasas y plazos y comparar créditos con los mismos supuestos. Reutilizar el modelo de amortización y el registro privado de metas y deudas. Las ampliaciones de los apartados 11 y 16–21 se detallan en la matriz.
+Siguiente apartado: **25, diagnóstico de defectos**. Ampliar la comprobación guiada, vincular casos a equipos propios y conservar hipótesis y evidencia por separado. Mantener cargas manuales de fichas y manuales y las órdenes aplazadas. Los pendientes de finanzas e ingeniería están en los apartados 21–24 de la matriz.
 
 Después:
 
@@ -9,4 +9,4 @@ Después:
 3. Apartados 13–40. Cerrar las brechas de cada módulo según la matriz. Conservar las herramientas que ya funcionan.
 4. Apartados 41–46. Aislamiento, compatibilidad sin conexión, privacidad y validación final. Los manuales técnicos se cargarán manualmente. Órdenes aplazadas. Integraciones nuevas sujetas a permisos. El sitio y los dispositivos físicos se corroborarán al final con el usuario.
 
-Para retomar, ejecuta `git status -sb && git log -5 --oneline` desde este repositorio, lee [la matriz](IMPLEMENTATION_STATUS.md) y continúa en el apartado 22. La [especificación completa](docs/lifts-especificacion-53.md) se conserva en el repositorio.
+Para retomar, ejecuta `git status -sb && git log -5 --oneline` desde este repositorio, lee [la matriz](IMPLEMENTATION_STATUS.md) y continúa en el apartado 25. La [especificación completa](docs/lifts-especificacion-53.md) se conserva en el repositorio.

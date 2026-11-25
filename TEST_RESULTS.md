@@ -22,3 +22,9 @@ La prueba móvil se repitió tras incorporar las preferencias de frecuencia. Apr
 - Cuatro recorridos en Chromium aprobados para Ingeniería y Preflight, Guardian, evolución y revisión personal. Se corrigió la duplicación de nombres de campos entre los formularios de simulación y los editores de Nexus.
 - Se repitió el recorrido móvil tras incorporar fichas financieras. Comprobó el vínculo histórico de una tarea completada, el borrador de decisión, la cronología observada, la proyección, el promedio de sueño, el IMC y el guardado en centavos de una meta de ahorro.
 - Compilación local de Cloudflare correcta durante la integración de decisiones. La comprobación del sitio publicado y de dispositivos físicos sigue pendiente.
+
+## Comparación financiera, formación y parámetros de máquina
+
+- 228 casos aprobados en `tests/*.test.cjs`. Casos nuevos de coste de crédito, variación independiente de tasa y plazo, fórmulas financieras y parámetros técnicos con referencia.
+- Dos recorridos Chromium aprobados en `tests/{systems-preflight,evolution}.browser.cjs`. Se verificó el costo con comisión, la respuesta de inflación y el guardado de 330,5 mm con referencia de prueba.
+- Los datos se probaron con cuentas simuladas. Las fichas técnicas reales quedan para carga manual y el despliegue público sigue pendiente de verificación.

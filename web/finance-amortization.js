@@ -17,6 +17,7 @@
     return {payment,totalInterest,totalPaid:principal+totalInterest,rows};
   }
   if(typeof module==='object'){module.exports={schedule};return;}
+  root.liftsAmortization={schedule};
   const $=id=>document.getElementById(id);
   const form=$('amortizationForm'),status=$('amortizationStatus'),host=$('amortizationRows'),download=$('amortizationDownload');
   const format=new Intl.NumberFormat('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});

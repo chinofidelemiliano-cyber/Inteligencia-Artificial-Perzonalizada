@@ -32,3 +32,13 @@ test('registered routes, inventory, orders and pair rules share stable IDs',()=>
   assert.equal(core.trace(space,order.id).ink,'Tinta U · L-9');
   assert.equal(core.trace(core.blank(),order.id),null);
 });
+
+test('machine parameters preserve units and require a traceable source',()=>{
+  const {blank,change}=require('../web/industrial-core.js');
+  const raw={name:'Prensa',path:'Entrada\nSalida',webWidth:'330,5',maxSpeed:'90',stations:'6'};
+  assert.throws(()=>change(blank(),'machines',raw),/referencia técnica/);
+  const saved=change(blank(),'machines',{...raw,parameterSource:'Medición firmada'});
+  assert.deepEqual(saved.item.parameters,{webWidth:330.5,maxSpeed:90,stations:6});
+  assert.throws(()=>change(saved.space,'machines',{...raw,stations:'6.5',parameterSource:'Manual'},saved.item.id),/estaciones/);
+  assert.deepEqual(change(blank(),'machines',{name:'Registro antiguo',path:'Entrada\nSalida'}).item.parameters,{});
+});
